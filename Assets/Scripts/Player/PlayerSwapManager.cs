@@ -1,0 +1,360 @@
+using UnityEngine;
+using UnityEngine.InputSystem;
+using System.Collections.Generic;
+using System.Collections;
+
+#region 뷰 (View)
+/// <summary>
+/// [설명]: 활성 캐릭터의 드래그 조작 및 캐릭터 간 스왑을 관리하는 매니저 클래스입니다.
+/// 화면 터치 시 정면 사격(Straight Fire), 정지 시 자동 타겟팅(Auto Targeting) 로직을 연계하여 처리합니다.
+/// </summary>
+public class PlayerSwapManager : MonoBehaviour
+{
+    #region 에디터 설정
+    [Header("캐릭터 리스트")]
+    [Tooltip("게임에 참여하는 플레이어 캐릭터 슬롯입니다.")]
+    [SerializeField] private List<PlayerCharacterController> m_characters;
+
+    [Header("위치 설정")]
+    [Tooltip("활성 캐릭터가 위치할 기준 지점(중앙)입니다.")]
+    [SerializeField] private Transform m_activePosition;
+    [Tooltip("대기 캐릭터들이 대기할 지점 리스트입니다.")]
+    [SerializeField] private Transform[] m_standbyPositions;
+
+    [Header("판정 설정")]
+    [Tooltip("캐릭터 터치 인식을 위한 레이어 마스크입니다.")]
+    [SerializeField] private LayerMask m_characterLayer; 
+    [Tooltip("캐릭터 터치 인식을 위한 유효 반경입니다.")]
+    [SerializeField] private float m_touchRadius = 1.5f;
+
+    [Header("애니메이션")]
+    [Tooltip("스왑 시 이동 속도에 영향을 주는 소요 시간입니다.")]
+    [SerializeField] private float m_swapDuration = 0.3f;
+    [Tooltip("이동 보간에 사용될 애니메이션 곡선입니다.")]
+    [SerializeField] private AnimationCurve m_swapCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+    #endregion
+
+    #region 내부 필드
+    private PlayerCharacterController m_activeCharacter;
+    private Camera m_mainCamera;
+    
+    private bool m_isDraggingActive; 
+    private bool m_isAnimating; 
+    private Vector2 m_lastScreenPos;
+    #endregion
+
+    #region 유니티 생명주기
+    private void Awake()
+    {
+        m_mainCamera = Camera.main;
+        if (m_mainCamera == null)
+        {
+            Debug.LogError("[PlayerSwapManager] 메인 카메라를 찾을 수 없습니다.");
+        }
+        
+        InitializeCharacters();
+    }
+
+    private void Start()
+    {
+        AlignCharactersToPositions();
+    }
+
+    private void Update()
+    {
+        // 스왑 애니메이션 도중에는 모든 수동 조작 입력을 차단합니다.
+        if (m_isAnimating)
+        {
+            return;
+        }
+
+        HandleInput();
+    }
+    #endregion
+
+    #region 초기화 및 바인딩 로직
+    /// <summary>
+    /// [설명]: 등록된 캐릭터의 데이터를 초기화하고 기본 활성 캐릭터를 설정합니다.
+    /// </summary>
+    private void InitializeCharacters()
+    {
+        if (m_characters == null || m_characters.Count == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < m_characters.Count; i++)
+        {
+            bool isActiveZero = (i == 0);
+            var stats = new PlayerStatsDTO 
+            { 
+                ID = $"Player_{i}", 
+                IsActive = isActiveZero,
+                MoveSpeed = 20f,
+                CurrentX = m_characters[i].transform.position.x 
+            };
+            
+            m_characters[i].Initialize(stats);
+
+            if (isActiveZero)
+            {
+                m_activeCharacter = m_characters[i];
+            }
+        }
+    }
+
+    /// <summary>
+    /// [설명]: 현재 활성 상태와 인덱스에 따라 캐릭터들을 지정된 앵커 위치로 즉시 이동시킵니다.
+    /// </summary>
+    private void AlignCharactersToPositions()
+    {
+        // 활성 캐릭터를 중앙으로 정렬
+        if (m_activeCharacter != null && m_activePosition != null)
+        {
+            m_activeCharacter.transform.position = m_activePosition.position;
+            m_activeCharacter.MoveToX(m_activePosition.position.x, true);
+        }
+
+        // 대기 중인 캐릭터들을 후방 지점으로 정렬
+        int standbyIdx = 0;
+        for (int i = 0; i < m_characters.Count; i++)
+        {
+            if (m_characters[i] == m_activeCharacter)
+            {
+                continue;
+            }
+            
+            if (m_standbyPositions != null && standbyIdx < m_standbyPositions.Length)
+            {
+                if (m_standbyPositions[standbyIdx] != null)
+                {
+                    m_characters[i].transform.position = m_standbyPositions[standbyIdx].position;
+                    m_characters[i].SetActive(false);
+                }
+                standbyIdx++;
+            }
+        }
+    }
+    #endregion
+
+    #region 내부 로직
+    /// <summary>
+    /// [설명]: 신규 Input System을 바탕으로 사용자의 터치(또는 클릭) 상호작용을 처리합니다.
+    /// </summary>
+    private void HandleInput()
+    {
+        var pointer = Pointer.current;
+        if (pointer == null)
+        {
+            return;
+        }
+
+        bool isPressed = pointer.press.isPressed;
+        bool wasPressed = pointer.press.wasPressedThisFrame;
+        bool wasReleased = pointer.press.wasReleasedThisFrame;
+        Vector2 screenPos = pointer.position.ReadValue();
+
+        // 1. 터치 시작 (Tap 또는 Drag Start)
+        if (wasPressed)
+        {
+            m_lastScreenPos = screenPos;
+            
+            // 스왑 대상 캐릭터를 터치했는지 우선 판별
+            bool swapTriggered = TrySwapCharacter(screenPos);
+            
+            // 규칙: 터치 중에는 정면 사격(IsDragging=true), 스왑 시에는 타겟팅 유지
+            if (swapTriggered == false)
+            {
+                m_isDraggingActive = true;
+                if (m_activeCharacter != null)
+                {
+                    m_activeCharacter.IsDragging = true;
+                }
+            }
+            else
+            {
+                m_isDraggingActive = false;
+                if (m_activeCharacter != null)
+                {
+                    m_activeCharacter.IsDragging = false;
+                }
+            }
+        }
+
+        // 2. 터치 유지 (Dragging)
+        if (isPressed)
+        {
+            if (m_isDraggingActive)
+            {
+                if (m_activeCharacter != null)
+                {
+                    m_activeCharacter.IsDragging = true;
+                }
+                MoveActiveCharacter(screenPos);
+            }
+        }
+
+        // 3. 터치 종료 (Release)
+        if (wasReleased)
+        {
+            m_isDraggingActive = false;
+            if (m_activeCharacter != null)
+            {
+                m_activeCharacter.IsDragging = false;
+            }
+        }
+
+        m_lastScreenPos = screenPos;
+    }
+
+    /// <summary>
+    /// [설명]: 터치된 위치가 다른 대기 캐릭터의 영역인지 확인하고, 그렇다면 스왑 애니메이션을 호출합니다.
+    /// </summary>
+    private bool TrySwapCharacter(Vector2 screenPos)
+    {
+        if (m_mainCamera == null)
+        {
+            return false;
+        }
+
+        float dist = Mathf.Abs(m_mainCamera.transform.position.z);
+        Vector3 worldPos3D = m_mainCamera.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, dist));
+        Vector2 worldPos = new Vector2(worldPos3D.x, worldPos3D.y);
+
+        foreach (var character in m_characters)
+        {
+            if (character == m_activeCharacter)
+            {
+                continue;
+            }
+
+            float distanceToPlayer = Vector2.Distance(worldPos, character.transform.position);
+            if (distanceToPlayer < m_touchRadius)
+            {
+                SwitchToCharacter(character);
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /// <summary>
+    /// [설명]: 이전 프레임과의 화면 변위를 계산하여 활성 캐릭터를 조작감에 맞춰 수평 이동시킵니다.
+    /// </summary>
+    private void MoveActiveCharacter(Vector2 screenPos)
+    {
+        if (m_activeCharacter == null || m_mainCamera == null)
+        {
+            return;
+        }
+
+        // 월드 좌표 공간에서의 가로 변위 계산
+        Vector3 lastPoint = m_mainCamera.ScreenToWorldPoint(new Vector3(m_lastScreenPos.x, m_lastScreenPos.y, Mathf.Abs(m_mainCamera.transform.position.z)));
+        Vector3 currPoint = m_mainCamera.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, Mathf.Abs(m_mainCamera.transform.position.z)));
+        float deltaX = currPoint.x - lastPoint.x;
+
+        // 카메라 시야 범위를 기준으로 이동 가능한 임계 구역 계산
+        float dist = Mathf.Abs(m_mainCamera.transform.position.z);
+        float camX = m_mainCamera.transform.position.x;
+        float camHalfWidth = m_mainCamera.orthographic 
+            ? m_mainCamera.orthographicSize * m_mainCamera.aspect 
+            : dist * Mathf.Tan(m_mainCamera.fieldOfView * 0.5f * Mathf.Deg2Rad) * m_mainCamera.aspect;
+
+        const float margin = 0.5f; 
+        float minX = camX - camHalfWidth + margin;
+        float maxX = camX + camHalfWidth - margin;
+
+        float targetX = Mathf.Clamp(m_activeCharacter.transform.position.x + deltaX, minX, maxX);
+        m_activeCharacter.MoveToX(targetX, true); // 1:1 정밀 조작 반영
+    }
+
+    /// <summary>
+    /// [설명]: 애니메이션 도중 중복 호출을 방지하면서 캐릭터 전환 코루틴을 실행합니다.
+    /// </summary>
+    private void SwitchToCharacter(PlayerCharacterController targetCharacter)
+    {
+        if (targetCharacter == null || targetCharacter == m_activeCharacter || m_isAnimating)
+        {
+            return;
+        }
+        
+        StartCoroutine(SwapAnimationCoroutine(targetCharacter));
+    }
+
+    /// <summary>
+    /// [설명]: 활성 캐릭터와 대상 캐릭터의 위치를 물리적으로 교환하며 상태 정보(타겟 등)를 인계합니다.
+    /// </summary>
+    private IEnumerator SwapAnimationCoroutine(PlayerCharacterController targetCharacter)
+    {
+        m_isAnimating = true;
+        m_isDraggingActive = false;
+
+        PlayerCharacterController oldActive = m_activeCharacter;
+        
+        // 1. 타겟 정보 및 상태 초기화
+        if (oldActive != null)
+        {
+            var oldAttack = oldActive.GetComponent<PlayerAttackComponent>();
+            var newAttack = targetCharacter.GetComponent<PlayerAttackComponent>();
+            
+            if (oldAttack != null && newAttack != null)
+            {
+                newAttack.CurrentTarget = oldAttack.CurrentTarget;
+            }
+            
+            oldActive.IsDragging = false;
+        }
+
+        // 2. 관리 포인터 및 가시성 업데이트
+        m_activeCharacter = targetCharacter;
+        m_activeCharacter.SetActive(true);
+        m_activeCharacter.IsDragging = false;
+
+        // 3. 교차 이동 보간 (Symmetry Move)
+        Vector3 oldStart = oldActive != null ? oldActive.transform.position : Vector3.zero;
+        Vector3 targetStart = targetCharacter.transform.position;
+        Vector3 oldEnd = targetStart;
+        Vector3 targetEnd = m_activePosition != null ? m_activePosition.position : targetCharacter.transform.position;
+
+        float elapsed = 0f;
+        while (elapsed < m_swapDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = m_swapCurve.Evaluate(elapsed / m_swapDuration);
+
+            if (oldActive != null)
+            {
+                oldActive.transform.position = Vector3.Lerp(oldStart, oldEnd, t);
+            }
+            
+            targetCharacter.transform.position = Vector3.Lerp(targetStart, targetEnd, t);
+            yield return null;
+        }
+
+        // 4. 최종 배치 완료 및 대기 캐릭터 비활성화
+        if (oldActive != null)
+        {
+            oldActive.transform.position = oldEnd;
+            oldActive.SetActive(false);
+            oldActive.IsDragging = false;
+        }
+
+        targetCharacter.transform.position = targetEnd;
+        targetCharacter.SetActive(true);
+        targetCharacter.MoveToX(targetEnd.x, true);
+        
+        // 5. 안전 장치: 애니메이션이 끝나면 조작 상태와 차단을 초기화합니다.
+        m_isAnimating = false;
+        m_isDraggingActive = false;
+        
+        if (m_activeCharacter != null)
+        {
+            m_activeCharacter.IsDragging = false;
+        }
+
+        Debug.Log($"[PlayerSwapManager] 캐릭터 {targetCharacter.name}로의 스왑 애니메이션이 완료되었습니다.");
+    }
+    #endregion
+}
+#endregion
