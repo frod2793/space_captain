@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using DG.Tweening;
 
 #region 데이터 모델 (DTO)
 /// <summary>
@@ -67,6 +68,7 @@ public class EnemyController : MonoBehaviour, IPoolable
     [SerializeField] private EnemyDTO m_enemyData;
 
     [Header("효과 설정")]
+    [SerializeField] private SpriteRenderer m_spriteRenderer;
     [SerializeField] private GameObject m_explosionPrefab;
     #endregion
 
@@ -92,21 +94,39 @@ public class EnemyController : MonoBehaviour, IPoolable
     /// </summary>
     private void OnTriggerEnter2D(Collider2D collision)
     {
+        HandleCollision(collision.gameObject);
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        HandleCollision(collision.gameObject);
+    }
+
+    private void HandleCollision(GameObject other)
+    {
         // 1. 모선과 충돌 시 처리
-        if (collision.TryGetComponent<MasterShip>(out var masterShip))
+        if (other.TryGetComponent<MasterShip>(out var masterShip))
         {
-            if (m_enemyData.IsDead) return; // [추가]: 이미 사망한 경우 무시
+            if (m_enemyData.IsDead) return;
             
             masterShip.TakeDamage(m_enemyData.AttackDamage);
             DestroyEnemy();
         }
-        // 2. 플레이어 총알과 충돌 시 처리 (데미지 로직 단일화)
-        else if (collision.TryGetComponent<BulletProjectile>(out var bullet))
+        // 2. 플레이어 캐릭터와 충돌 시 처리
+        else if (other.TryGetComponent<PlayerCharacterController>(out var player))
         {
-            if (m_enemyData.IsDead) return; // [추가]: 이미 사망한 경우 무시
+            if (m_enemyData.IsDead) return;
 
-            TakeDamage(bullet.Damage); // [수정]: 총알의 Damage 속성 사용
-            Destroy(bullet.gameObject); // 총알 제거 주체를 적(Enemy)으로 설정
+            player.TakeDamage(m_enemyData.AttackDamage);
+            DestroyEnemy();
+        }
+        // 3. 플레이어 총알과 충돌 시 처리
+        else if (other.TryGetComponent<BulletProjectile>(out var bullet))
+        {
+            if (m_enemyData.IsDead) return;
+
+            TakeDamage(bullet.Damage);
+            Destroy(bullet.gameObject);
         }
     }
     #endregion
@@ -119,6 +139,8 @@ public class EnemyController : MonoBehaviour, IPoolable
     {
         if (m_enemyData == null) m_enemyData = new EnemyDTO();
         m_logic = new EnemyLogic(m_enemyData);
+
+        if (m_spriteRenderer == null) m_spriteRenderer = GetComponentInChildren<SpriteRenderer>();
 
         // 씬 내의 모선을 찾습니다. (유니티 API 사용)
         m_targetMasterShip = UnityEngine.Object.FindAnyObjectByType<MasterShip>();
@@ -154,6 +176,16 @@ public class EnemyController : MonoBehaviour, IPoolable
     public void TakeDamage(int amount)
     {
         if (m_logic == null || m_enemyData.IsDead) return; // [수정]: 이미 사망한 경우 데미지 처리 안 함
+
+        // [추가]: 피격 시각적 피드백
+        if (m_spriteRenderer != null)
+        {
+            m_spriteRenderer.DOKill();
+            m_spriteRenderer.DOColor(Color.red, 0.1f).SetLoops(2, LoopType.Yoyo).OnComplete(() => {
+                if (m_spriteRenderer != null) m_spriteRenderer.color = Color.white;
+            });
+        }
+
         m_logic.OnDamaged(amount);
 
         if (m_enemyData.IsDead)

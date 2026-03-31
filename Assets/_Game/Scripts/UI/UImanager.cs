@@ -15,6 +15,9 @@ public class UIManager : MonoBehaviour
     [Header("모선 HP UI")]
     [SerializeField] private Slider m_hpSlider;
 
+    [Header("보스 UI")]
+    [SerializeField] private Slider m_bossHpSlider;
+
     [Header("상태 패널 UI")]
     [SerializeField] private GameObject m_startPanel;
     [SerializeField] private GameObject m_gameOverPanel;
@@ -35,6 +38,13 @@ public class UIManager : MonoBehaviour
         {
             masterShip.OnMasterShipDestroyed += ShowGameOver;
             masterShip.OnHpChanged += UpdateHpBar; // HP 변경 이벤트 연동
+        }
+
+        // [추가]: 모든 플레이어 캐릭터 사망 이벤트 구독
+        var swapManager = Object.FindAnyObjectByType<PlayerSwapManager>();
+        if (swapManager != null)
+        {
+            swapManager.OnAllPlayersDead += ShowGameOver;
         }
     }
     #endregion
@@ -73,6 +83,18 @@ public class UIManager : MonoBehaviour
     public void UpdateHpBar(float ratio)
     {
         if (m_hpSlider != null) m_hpSlider.value = ratio;
+    }
+
+    /// <summary>
+    /// [설명]: 보스 HP 슬라이더의 값을 설정하고 가시성을 제어합니다 (0.0 ~ 1.0).
+    /// </summary>
+    public void UpdateBossHpBar(float ratio)
+    {
+        if (m_bossHpSlider != null)
+        {
+            m_bossHpSlider.gameObject.SetActive(ratio > 0);
+            m_bossHpSlider.value = ratio;
+        }
     }
 
     /// <summary>

@@ -35,6 +35,12 @@ public class PlayerSwapManager : MonoBehaviour
     [SerializeField] private float m_swapDuration = 0.3f;
     [Tooltip("이동 보간에 사용될 애니메이션 곡선입니다.")]
     [SerializeField] private AnimationCurve m_swapCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+
+    [Header("UI 연동")]
+    [Tooltip("플레이어를 따라다니는 체력바 UI입니다.")]
+    [SerializeField] private PlayerHUDView m_playerHUD;
+
+    public event Action OnAllPlayersDead; // [추가]: 모든 플레이어 사망 이벤트
     #endregion
 
     #region 내부 필드
@@ -72,6 +78,17 @@ public class PlayerSwapManager : MonoBehaviour
         }
 
         HandleInput();
+
+#if UNITY_EDITOR
+        // [테스트]: T 키를 누르면 현재 활성 캐릭터에게 10 데미지를 입힙니다.
+        if (Keyboard.current != null && Keyboard.current.tKey.wasPressedThisFrame)
+        {
+            if (m_activeCharacter != null)
+            {
+                m_activeCharacter.TakeDamage(10);
+            }
+        }
+#endif
     }
     #endregion
 
@@ -98,10 +115,18 @@ public class PlayerSwapManager : MonoBehaviour
             };
             
             m_characters[i].Initialize(stats);
+            m_characters[i].OnDead += HandlePlayerDead; // [추가]: 사망 이벤트 구독
 
             if (isActiveZero)
             {
                 m_activeCharacter = m_characters[i];
+                
+                // 초기 HUD 타겟 설정 및 이벤트 구독
+                if (m_playerHUD != null)
+                {
+                    m_playerHUD.SetTarget(m_activeCharacter.transform);
+                    m_activeCharacter.OnHpChanged += m_playerHUD.UpdateHP;
+                }
             }
         }
     }
@@ -231,8 +256,8 @@ public class PlayerSwapManager : MonoBehaviour
                 continue;
             }
 
-            float distanceToPlayer = Vector2.Distance(worldPos, character.transform.position);
-            if (distanceToPlayer < m_touchRadius)
+            // [개선]: 고정 반경 대신 개별 캐릭터의 콜라이더 영역을 기준으로 클릭 판정
+            if (character.Collider != null && character.Collider.OverlapPoint(worldPos))
             {
                 SwitchToCharacter(character);
                 return true;
@@ -309,9 +334,24 @@ public class PlayerSwapManager : MonoBehaviour
             }
 
             // 2. 관리 포인터 및 가시성 업데이트
+            if (oldActive != null && m_playerHUD != null)
+            {
+                oldActive.OnHpChanged -= m_playerHUD.UpdateHP;
+            }
+
             m_activeCharacter = targetCharacter;
             m_activeCharacter.SetActive(true);
             m_activeCharacter.IsDragging = false;
+
+            if (m_playerHUD != null)
+            {
+                m_playerHUD.SetTarget(m_activeCharacter.transform);
+                m_activeCharacter.OnHpChanged += m_playerHUD.UpdateHP;
+                
+                // 현재 체력 비율로 즉시 갱신
+                float ratio = (float)m_activeCharacter.Stats.CurrentHp / m_activeCharacter.Stats.MaxHp;
+                m_playerHUD.UpdateHP(ratio);
+            }
 
             // 3. 교차 이동 보간 (Symmetry Move - DOTween 전환)
             Vector3 targetStart = targetCharacter.transform.position; // [복구]: 시작 위치 저장
@@ -354,6 +394,35 @@ public class PlayerSwapManager : MonoBehaviour
         {
             // 취소 시에도 안전하게 플래그 초기화 (필요 시)
             m_isAnimating = false;
+        }
+    }
+    /// <summary>
+    /// [설명]: 캐릭터 사망 시 호출되어 자동 스왑 또는 게임 오버 처리를 수행합니다.
+    /// </summary>
+    private void HandlePlayerDead(PlayerCharacterController deadPlayer)
+    {
+        // 1. 사망한 캐릭터가 현재 활성 캐릭터인 경우에만 자동 스왑 수행
+        if (deadPlayer == m_activeCharacter)
+        {
+            // 2. 살아있는 다른 캐릭터 찾기 (체력이 0보다 큰 캐릭터)
+            PlayerCharacterController nextCharacter = m_characters.Find(c => c != deadPlayer && c.Stats.CurrentHp > 0);
+
+            if (nextCharacter != null)
+            {
+                Debug.LogWarning($"[자동 스왑]: {deadPlayer.Stats.ID} 사망으로 인해 {nextCharacter.Stats.ID}로 캐릭터 자동 교체!");
+                SwitchToCharacter(nextCharacter);
+            }
+            else
+            {
+                // 3. 더 이상 교체할 캐릭터가 없는 경우
+                Debug.LogError("[Game Over]: 모든 플레이어 캐릭터가 파괴되었습니다!");
+                OnAllPlayersDead?.Invoke(); // [추가]: 게임 오버 이벤트 전파
+            }
+        }
+        else
+        {
+            // 대기 중인 캐릭터가 죽은 경우에도 로그 출력
+            Debug.LogWarning($"[대기 캐릭터 사망]: {deadPlayer.Stats.ID} 캐릭터가 대기 중 파괴되었습니다.");
         }
     }
     #endregion

@@ -24,6 +24,10 @@ public class WaveConfigDTO
     public float MinimumInterval = 0.5f;
     [Tooltip("웨이브 종료 후 다음 웨이브 시작까지의 휴식 시간입니다.")]
     public float RestDuration = 3.0f;
+
+    [Header("보스 특별 설정")]
+    [Tooltip("보스가 출현할 웨이브 번호입니다. (1부터 시작)")]
+    public int BossArrivalWave = 3;
 }
 #endregion
 
@@ -33,8 +37,9 @@ public class WaveConfigDTO
 /// </summary>
 public class EnemySpawnLogic
 {
+    #region 내부 필드
     private WaveConfigDTO m_config;
-    private int m_currentWaveIndex = 0;
+    #endregion
 
     public EnemySpawnLogic(WaveConfigDTO config)
     {
@@ -73,6 +78,7 @@ public class EnemySpawnLogic
 #region 뷰 (View)
 /// <summary>
 /// [설명]: 증가율 기반 웨이브 시스템과 오브젝트 풀링을 활용한 적 스포너 클래스입니다.
+/// 보스 출현 시 일반 적 생성을 일시 중지하고, 처치 후 재개하는 로직을 포함합니다.
 /// </summary>
 [RequireComponent(typeof(BoxCollider2D))]
 public class EnemySpawner : MonoBehaviour
@@ -85,6 +91,10 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField] private float m_spawnOverlapRadius = 1.0f;
     [Tooltip("빈 공간을 찾기 위한 최대 시도 횟수입니다.")]
     [SerializeField] private int m_maxSpawnAttempts = 5;
+
+    [Header("보스 설정")]
+    [SerializeField] private GameObject m_bossPrefab;
+    [SerializeField] private Transform m_bossSpawnPoint;
     #endregion
 
     #region 내부 필드
@@ -98,12 +108,13 @@ public class EnemySpawner : MonoBehaviour
     private int m_activeEnemyCount;
 
     private Collider2D m_spawnAreaCollider;
+    private bool m_isBossSpawned;
     #endregion
 
     #region 유니티 생명주기
     private void Awake()
     {
-        Initialize();
+        Init();
     }
 
     private void Update()
@@ -112,14 +123,16 @@ public class EnemySpawner : MonoBehaviour
     }
     #endregion
 
-    #region 초기화 로직
-    private void Initialize()
+    #region 초기화 및 바인딩 로직
+    /// <summary>
+    /// [설명]: 시스템 구성 요소와 오브젝트 풀을 초기화합니다.
+    /// </summary>
+    private void Init()
     {
         if (m_waveConfig == null) m_waveConfig = new WaveConfigDTO();
         
         m_spawnLogic = new EnemySpawnLogic(m_waveConfig);
         
-        // 풀링 초기화
         if (m_waveConfig.EnemyPrefab != null)
         {
             m_enemyPool = new EnemyPool(m_waveConfig.EnemyPrefab, 10, 50, transform);
@@ -131,20 +144,68 @@ public class EnemySpawner : MonoBehaviour
         StartNextWave();
     }
 
+    /// <summary>
+    /// [설명]: 다음 웨이브 단계를 위한 파라미터를 설정하고 보스 스폰 여부를 체크합니다.
+    /// </summary>
     private void StartNextWave()
     {
         m_remainingEnemiesInWave = m_spawnLogic.GetEnemyCountForWave(m_currentWaveIndex);
         m_currentSpawnInterval = m_spawnLogic.GetSpawnIntervalForWave(m_currentWaveIndex);
         m_currentTimer = m_currentSpawnInterval;
+
+        CheckBossSpawn();
     }
     #endregion
 
     #region 내부 로직
+    /// <summary>
+    /// [설명]: 현재 웨이브 번호를 기반으로 보스 출현 조건(BossArrivalWave)을 확인합니다.
+    /// </summary>
+    private void CheckBossSpawn()
+    {
+        if (m_waveConfig != null && m_currentWaveIndex + 1 == m_waveConfig.BossArrivalWave && !m_isBossSpawned)
+        {
+            SpawnBoss();
+        }
+    }
+
+    /// <summary>
+    /// [설명]: 보스 캐릭터를 소환하고 처치 이벤트를 구독합니다.
+    /// </summary>
+    private void SpawnBoss()
+    {
+        if (m_bossPrefab == null) return;
+
+        Vector3 spawnPos = m_bossSpawnPoint != null ? m_bossSpawnPoint.position : transform.position;
+        GameObject bossObj = Instantiate(m_bossPrefab, spawnPos, Quaternion.identity);
+        
+        m_isBossSpawned = true;
+
+        if (bossObj.TryGetComponent<BossController>(out var bossController))
+        {
+            bossController.OnDefeated += HandleBossDefeated;
+        }
+
+        Debug.LogWarning($"[웨이브 {m_currentWaveIndex + 1}]: 보스가 출현했습니다! 일반 적 스폰이 일시 중단됩니다.");
+    }
+
+    /// <summary>
+    /// [설명]: 보스 처치 신호를 수신하여 일반 적 스폰 로직을 재성성화합니다.
+    /// </summary>
+    private void HandleBossDefeated()
+    {
+        m_isBossSpawned = false;
+        Debug.LogWarning("[보스 처치]: 보스가 파괴되었습니다. 중단되었던 웨이브 스폰을 재개합니다!");
+    }
+
+    /// <summary>
+    /// [설명]: 매 프레임 적 소환 타이머 및 개체수를 관리합니다.
+    /// </summary>
     private void HandleWaveLogic()
     {
         if (m_enemyPool == null || m_spawnAreaCollider == null) return;
+        if (m_isBossSpawned) return;
 
-        // 현재 웨이브에서 생성할 적이 남았다면 타이머 업데이트
         if (m_remainingEnemiesInWave > 0)
         {
             m_currentTimer -= Time.deltaTime;
@@ -154,11 +215,10 @@ public class EnemySpawner : MonoBehaviour
                 m_currentTimer = m_currentSpawnInterval;
                 m_remainingEnemiesInWave--;
 
-                // 웨이브의 모든 적 생성이 끝났을 때의 처리는 하지 않음 (모든 적 처치 대기)
                 if (m_remainingEnemiesInWave <= 0)
                 {
 #if UNITY_EDITOR
-                    Debug.Log($"[Wave {m_currentWaveIndex + 1}] 모든 적 생성 완료. 남은 적 처치 대기 중...");
+                    Debug.Log($"[Wave {m_currentWaveIndex + 1}] 모든 일반 적 생성 완료. 남은 적 처치 대기 중...");
 #endif
                 }
             }
@@ -166,52 +226,50 @@ public class EnemySpawner : MonoBehaviour
     }
 
     /// <summary>
-    /// [설명]: 적이 처치(풀 반환)될 때 호출되어 웨이브 종료 여부를 확인합니다.
+    /// [설명]: 적 개체 파괴 시 잔여 개체수를 점검하여 웨이브를 종료시킵니다.
     /// </summary>
     private void OnEnemyDestroyed()
     {
         m_activeEnemyCount--;
 
-        // 모든 적이 생성되었고, 필드에 적이 없다면 다음 웨이브 단계로 진행
         if (m_remainingEnemiesInWave <= 0 && m_activeEnemyCount <= 0)
         {
             m_currentWaveIndex++;
-            WaitAndStartNextWaveAsync().Forget(); // [수정]: Invoke 대신 UniTask 사용
+            WaitAndStartNextWaveAsync().Forget();
         }
     }
 
     /// <summary>
-    /// [설명]: 설정된 휴식 시간만큼 대기한 후 다음 웨이브를 시작합니다.
+    /// [설명]: 웨이브 사이의 휴식 시간을 대기한 후 다음 웨이브를 개시합니다.
     /// </summary>
     private async UniTaskVoid WaitAndStartNextWaveAsync()
     {
         try
         {
-            // 휴식 시간 대기 (초 단위를 밀리초로 변환)
             await UniTask.Delay(TimeSpan.FromSeconds(m_waveConfig.RestDuration), cancellationToken: this.GetCancellationTokenOnDestroy());
-            
             StartNextWave();
         }
         catch (OperationCanceledException)
         {
-            // 객체 파괴 등으로 인한 취소 시 안전하게 종료
+            // 객체 파괴 등으로 인한 취소 시 대응
         }
     }
 
+    /// <summary>
+    /// [설명]: 중첩 방지 로직을 거쳐 유효한 위치에 적을 소환합니다.
+    /// </summary>
     private void SpawnEnemy()
     {
         if (m_enemyPool == null || m_spawnAreaCollider == null) return;
 
-        // [개선]: 중첩 방지 로직이 적용된 위치 계산
         Vector3 spawnPos = Vector3.zero;
         bool foundPos = false;
 
         for (int i = 0; i < m_maxSpawnAttempts; i++)
         {
             Vector3 potentialPos = m_spawnLogic.CalculateRandomSpawnPositionInBounds(m_spawnAreaCollider.bounds);
+            Collider2D hit = Physics2D.OverlapCircle(potentialPos, m_spawnOverlapRadius, 1 << gameObject.layer);
             
-            // 물리 엔진으로 해당 위치에 적이 있는지 체크
-            Collider2D hit = Physics2D.OverlapCircle(potentialPos, m_spawnOverlapRadius, 1 << gameObject.layer); // 자신의 레이어(Enemy 추정) 체크
             if (hit == null)
             {
                 spawnPos = potentialPos;
@@ -220,7 +278,6 @@ public class EnemySpawner : MonoBehaviour
             }
         }
 
-        // 만약 빈 공간을 찾지 못했다면, 마지막 시도한 위치를 사용하거나 스폰을 건너뛸 수 있음 (여기서는 마지막 시도 위치 사용)
         if (!foundPos)
         {
             spawnPos = m_spawnLogic.CalculateRandomSpawnPositionInBounds(m_spawnAreaCollider.bounds);
@@ -232,7 +289,6 @@ public class EnemySpawner : MonoBehaviour
         enemyObj.transform.position = spawnPos;
         enemyObj.transform.rotation = Quaternion.identity;
 
-        // 적 컨트롤러에 풀 반환 액션 등록 (개체수 추적 로직 포함)
         if (enemyObj.TryGetComponent<EnemyController>(out var controller))
         {
             m_activeEnemyCount++;

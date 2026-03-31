@@ -52,7 +52,7 @@ public class GameProgressController : MonoBehaviour
         // 3. 목표 도달 체크
         if (m_progressData.CurrentDistance >= m_progressData.TargetDistance)
         {
-            // [임시]: 목표 도달 시 게임 오버 처리
+            // [임시]: 목표 도달 시 게임 오버 처리 (또는 클리어 UI)
             if (m_uiManager != null)
             {
                 m_uiManager.ShowGameOver();
