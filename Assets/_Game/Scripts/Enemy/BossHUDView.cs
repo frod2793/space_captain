@@ -2,13 +2,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
 
-#region 뷰 (View)
 /// <summary>
-/// [설명]: 보스 캐릭터를 추적하며 체력 상태를 실시간으로 시각화하는 UI 뷰 클래스입니다.
+/// [설명]: 보스 캐릭터를 추적하며 체력 상태를 실시간으로 시각화하는 UI 뷰 클래스
 /// </summary>
 public class BossHUDView : MonoBehaviour
 {
-    #region 에디터 설정
     [Header("UI 컴포넌트")]
     [SerializeField] private Slider m_hpSlider;
     
@@ -19,15 +17,11 @@ public class BossHUDView : MonoBehaviour
     [SerializeField] private float m_smoothTime = 0.1f;
     [Tooltip("World Space Canvas 사용 여부")]
     [SerializeField] private bool m_useWorldSpace = true;
-    #endregion
 
-    #region 내부 필드
     private Transform m_target;
     private Vector3 m_currentVelocity;
     private Camera m_mainCamera;
-    #endregion
 
-    #region 유니티 생명주기
     private void Awake()
     {
         Init();
@@ -43,9 +37,7 @@ public class BossHUDView : MonoBehaviour
 
         UpdatePosition();
     }
-    #endregion
 
-    #region 초기화 및 바인딩 로직
     /// <summary>
     /// [설명]: 캔버스 렌더 모드를 감지하여 추적 모드를 초기화합니다.
     /// </summary>
@@ -59,11 +51,9 @@ public class BossHUDView : MonoBehaviour
         
         gameObject.SetActive(false);
     }
-    #endregion
 
-    #region 내부 로직
     /// <summary>
-    /// [설명]: 카메라 공간 좌표를 변환하여 UI 위치를 타겟 캐릭터로 동기화합니다.
+    /// [설명]: 카메라 공간 좌표를 변환하여 UI 위치를 타겟 캐릭터로 동기화
     /// </summary>
     private void UpdatePosition()
     {
@@ -93,9 +83,7 @@ public class BossHUDView : MonoBehaviour
             transform.position = finalPos;
         }
     }
-    #endregion
 
-    #region 공개 메서드
     /// <summary>
     /// [설명]: 추적할 대상 캐릭터를 설정하고 UI를 활성화합니다.
     /// </summary>
@@ -115,7 +103,7 @@ public class BossHUDView : MonoBehaviour
     }
 
     /// <summary>
-    /// [설명]: 체력 슬라이더 상태를 동기화합니다. (DOTween 애니메이션 적용)
+    /// [설명]: 체력 슬라이더 상태를 동기화합니다.
     /// </summary>
     /// <param name="ratio">남은 체력 비율 (0~1)</param>
     public void UpdateHP(float ratio)
@@ -126,6 +114,4 @@ public class BossHUDView : MonoBehaviour
             m_hpSlider.DOValue(ratio, 0.2f).SetEase(Ease.OutQuad);
         }
     }
-    #endregion
 }
-#endregion

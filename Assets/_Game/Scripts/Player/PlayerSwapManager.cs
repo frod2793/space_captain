@@ -6,14 +6,12 @@ using System;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 
-#region 뷰 (View)
 /// <summary>
 /// [설명]: 활성 캐릭터의 드래그 조작 및 캐릭터 간 스왑을 관리하는 매니저 클래스입니다.
 /// 화면 터치 시 정면 사격(Straight Fire), 정지 시 자동 타겟팅(Auto Targeting) 로직을 연계하여 처리합니다.
 /// </summary>
 public class PlayerSwapManager : MonoBehaviour
 {
-    #region 에디터 설정
     [Header("캐릭터 리스트")]
     [Tooltip("게임에 참여하는 플레이어 캐릭터 슬롯입니다.")]
     [SerializeField] private List<PlayerCharacterController> m_characters;
@@ -41,18 +39,14 @@ public class PlayerSwapManager : MonoBehaviour
     [SerializeField] private PlayerHUDView m_playerHUD;
 
     public event Action OnAllPlayersDead; // [추가]: 모든 플레이어 사망 이벤트
-    #endregion
 
-    #region 내부 필드
     private PlayerCharacterController m_activeCharacter;
     private Camera m_mainCamera;
     
     private bool m_isDraggingActive; 
     private bool m_isAnimating; 
     private Vector2 m_lastScreenPos;
-    #endregion
 
-    #region 유니티 생명주기
     private void Awake()
     {
         m_mainCamera = Camera.main;
@@ -90,9 +84,7 @@ public class PlayerSwapManager : MonoBehaviour
         }
 #endif
     }
-    #endregion
 
-    #region 초기화 및 바인딩 로직
     /// <summary>
     /// [설명]: 등록된 캐릭터의 데이터를 초기화하고 기본 활성 캐릭터를 설정합니다.
     /// </summary>
@@ -163,9 +155,7 @@ public class PlayerSwapManager : MonoBehaviour
             }
         }
     }
-    #endregion
 
-    #region 내부 로직
     /// <summary>
     /// [설명]: 신규 Input System을 바탕으로 사용자의 터치(또는 클릭) 상호작용을 처리합니다.
     /// </summary>
@@ -425,6 +415,4 @@ public class PlayerSwapManager : MonoBehaviour
             Debug.LogWarning($"[대기 캐릭터 사망]: {deadPlayer.Stats.ID} 캐릭터가 대기 중 파괴되었습니다.");
         }
     }
-    #endregion
 }
-#endregion

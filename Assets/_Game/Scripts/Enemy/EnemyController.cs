@@ -2,7 +2,6 @@ using UnityEngine;
 using System;
 using DG.Tweening;
 
-#region 데이터 모델 (DTO)
 /// <summary>
 /// [설명]: 적 캐릭터의 핵심 데이터(속도, 공격력, 체력 등)를 담는 데이터 전송 객체입니다.
 /// </summary>
@@ -15,9 +14,7 @@ public class EnemyDTO
     public int CurrentHp = 10;
     public bool IsDead = false;
 }
-#endregion
 
-#region 적 로직 (POCO)
 /// <summary>
 /// [설명]: 적의 이동 및 상태 변화 로직을 담당하는 순수 C# 클래스입니다.
 /// </summary>
@@ -55,30 +52,23 @@ public class EnemyLogic
         if (m_data.CurrentHp <= 0) m_data.IsDead = true;
     }
 }
-#endregion
 
-#region 뷰 (View)
 /// <summary>
 /// [설명]: 실제 적 오브젝트를 제어하고 모선과의 상호작용을 처리하는 뷰 클래스입니다.
 /// </summary>
 public class EnemyController : MonoBehaviour, IPoolable
 {
-    #region 에디터 설정
     [Header("적 설정")]
     [SerializeField] private EnemyDTO m_enemyData;
 
     [Header("효과 설정")]
     [SerializeField] private SpriteRenderer m_spriteRenderer;
     [SerializeField] private GameObject m_explosionPrefab;
-    #endregion
 
-    #region 내부 필드
     private EnemyLogic m_logic;
     private MasterShip m_targetMasterShip;
     private Action<GameObject> m_onRelease;
-    #endregion
 
-    #region 유니티 생명주기
     private void Awake()
     {
         Initialize();
@@ -129,9 +119,7 @@ public class EnemyController : MonoBehaviour, IPoolable
             Destroy(bullet.gameObject);
         }
     }
-    #endregion
 
-    #region 초기화 및 바인딩 로직
     /// <summary>
     /// [설명]: 데이터와 로직을 연결하고 목표 대상(모선)을 찾습니다.
     /// </summary>
@@ -170,9 +158,7 @@ public class EnemyController : MonoBehaviour, IPoolable
     {
         m_onRelease = releaseAction;
     }
-    #endregion
 
-    #region 공개 메서드
     public void TakeDamage(int amount)
     {
         if (m_logic == null || m_enemyData.IsDead) return; // [수정]: 이미 사망한 경우 데미지 처리 안 함
@@ -193,9 +179,7 @@ public class EnemyController : MonoBehaviour, IPoolable
             DestroyEnemy();
         }
     }
-    #endregion
 
-    #region 내부 로직
     /// <summary>
     /// [설명]: 매 프레임마다 모선을 향해 이동합니다.
     /// </summary>
@@ -240,6 +224,4 @@ public class EnemyController : MonoBehaviour, IPoolable
             Destroy(gameObject);
         }
     }
-    #endregion
 }
-#endregion

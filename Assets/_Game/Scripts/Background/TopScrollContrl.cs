@@ -1,6 +1,5 @@
 using UnityEngine;
 
-#region 데이터 모델 (DTO)
 /// <summary>
 /// [설명]: 배경 스크롤에 필요한 설정 데이터를 담는 데이터 전송 객체입니다.
 /// </summary>
@@ -13,9 +12,7 @@ public class BackgroundScrollDTO
     [Tooltip("배경 이미지 한 장의 세로 높이입니다. (자동 탐지 실패 시 기본값으로 사용됩니다)")]
     public float BackgroundHeight = 20.0f;
 }
-#endregion
 
-#region 배경 스크롤 로직 (POCO)
 /// <summary>
 /// [설명]: 유니티에 의존하지 않고 배경의 위치 이동 및 무한 루프 계산을 담당하는 순수 C# 로직 클래스입니다.
 /// </summary>
@@ -39,16 +36,13 @@ public class BackgroundScrollLogic
         return nextY;
     }
 }
-#endregion
 
-#region 뷰 (View)
 /// <summary>
 /// [설명]: 세로 비율 화면에서 3개의 배경 이미지를 무한히 스크롤하는 뷰 클래스입니다.
 /// 이미지 사이즈를 자동으로 탐지하여 스크롤 높이를 설정합니다.
 /// </summary>
 public class TopScrollContrl : MonoBehaviour
 {
-    #region 에디터 설정
     [Header("배경 설정")]
     [Tooltip("첫 번째 배경 이미지의 Transform입니다. 사이즈 탐지의 기준이 됩니다.")]
     [SerializeField] private Transform m_background1;
@@ -61,13 +55,9 @@ public class TopScrollContrl : MonoBehaviour
 
     [Header("스크롤 설정")]
     [SerializeField] private BackgroundScrollDTO m_scrollSettings;
-    #endregion
 
-    #region 내부 필드
     private BackgroundScrollLogic m_scrollLogic;
-    #endregion
 
-    #region 유니티 생명주기
     private void Awake()
     {
         Initialize();
@@ -77,9 +67,7 @@ public class TopScrollContrl : MonoBehaviour
     {
         UpdateScrolling();
     }
-    #endregion
 
-    #region 초기화 및 바인딩 로직
     /// <summary>
     /// [설명]: 스크롤 로직을 초기화하고 배경 이미지의 사이즈를 자동 탐지하여 위치를 설정합니다.
     /// </summary>
@@ -126,9 +114,7 @@ public class TopScrollContrl : MonoBehaviour
 #endif
         }
     }
-    #endregion
 
-    #region 내부 로직
     /// <summary>
     /// [설명]: 매 프레임마다 3개 배경의 위치를 업데이트합니다.
     /// </summary>
@@ -145,6 +131,4 @@ public class TopScrollContrl : MonoBehaviour
         m_background2.localPosition = new Vector3(0, m_scrollLogic.GetNextPositionY(m_background2.localPosition.y, dt, speed, height), 0);
         m_background3.localPosition = new Vector3(0, m_scrollLogic.GetNextPositionY(m_background3.localPosition.y, dt, speed, height), 0);
     }
-    #endregion
 }
-#endregion

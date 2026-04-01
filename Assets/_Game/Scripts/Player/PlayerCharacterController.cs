@@ -2,24 +2,18 @@ using UnityEngine;
 using System;
 using DG.Tweening;
 
-#region 뷰 (View)
 /// <summary>
 /// [설명]: 플레이어 캐릭터 개별 오브젝트의 시각적 요소 및 생명주기를 제어하는 클래스입니다.
 /// </summary>
 public class PlayerCharacterController : MonoBehaviour
 {
-    #region 에디터 설정
     [Header("시각 요소")]
     [SerializeField] private SpriteRenderer m_spriteRenderer;
     [SerializeField] private Collider2D m_collider;
-    #endregion
 
-    #region 내부 필드
     private PlayerStatsDTO m_stats;
     private float m_targetX;
-    #endregion
 
-    #region 프로퍼티
     public event Action<PlayerCharacterController> OnSelected;
     /// <summary>
     /// [설명]: 체력 비율이 변경될 때 발생하는 이벤트입니다. (0.0 ~ 1.0)
@@ -34,9 +28,7 @@ public class PlayerCharacterController : MonoBehaviour
     public bool IsDragging { get; set; }
     public PlayerStatsDTO Stats => m_stats;
     public Collider2D Collider => m_collider;
-    #endregion
 
-    #region 유니티 생명주기
     private void Awake()
     {
         if (m_collider == null)
@@ -49,9 +41,7 @@ public class PlayerCharacterController : MonoBehaviour
     {
         HandleMovementUpdate();
     }
-    #endregion
 
-    #region 초기화 및 바인딩 로직
     /// <summary>
     /// [설명]: 캐릭터의 통계 데이터와 초기 위치를 설정합니다.
     /// </summary>
@@ -69,9 +59,7 @@ public class PlayerCharacterController : MonoBehaviour
         if (m_stats == null) return;
         m_stats.IsActive = isActive;
     }
-    #endregion
 
-    #region 내부 로직
     /// <summary>
     /// [설명]: 활성 상태일 때 타겟 좌표로의 부드러운 이동을 처리합니다.
     /// </summary>
@@ -87,9 +75,7 @@ public class PlayerCharacterController : MonoBehaviour
             m_stats.CurrentX = pos.x;
         }
     }
-    #endregion
 
-    #region 공개 메서드
     /// <summary>
     /// [설명]: 지정된 X 좌표로 이동 명령을 내립니다.
     /// </summary>
@@ -151,6 +137,4 @@ public class PlayerCharacterController : MonoBehaviour
         if (m_spriteRenderer != null) m_spriteRenderer.enabled = false;
         if (m_collider != null) m_collider.enabled = false;
     }
-    #endregion
 }
-#endregion

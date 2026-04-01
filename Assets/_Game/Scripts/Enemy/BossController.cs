@@ -3,9 +3,8 @@ using System;
 using System.Collections.Generic;
 using DG.Tweening;
 
-#region 데이터 모델 (DTO)
 /// <summary>
-/// [설명]: 보스 캐릭터의 핵심 데이터(체력, 공격력, 이동 속도 등)를 담는 순수 데이터 객체(POCO)입니다.
+/// [설명]: 보스 캐릭터의 핵심 데이터(체력, 공격력, 이동 속도 등)를 담는 순수 데이터 객체입니다.
 /// </summary>
 [Serializable]
 public class BossDTO
@@ -17,18 +16,13 @@ public class BossDTO
     public int CurrentHp = 500;
     public bool IsDead = false;
 }
-#endregion
 
-#region 보스 로직 (POCO)
 /// <summary>
 /// [설명]: 보스의 이동 연산 및 데미지 계산 등 핵심 비즈니스 로직을 담당하는 클래스입니다.
-/// MonoBehaviour에 의존하지 않아 단위 테스트가 가능합니다.
 /// </summary>
 public class BossLogic
 {
-    #region 내부 필드
     private BossDTO m_data;
-    #endregion
 
     public BossLogic(BossDTO data)
     {
@@ -59,16 +53,13 @@ public class BossLogic
         return (float)m_data.CurrentHp / m_data.MaxHp;
     }
 }
-#endregion
 
-#region 뷰 (View)
 /// <summary>
-/// [설명]: 보스 오브젝트의 시각적 제어 및 입력을 담당하는 메인 컨트롤러 클래스입니다.
-/// 활성 플레이어를 우선적으로 타겟팅하며 사격 패턴을 실행합니다.
+/// [설명]: 보스 오브젝트의 시각적 제어 및 입력을 담당하는 메인 컨트롤러 클래스
+/// 활성 플레이어를 우선적으로 타겟팅하며 사격 패턴을 실행
 /// </summary>
 public class BossController : MonoBehaviour
 {
-    #region 에디터 설정
     [Header("보스 데이터")]
     [SerializeField] private BossDTO m_bossData;
 
@@ -86,18 +77,14 @@ public class BossController : MonoBehaviour
     /// [설명]: 보스가 파괴되었을 때 발생하는 이벤트입니다.
     /// </summary>
     public event Action OnDefeated;
-    #endregion
 
-    #region 내부 필드
     private BossLogic m_logic;
     private Transform m_currentTarget;
     private MasterShip m_masterShip;
     private List<PlayerCharacterController> m_players = new List<PlayerCharacterController>();
     private UIManager m_uiManager;
     private float m_fireTimer;
-    #endregion
 
-    #region 유니티 생명주기
     private void Awake()
     {
         Init();
@@ -126,9 +113,7 @@ public class BossController : MonoBehaviour
     {
         if (collision != null) HandleCollision(collision.gameObject);
     }
-    #endregion
 
-    #region 초기화 및 바인딩 로직
     /// <summary>
     /// [설명]: 보스의 핵심 데이터 및 의존 객체들을 초기화합니다.
     /// </summary>
@@ -138,13 +123,10 @@ public class BossController : MonoBehaviour
         m_logic = new BossLogic(m_bossData);
 
         if (m_spriteRenderer == null) m_spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-
-        // 의존성 주입 (Service Locator 방식 캐싱)
         m_masterShip = UnityEngine.Object.FindAnyObjectByType<MasterShip>();
         m_players.AddRange(UnityEngine.Object.FindObjectsByType<PlayerCharacterController>(FindObjectsSortMode.None));
         m_uiManager = UnityEngine.Object.FindAnyObjectByType<UIManager>();
 
-        // 자동 탐색: 비활성화된 BossHUDView도 포함하여 탐색
         if (m_bossHUD == null)
         {
             m_bossHUD = UnityEngine.Object.FindFirstObjectByType<BossHUDView>(FindObjectsInactive.Include);
@@ -167,9 +149,7 @@ public class BossController : MonoBehaviour
             m_uiManager.UpdateBossHpBar(1.0f);
         }
     }
-    #endregion
 
-    #region 내부 로직
     /// <summary>
     /// [설명]: 타겟팅 로직을 수행합니다. (현재 활성화된 플레이어 한정)
     /// </summary>
@@ -270,11 +250,9 @@ public class BossController : MonoBehaviour
         OnDefeated?.Invoke();
         Destroy(gameObject);
     }
-    #endregion
 
-    #region 공개 메서드
     /// <summary>
-    /// [설명]: 데미지를 입고 피격 연출을 활성화합니다.
+    /// [설명]: 데미지를 입고 피격 연출을 활성화
     /// </summary>
     /// <param name="amount">입는 데미지 수치</param>
     public void TakeDamage(int amount)
@@ -301,6 +279,4 @@ public class BossController : MonoBehaviour
             DestroyBoss();
         }
     }
-    #endregion
 }
-#endregion

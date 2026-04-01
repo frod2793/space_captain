@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.Pool;
 using System;
 
-#region 인터페이스
 /// <summary>
 /// [설명]: 오브젝트 풀링이 가능한 객체를 위한 인터페이스입니다.
 /// </summary>
@@ -11,9 +10,7 @@ public interface IPoolable
     void OnSpawn();
     void OnDespawn();
 }
-#endregion
 
-#region 풀러 구현
 /// <summary>
 /// [설명]: 적 오브젝트의 생성과 재사용을 관리하는 풀링 클래스입니다.
 /// </summary>
@@ -70,4 +67,3 @@ public class EnemyPool
     public GameObject Get() => m_pool.Get();
     public void Release(GameObject obj) => m_pool.Release(obj);
 }
-#endregion

@@ -3,7 +3,6 @@ using Cysharp.Threading.Tasks;
 using System.Threading;
 using UnityEngine;
 
-#region 데이터 모델 (DTO)
 /// <summary>
 /// [설명]: 웨이브 진행에 따른 적 생성 규칙(증가율 등)을 정의하는 데이터 전송 객체입니다.
 /// </summary>
@@ -29,17 +28,13 @@ public class WaveConfigDTO
     [Tooltip("보스가 출현할 웨이브 번호입니다. (1부터 시작)")]
     public int BossArrivalWave = 3;
 }
-#endregion
 
-#region 스폰 로직 (POCO)
 /// <summary>
 /// [설명]: 웨이브 진행 상태 및 스폰 위치 계산을 담당하는 순수 C# 로직 클래스입니다.
 /// </summary>
 public class EnemySpawnLogic
 {
-    #region 내부 필드
     private WaveConfigDTO m_config;
-    #endregion
 
     public EnemySpawnLogic(WaveConfigDTO config)
     {
@@ -73,9 +68,7 @@ public class EnemySpawnLogic
         return new Vector3(randomX, randomY, 0);
     }
 }
-#endregion
 
-#region 뷰 (View)
 /// <summary>
 /// [설명]: 증가율 기반 웨이브 시스템과 오브젝트 풀링을 활용한 적 스포너 클래스입니다.
 /// 보스 출현 시 일반 적 생성을 일시 중지하고, 처치 후 재개하는 로직을 포함합니다.
@@ -83,7 +76,6 @@ public class EnemySpawnLogic
 [RequireComponent(typeof(BoxCollider2D))]
 public class EnemySpawner : MonoBehaviour
 {
-    #region 에디터 설정
     [SerializeField] private WaveConfigDTO m_waveConfig;
 
     [Header("스폰 최적화")]
@@ -95,9 +87,7 @@ public class EnemySpawner : MonoBehaviour
     [Header("보스 설정")]
     [SerializeField] private GameObject m_bossPrefab;
     [SerializeField] private Transform m_bossSpawnPoint;
-    #endregion
 
-    #region 내부 필드
     private EnemySpawnLogic m_spawnLogic;
     private EnemyPool m_enemyPool;
     
@@ -109,9 +99,7 @@ public class EnemySpawner : MonoBehaviour
 
     private Collider2D m_spawnAreaCollider;
     private bool m_isBossSpawned;
-    #endregion
 
-    #region 유니티 생명주기
     private void Awake()
     {
         Init();
@@ -121,9 +109,7 @@ public class EnemySpawner : MonoBehaviour
     {
         HandleWaveLogic();
     }
-    #endregion
 
-    #region 초기화 및 바인딩 로직
     /// <summary>
     /// [설명]: 시스템 구성 요소와 오브젝트 풀을 초기화합니다.
     /// </summary>
@@ -155,11 +141,9 @@ public class EnemySpawner : MonoBehaviour
 
         CheckBossSpawn();
     }
-    #endregion
 
-    #region 내부 로직
     /// <summary>
-    /// [설명]: 현재 웨이브 번호를 기반으로 보스 출현 조건(BossArrivalWave)을 확인합니다.
+    /// [설명]: 현재 웨이브 번호를 기반으로 보스 출현 조건을 확인합니다.
     /// </summary>
     private void CheckBossSpawn()
     {
@@ -170,7 +154,7 @@ public class EnemySpawner : MonoBehaviour
     }
 
     /// <summary>
-    /// [설명]: 보스 캐릭터를 소환하고 처치 이벤트를 구독합니다.
+    /// [설명]: 보스 캐릭터를 소환하고 처치 이벤트를 구독
     /// </summary>
     private void SpawnBoss()
     {
@@ -299,6 +283,4 @@ public class EnemySpawner : MonoBehaviour
             });
         }
     }
-    #endregion
 }
-#endregion

@@ -1,26 +1,20 @@
 using UnityEngine;
 
-#region 씬 초기화 (Initializer / Controller)
 /// <summary>
 /// [설명]: 게임 진행도를 관리하고 UIManager를 통해 UI를 갱신하는 컨트롤러입니다.
 /// </summary>
 public class GameProgressController : MonoBehaviour
 {
-    #region 에디터 설정
     [Header("UI 매니저 연결")]
     [SerializeField] private UIManager m_uiManager;
 
     [Header("진행 설정")]
     [SerializeField] private float m_targetDistance = 2000f;
     [SerializeField] private float m_scrollSpeedMultiplier = 5.0f; 
-    #endregion
 
-    #region 내부 필드
     private ProgressDTO m_progressData;
     private TopScrollContrl m_backgroundScroll;
-    #endregion
 
-    #region 유니티 생명주기
     private void Awake()
     {
         m_backgroundScroll = FindFirstObjectByType<TopScrollContrl>();
@@ -59,6 +53,4 @@ public class GameProgressController : MonoBehaviour
             }
         }
     }
-    #endregion
 }
-#endregion

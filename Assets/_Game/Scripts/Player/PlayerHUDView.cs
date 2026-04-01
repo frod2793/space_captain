@@ -2,13 +2,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
 
-#region 뷰 (View)
 /// <summary>
 /// [설명]: 활성화된 플레이어 캐릭터를 추적하며 체력 상태를 시각화하는 UI 뷰 클래스입니다.
 /// </summary>
 public class PlayerHUDView : MonoBehaviour
 {
-    #region 에디터 설정
     [Header("UI 컴포넌트")]
     [SerializeField] private Slider m_hpSlider;
     
@@ -19,15 +17,11 @@ public class PlayerHUDView : MonoBehaviour
     [SerializeField] private float m_smoothTime = 0.1f;
     [Tooltip("World Space Canvas 사용 여부 (체크 해제 시 Screen Space로 간주)")]
     [SerializeField] private bool m_useWorldSpace = true;
-    #endregion
 
-    #region 내부 필드
     private Transform m_target;
     private Vector3 m_currentVelocity;
     private Camera m_mainCamera;
-    #endregion
 
-    #region 유니티 생명주기
     private void Awake()
     {
         m_mainCamera = Camera.main;
@@ -70,9 +64,7 @@ public class PlayerHUDView : MonoBehaviour
             transform.position = finalPos;
         }
     }
-    #endregion
 
-    #region 공개 메서드
     /// <summary>
     /// [설명]: 추적할 대상 캐릭터를 설정합니다. 대상을 변경하면 UI를 즉시 활성화합니다.
     /// </summary>
@@ -118,6 +110,4 @@ public class PlayerHUDView : MonoBehaviour
             m_hpSlider.DOValue(ratio, 0.25f).SetEase(Ease.OutQuad);
         }
     }
-    #endregion
 }
-#endregion

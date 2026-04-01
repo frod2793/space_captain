@@ -1,22 +1,18 @@
 using UnityEngine;
 
-#region 데이터 모델 (DTO)
 public enum PlayerAttackType
 {
     Single,     // 단발
     Double,     // 더블 배럴
     Spread      // 3발 방사
 }
-#endregion
 
-#region 뷰 (View)
 /// <summary>
 /// [설명]: 플레이어 캐릭터의 공격을 담당하는 컴포넌트입니다.
 /// 활성 상태(IsActive)일 때만 동작합니다.
 /// </summary>
 public class PlayerAttackComponent : MonoBehaviour
 {
-    #region 에디터 설정
     [Header("설정")]
     [SerializeField] private PlayerCharacterController m_owner;
     [SerializeField] private PlayerAttackType m_attackType = PlayerAttackType.Single;
@@ -29,17 +25,11 @@ public class PlayerAttackComponent : MonoBehaviour
 
     [Header("발사 위치")]
     [SerializeField] private Transform[] m_firePoints; // 0: 중앙, 1: 왼쪽, 2: 오른쪽
-    #endregion
 
-    #region 프로퍼티
     public Transform CurrentTarget { get; set; } // [추가]: 현재 조준 중인 타겟 (스왑 시 상속용)
-    #endregion
 
-    #region 내부 필드
     private float m_fireTimer;
-    #endregion
 
-    #region 유니티 생명주기
     private void Awake()
     {
         if (m_owner == null) m_owner = GetComponent<PlayerCharacterController>();
@@ -79,9 +69,7 @@ public class PlayerAttackComponent : MonoBehaviour
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, m_targetingRange);
     }
-    #endregion
 
-    #region 내부 로직
     private void Fire()
     {
         if (m_bulletPrefab == null) return;
@@ -168,6 +156,4 @@ public class PlayerAttackComponent : MonoBehaviour
             }
         }
     }
-    #endregion
 }
-#endregion

@@ -1,14 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-#region 뷰 (View)
 /// <summary>
 /// [설명]: 게임 내 모든 UI 요소를 총괄 관리하는 매니저 클래스입니다.
 /// 프로토타이핑 단계를 위해 중앙 집중식으로 제작되었습니다.
 /// </summary>
 public class UIManager : MonoBehaviour
 {
-    #region 에디터 설정
     [Header("진행도 UI")]
     [SerializeField] private Slider m_progressSlider;
 
@@ -21,9 +19,7 @@ public class UIManager : MonoBehaviour
     [Header("상태 패널 UI")]
     [SerializeField] private GameObject m_startPanel;
     [SerializeField] private GameObject m_gameOverPanel;
-    #endregion
 
-    #region 유니티 생명주기
     private void Start()
     {
         // 초기 상태 설정: 시작 패널 활성화, 게임 일시정지
@@ -47,9 +43,7 @@ public class UIManager : MonoBehaviour
             swapManager.OnAllPlayersDead += ShowGameOver;
         }
     }
-    #endregion
 
-    #region 공개 메서드
     /// <summary>
     /// [설명]: 게임 시작 버튼 클릭 시 호출됩니다.
     /// </summary>
@@ -105,6 +99,4 @@ public class UIManager : MonoBehaviour
         if (m_gameOverPanel != null) m_gameOverPanel.SetActive(true);
         Time.timeScale = 0f;
     }
-    #endregion
 }
-#endregion
