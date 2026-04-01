@@ -66,7 +66,7 @@ public class BossController : MonoBehaviour
     [Header("시각 효과")]
     [SerializeField] private SpriteRenderer m_spriteRenderer;
     [SerializeField] private GameObject m_explosionPrefab;
-    [SerializeField] private BossHUDView m_bossHUD;
+    [SerializeField] private BossHpBar m_bossHUD;
 
     [Header("전투 설정")]
     [SerializeField] private GameObject m_bulletPrefab;
@@ -129,7 +129,7 @@ public class BossController : MonoBehaviour
 
         if (m_bossHUD == null)
         {
-            m_bossHUD = UnityEngine.Object.FindFirstObjectByType<BossHUDView>(FindObjectsInactive.Include);
+            m_bossHUD = UnityEngine.Object.FindFirstObjectByType<BossHpBar>(FindObjectsInactive.Include);
         }
     }
 

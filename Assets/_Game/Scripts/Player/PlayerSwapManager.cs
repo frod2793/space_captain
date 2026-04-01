@@ -36,7 +36,7 @@ public class PlayerSwapManager : MonoBehaviour
 
     [Header("UI 연동")]
     [Tooltip("플레이어를 따라다니는 체력바 UI입니다.")]
-    [SerializeField] private PlayerHUDView m_playerHUD;
+    [SerializeField] private PlayerHpBar m_playerHUD;
 
     public event Action OnAllPlayersDead; // [추가]: 모든 플레이어 사망 이벤트
 

@@ -5,7 +5,7 @@ using DG.Tweening;
 /// <summary>
 /// [설명]: 보스 캐릭터를 추적하며 체력 상태를 실시간으로 시각화하는 UI 뷰 클래스
 /// </summary>
-public class BossHUDView : MonoBehaviour
+public class BossHpBar : MonoBehaviour
 {
     [Header("UI 컴포넌트")]
     [SerializeField] private Slider m_hpSlider;

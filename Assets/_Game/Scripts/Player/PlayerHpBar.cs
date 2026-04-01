@@ -5,7 +5,7 @@ using DG.Tweening;
 /// <summary>
 /// [설명]: 활성화된 플레이어 캐릭터를 추적하며 체력 상태를 시각화하는 UI 뷰 클래스입니다.
 /// </summary>
-public class PlayerHUDView : MonoBehaviour
+public class PlayerHpBar : MonoBehaviour
 {
     [Header("UI 컴포넌트")]
     [SerializeField] private Slider m_hpSlider;
