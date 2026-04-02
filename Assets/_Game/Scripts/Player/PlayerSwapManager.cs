@@ -38,7 +38,8 @@ public class PlayerSwapManager : MonoBehaviour
     [Tooltip("플레이어를 따라다니는 체력바 UI입니다.")]
     [SerializeField] private PlayerHpBar m_playerHUD;
 
-    public event Action OnAllPlayersDead; // [추가]: 모든 플레이어 사망 이벤트
+    public event Action OnAllPlayersDead; 
+    public List<PlayerCharacterController> Characters => m_characters;
 
     private PlayerCharacterController m_activeCharacter;
     private Camera m_mainCamera;
@@ -50,11 +51,6 @@ public class PlayerSwapManager : MonoBehaviour
     private void Awake()
     {
         m_mainCamera = Camera.main;
-        if (m_mainCamera == null)
-        {
-            Debug.LogError("[PlayerSwapManager] 메인 카메라를 찾을 수 없습니다.");
-        }
-        
         InitializeCharacters();
     }
 
@@ -65,7 +61,6 @@ public class PlayerSwapManager : MonoBehaviour
 
     private void Update()
     {
-        // 스왑 애니메이션 도중에는 모든 수동 조작 입력을 차단합니다.
         if (m_isAnimating)
         {
             return;
@@ -107,13 +102,13 @@ public class PlayerSwapManager : MonoBehaviour
             };
             
             m_characters[i].Initialize(stats);
-            m_characters[i].OnDead += HandlePlayerDead; // [추가]: 사망 이벤트 구독
+            m_characters[i].OnDead += HandlePlayerDead;
 
             if (isActiveZero)
             {
                 m_activeCharacter = m_characters[i];
                 
-                // 초기 HUD 타겟 설정 및 이벤트 구독
+                
                 if (m_playerHUD != null)
                 {
                     m_playerHUD.SetTarget(m_activeCharacter.transform);
@@ -128,14 +123,12 @@ public class PlayerSwapManager : MonoBehaviour
     /// </summary>
     private void AlignCharactersToPositions()
     {
-        // 활성 캐릭터를 중앙으로 정렬
         if (m_activeCharacter != null && m_activePosition != null)
         {
             m_activeCharacter.transform.position = m_activePosition.position;
             m_activeCharacter.MoveToX(m_activePosition.position.x, true);
         }
-
-        // 대기 중인 캐릭터들을 후방 지점으로 정렬
+        
         int standbyIdx = 0;
         for (int i = 0; i < m_characters.Count; i++)
         {
@@ -357,8 +350,7 @@ public class PlayerSwapManager : MonoBehaviour
             }
             
             swapSequence.Join(targetCharacter.transform.DOMove(targetEnd, m_swapDuration).SetEase(m_swapCurve));
-
-            // 트윈 실행 및 완료 대기 (UniTask 연동)
+            
             await swapSequence.Play().ToUniTask(cancellationToken: cts);
 
             // 4. 최종 배치 완료 및 대기 캐릭터 비활성화
@@ -391,28 +383,22 @@ public class PlayerSwapManager : MonoBehaviour
     /// </summary>
     private void HandlePlayerDead(PlayerCharacterController deadPlayer)
     {
-        // 1. 사망한 캐릭터가 현재 활성 캐릭터인 경우에만 자동 스왑 수행
-        if (deadPlayer == m_activeCharacter)
+        if (deadPlayer != m_activeCharacter)
         {
-            // 2. 살아있는 다른 캐릭터 찾기 (체력이 0보다 큰 캐릭터)
-            PlayerCharacterController nextCharacter = m_characters.Find(c => c != deadPlayer && c.Stats.CurrentHp > 0);
+            Debug.LogWarning($"[대기 캐릭터 사망]: {deadPlayer.Stats.ID}");
+            return;
+        }
 
-            if (nextCharacter != null)
-            {
-                Debug.LogWarning($"[자동 스왑]: {deadPlayer.Stats.ID} 사망으로 인해 {nextCharacter.Stats.ID}로 캐릭터 자동 교체!");
-                SwitchToCharacter(nextCharacter);
-            }
-            else
-            {
-                // 3. 더 이상 교체할 캐릭터가 없는 경우
-                Debug.LogError("[Game Over]: 모든 플레이어 캐릭터가 파괴되었습니다!");
-                OnAllPlayersDead?.Invoke(); // [추가]: 게임 오버 이벤트 전파
-            }
-        }
-        else
+        PlayerCharacterController nextCharacter = m_characters.Find(c => c != deadPlayer && c.Stats.CurrentHp > 0);
+
+        if (nextCharacter != null)
         {
-            // 대기 중인 캐릭터가 죽은 경우에도 로그 출력
-            Debug.LogWarning($"[대기 캐릭터 사망]: {deadPlayer.Stats.ID} 캐릭터가 대기 중 파괴되었습니다.");
+            Debug.LogWarning($"[자동 스왑]: {deadPlayer.Stats.ID} 쥬금 {nextCharacter.Stats.ID}로 캐릭터 스왑");
+            SwitchToCharacter(nextCharacter);
+            return;
         }
+
+        Debug.LogError("[Game Over]");
+        OnAllPlayersDead?.Invoke();
     }
 }

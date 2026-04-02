@@ -97,8 +97,7 @@ public class TopScrollContrl : MonoBehaviour
     private void DetectBackgroundHeight()
     {
         if (m_background1 == null) return;
-
-        // SpriteRenderer 컴포넌트 탐색 및 높이 추출
+        
         if (m_background1.TryGetComponent<SpriteRenderer>(out var spriteRenderer))
         {
             // 실제 렌더링되는 스프라이트의 월드 크기(Height)를 가져옴

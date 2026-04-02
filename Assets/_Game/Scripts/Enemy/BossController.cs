@@ -206,13 +206,15 @@ public class BossController : MonoBehaviour
     /// </summary>
     private void Shoot()
     {
-        if (m_firePoint == null) return;
+        if (m_firePoint == null || m_bulletPrefab == null) return;
 
-        GameObject bulletObj = Instantiate(m_bulletPrefab, m_firePoint.position, m_firePoint.rotation);
-        if (bulletObj != null && bulletObj.TryGetComponent<EnemyBullet>(out var enemyBullet))
-        {
-            enemyBullet.Initialize(m_bossData.AttackDamage);
-        }
+        var pool = UnityEngine.Object.FindAnyObjectByType<ObjectPoolManager>();
+        GameObject bulletObj;
+
+        if (pool != null) bulletObj = pool.GetFromPool(m_bulletPrefab, m_firePoint.position, m_firePoint.rotation);
+        else bulletObj = Instantiate(m_bulletPrefab, m_firePoint.position, m_firePoint.rotation);
+
+        if (bulletObj != null && bulletObj.TryGetComponent<EnemyBullet>(out var enemyBullet)) enemyBullet.Initialize(m_bossData.AttackDamage);
     }
 
     /// <summary>

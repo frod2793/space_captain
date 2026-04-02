@@ -25,16 +25,13 @@ public class PlayerHpBar : MonoBehaviour
     private void Awake()
     {
         m_mainCamera = Camera.main;
-
-        // [추가]: 캔버스 렌더 모드 자동 감지
+        
         Canvas parentCanvas = GetComponentInParent<Canvas>();
         if (parentCanvas != null)
         {
-            // 렌더 모드가 WorldSpace가 아니라면 ScreenSpace로 간주하여 오프셋 처리 방식 변경
             m_useWorldSpace = (parentCanvas.renderMode == RenderMode.WorldSpace);
         }
         
-        // 초기에는 비활성화
         gameObject.SetActive(false);
     }
 
@@ -51,7 +48,6 @@ public class PlayerHpBar : MonoBehaviour
         }
         else
         {
-            // Screen Space (Overlay/Camera) 대응
             finalPos = m_mainCamera.WorldToScreenPoint(targetPos);
         }
         
@@ -77,11 +73,9 @@ public class PlayerHpBar : MonoBehaviour
         {
             gameObject.SetActive(true);
             
-            // 타겟 변경 시 위치 즉시 초기화 (Damp 지연 방지)
             Vector3 targetPos = m_target.position + m_offset;
             transform.position = m_useWorldSpace ? targetPos : m_mainCamera.WorldToScreenPoint(targetPos);
-
-            // [추가]: 초기 체력 상태를 즉시 반영 (0에서 채워지는 현상 방지)
+            
             if (m_target.TryGetComponent<PlayerCharacterController>(out var controller))
             {
                 if (m_hpSlider != null && controller.Stats != null)

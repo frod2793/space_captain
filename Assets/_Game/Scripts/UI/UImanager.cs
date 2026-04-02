@@ -1,61 +1,142 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
-/// <summary>
-/// [설명]: 게임 내 모든 UI 요소를 총괄 관리하는 매니저 클래스입니다.
-/// 프로토타이핑 단계를 위해 중앙 집중식으로 제작되었습니다.
-/// </summary>
 public class UIManager : MonoBehaviour
 {
-    [Header("진행도 UI")]
     [SerializeField] private Slider m_progressSlider;
-
-    [Header("모선 HP UI")]
     [SerializeField] private Slider m_hpSlider;
-
-    [Header("보스 UI")]
     [SerializeField] private Slider m_bossHpSlider;
-
-    [Header("상태 패널 UI")]
     [SerializeField] private GameObject m_startPanel;
     [SerializeField] private GameObject m_gameOverPanel;
+    [SerializeField] private GameObject m_upgradePanel;
+    [SerializeField] private UpgradeButton[] m_upgradeButtons;
+
+    private int m_killCount = 0;
+    private const int KILL_FOR_LEVEL_UP = 5;
 
     private void Start()
     {
-        // 초기 상태 설정: 시작 패널 활성화, 게임 일시정지
         if (m_startPanel != null) m_startPanel.SetActive(true);
         if (m_gameOverPanel != null) m_gameOverPanel.SetActive(false);
+        if (m_upgradePanel != null) m_upgradePanel.SetActive(false);
         
         Time.timeScale = 0f;
 
-        // 모선 이벤트 구독
         var masterShip = Object.FindAnyObjectByType<MasterShip>();
         if (masterShip != null)
         {
             masterShip.OnMasterShipDestroyed += ShowGameOver;
-            masterShip.OnHpChanged += UpdateHpBar; // HP 변경 이벤트 연동
+            masterShip.OnHpChanged += UpdateHpBar;
         }
 
-        // [추가]: 모든 플레이어 캐릭터 사망 이벤트 구독
         var swapManager = Object.FindAnyObjectByType<PlayerSwapManager>();
         if (swapManager != null)
         {
             swapManager.OnAllPlayersDead += ShowGameOver;
         }
+
+        EnemyController.OnEnemyDead += HandleEnemyDead;
+
+        for (int i = 0; i < m_upgradeButtons.Length; i++)
+        {
+            m_upgradeButtons[i].Initialize(OnUpgradeSelected);
+        }
     }
 
-    /// <summary>
-    /// [설명]: 게임 시작 버튼 클릭 시 호출됩니다.
-    /// </summary>
+    private void OnDestroy()
+    {
+        EnemyController.OnEnemyDead -= HandleEnemyDead;
+    }
+
+    private void HandleEnemyDead()
+    {
+        m_killCount++;
+        if (m_killCount >= KILL_FOR_LEVEL_UP)
+        {
+            m_killCount = 0;
+            ShowUpgradePanel();
+        }
+    }
+
+    private void ShowUpgradePanel()
+    {
+        m_isProcessingUpgrade = false; // 새 업그레이드 기회 제공
+
+        var swapManager = Object.FindAnyObjectByType<PlayerSwapManager>();
+        if (swapManager != null)
+        {
+            var characters = swapManager.Characters;
+            if (characters != null)
+            {
+                for (int i = 0; i < characters.Count; i++)
+                {
+                    if (characters[i] != null) characters[i].PlayLevelUpEffect();
+                }
+            }
+        }
+
+        if (m_upgradePanel != null) m_upgradePanel.SetActive(true);
+        Time.timeScale = 0f;
+    }
+
+    private bool m_isProcessingUpgrade = false;
+
+    private void OnUpgradeSelected(int index)
+    {
+        if (m_isProcessingUpgrade) return;
+        m_isProcessingUpgrade = true;
+
+        var swapManager = Object.FindAnyObjectByType<PlayerSwapManager>();
+        if (swapManager == null || swapManager.Characters == null)
+        {
+            m_isProcessingUpgrade = false;
+            return;
+        }
+
+        string targetId = index == 0 ? "a" : (index == 1 ? "b" : "c");
+        var targetCharacter = swapManager.Characters.Find(c => c.CharacterID.Equals(targetId, System.StringComparison.OrdinalIgnoreCase));
+        
+        if (targetCharacter == null)
+        {
+            m_isProcessingUpgrade = false;
+            return;
+        }
+
+        var targetStats = targetCharacter.Stats;
+        if (targetStats == null)
+        {
+            m_isProcessingUpgrade = false;
+            return;
+        }
+        
+
+        switch (index)
+        {
+            case 0:
+                targetStats.BulletCountBonus++;
+                break;
+            case 1:
+                targetStats.SpreadAngleBonus += 10f; 
+                break;
+            case 2:
+                targetStats.SpreadAngleBonus -= 10f; 
+                break;
+        }
+        
+        if (m_upgradePanel != null) 
+        {
+            m_upgradePanel.SetActive(false);
+            Time.timeScale = 1f;
+        }
+    }
+
     public void OnStartButtonClicked()
     {
         if (m_startPanel != null) m_startPanel.SetActive(false);
         Time.timeScale = 1f;
     }
 
-    /// <summary>
-    /// [설명]: 재시도 버튼 클릭 시 호출됩니다. 현재 씬을 다시 로드합니다.
-    /// </summary>
     public void OnRetryButtonClicked()
     {
         Time.timeScale = 1f;
@@ -63,9 +144,6 @@ public class UIManager : MonoBehaviour
             UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
     }
 
-    /// <summary>
-    /// [설명]: 진행도 슬라이더의 값을 설정합니다 (0.0 ~ 1.0).
-    /// </summary>
     public void SetProgressRatio(float ratio)
     {
         if (m_progressSlider != null) m_progressSlider.value = ratio;

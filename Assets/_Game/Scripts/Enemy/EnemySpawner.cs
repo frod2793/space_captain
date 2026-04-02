@@ -89,7 +89,6 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField] private Transform m_bossSpawnPoint;
 
     private EnemySpawnLogic m_spawnLogic;
-    private EnemyPool m_enemyPool;
     
     private float m_currentTimer;
     private int m_currentWaveIndex = 0;
@@ -116,17 +115,9 @@ public class EnemySpawner : MonoBehaviour
     private void Init()
     {
         if (m_waveConfig == null) m_waveConfig = new WaveConfigDTO();
-        
         m_spawnLogic = new EnemySpawnLogic(m_waveConfig);
-        
-        if (m_waveConfig.EnemyPrefab != null)
-        {
-            m_enemyPool = new EnemyPool(m_waveConfig.EnemyPrefab, 10, 50, transform);
-        }
-
         m_spawnAreaCollider = GetComponent<Collider2D>();
         if (m_spawnAreaCollider != null) m_spawnAreaCollider.isTrigger = true;
-
         StartNextWave();
     }
 
@@ -187,7 +178,7 @@ public class EnemySpawner : MonoBehaviour
     /// </summary>
     private void HandleWaveLogic()
     {
-        if (m_enemyPool == null || m_spawnAreaCollider == null) return;
+        if (m_spawnAreaCollider == null) return;
         if (m_isBossSpawned) return;
 
         if (m_remainingEnemiesInWave > 0)
@@ -244,8 +235,10 @@ public class EnemySpawner : MonoBehaviour
     /// </summary>
     private void SpawnEnemy()
     {
-        if (m_enemyPool == null || m_spawnAreaCollider == null) return;
+        if (m_spawnAreaCollider == null || m_waveConfig.EnemyPrefab == null) return;
 
+        var pool = UnityEngine.Object.FindAnyObjectByType<ObjectPoolManager>();
+        
         Vector3 spawnPos = Vector3.zero;
         bool foundPos = false;
 
@@ -262,25 +255,24 @@ public class EnemySpawner : MonoBehaviour
             }
         }
 
-        if (!foundPos)
+        if (!foundPos) spawnPos = m_spawnLogic.CalculateRandomSpawnPositionInBounds(m_spawnAreaCollider.bounds);
+
+        GameObject enemyObj = null;
+        if (pool != null)
         {
-            spawnPos = m_spawnLogic.CalculateRandomSpawnPositionInBounds(m_spawnAreaCollider.bounds);
+            enemyObj = pool.GetFromPool(m_waveConfig.EnemyPrefab, spawnPos, Quaternion.identity);
+        }
+        else
+        {
+            enemyObj = Instantiate(m_waveConfig.EnemyPrefab, spawnPos, Quaternion.identity);
         }
 
-        GameObject enemyObj = m_enemyPool.Get();
         if (enemyObj == null) return;
-
-        enemyObj.transform.position = spawnPos;
-        enemyObj.transform.rotation = Quaternion.identity;
 
         if (enemyObj.TryGetComponent<EnemyController>(out var controller))
         {
             m_activeEnemyCount++;
-            controller.SetPoolReleaseAction(obj => 
-            {
-                m_enemyPool.Release(obj);
-                OnEnemyDestroyed();
-            });
+            controller.SetPoolReleaseAction(obj => OnEnemyDestroyed());
         }
     }
 }

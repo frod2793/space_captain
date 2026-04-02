@@ -1,37 +1,42 @@
 using UnityEngine;
 
-/// <summary>
-/// [설명]: 플레이어의 발사체(Bullet) 기본 로직입니다.
-/// </summary>
 public class BulletProjectile : MonoBehaviour
 {
     [SerializeField] private float m_speed = 15f;
     [SerializeField] private float m_lifeTime = 3f;
 
-    private void Start()
+    private float m_timer;
+    private ObjectPoolManager m_pool;
+
+    public int Damage { get; set; }
+
+    private void OnEnable()
     {
-        // 일정 시간 후 자동 소멸 (프로토타입용)
-        Destroy(gameObject, m_lifeTime);
+        m_timer = 0f;
+        if (m_pool == null) m_pool = FindAnyObjectByType<ObjectPoolManager>();
     }
 
     private void Update()
     {
-        // 위쪽 방향으로 이동
         transform.Translate(Vector3.up * m_speed * Time.deltaTime);
+
+        m_timer += Time.deltaTime;
+        if (m_timer >= m_lifeTime) Release();
     }
 
-    /// <summary>
-    /// [설명]: 발사체의 속도를 외부에서 설정합니다.
-    /// </summary>
     public void SetSpeed(float speed)
     {
         m_speed = speed;
     }
 
-    /// <summary>
-    /// [설명]: 발사체의 데미지를 설정하거나 가져옵니다.
-    /// </summary>
-    public int Damage { get; set; }
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Enemy")) Release();
+    }
 
-
+    private void Release()
+    {
+        if (m_pool != null) m_pool.ReturnToPool(gameObject);
+        else Destroy(gameObject);
+    }
 }

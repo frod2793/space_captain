@@ -9,16 +9,21 @@ public class EnemyBullet : MonoBehaviour
     [SerializeField] private float m_lifeTime = 5f;
 
     private int m_damage;
+    private float m_timer;
+    private ObjectPoolManager m_pool;
 
-    private void Start()
+    private void OnEnable()
     {
-        Destroy(gameObject, m_lifeTime);
+        m_timer = 0f;
+        if (m_pool == null) m_pool = UnityEngine.Object.FindAnyObjectByType<ObjectPoolManager>();
     }
 
     private void Update()
     {
-        // 자신의 '위쪽(Up)' 방향으로 전진
         transform.Translate(Vector3.up * m_speed * Time.deltaTime);
+
+        m_timer += Time.deltaTime;
+        if (m_timer >= m_lifeTime) Release();
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -37,14 +42,20 @@ public class EnemyBullet : MonoBehaviour
         if (other.TryGetComponent<PlayerCharacterController>(out var player))
         {
             player.TakeDamage(m_damage);
-            Destroy(gameObject);
+            Release();
         }
         // 2. 모선 피격
         else if (other.TryGetComponent<MasterShip>(out var ship))
         {
             ship.TakeDamage(m_damage);
-            Destroy(gameObject);
+            Release();
         }
+    }
+
+    private void Release()
+    {
+        if (m_pool != null) m_pool.ReturnToPool(gameObject);
+        else Destroy(gameObject);
     }
 
     public void Initialize(int damage, float speed = 10f)

@@ -1,159 +1,158 @@
 using UnityEngine;
+using System.Collections.Generic;
 
-public enum PlayerAttackType
-{
-    Single,     // 단발
-    Double,     // 더블 배럴
-    Spread      // 3발 방사
-}
-
-/// <summary>
-/// [설명]: 플레이어 캐릭터의 공격을 담당하는 컴포넌트입니다.
-/// 활성 상태(IsActive)일 때만 동작합니다.
-/// </summary>
 public class PlayerAttackComponent : MonoBehaviour
 {
-    [Header("설정")]
     [SerializeField] private PlayerCharacterController m_owner;
-    [SerializeField] private PlayerAttackType m_attackType = PlayerAttackType.Single;
+    [SerializeField] private PlayerAttackType m_attackType;
     [SerializeField] private GameObject m_bulletPrefab;
-    
-    [Header("성능")]
-    [SerializeField] private float m_fireRate = 0.2f;
-    [SerializeField] private float m_bulletSpeed = 15f;
-    [SerializeField] private float m_targetingRange = 15f; // [추가]: 자동 타겟팅 사거리
+    [SerializeField] private Transform[] m_firePoints;
+    [SerializeField] private float m_fireRate = 0.5f;
+    [SerializeField] private float m_bulletSpeed = 10f;
+    [SerializeField] private float m_targetingRange = 10f;
 
-    [Header("발사 위치")]
-    [SerializeField] private Transform[] m_firePoints; // 0: 중앙, 1: 왼쪽, 2: 오른쪽
-
-    public Transform CurrentTarget { get; set; } // [추가]: 현재 조준 중인 타겟 (스왑 시 상속용)
-
+    public EnemyController CurrentTarget { get; set; }
     private float m_fireTimer;
-
-    private void Awake()
-    {
-        if (m_owner == null) m_owner = GetComponent<PlayerCharacterController>();
-    }
 
     private void Update()
     {
         if (m_owner == null || !m_owner.IsActive) return;
 
-        // [개선]: 타겟 정보를 매 프레임 업데이트하여 사격 여부 판단 근거로 사용
-        UpdateCurrentTarget();
-
-        // [수정]: 사격 조건 판단 (드래그 중이거나, 사거리 내에 타겟이 있을 때만 타이머 진행)
-        bool shouldFire = m_owner.IsDragging || (CurrentTarget != null);
+        UpdateTargeting();
         
-        if (shouldFire)
+        m_fireTimer += Time.deltaTime;
+        if (m_fireTimer >= m_fireRate && (CurrentTarget != null || (m_owner != null && m_owner.IsDragging)))
         {
-            m_fireTimer += Time.deltaTime;
-            if (m_fireTimer >= m_fireRate)
-            {
-                Fire();
-                m_fireTimer = 0f;
-            }
+            m_fireTimer = 0f;
+            Fire();
         }
-        else
-        {
-            // 타겟이 없으면 타이머를 초기화하거나 대기 상태 유지 (여기서는 타이머 유지하여 적 발견 시 즉시 사격)
-            // m_fireTimer = m_fireRate; // 적 발견 시 즉시 사격하고 싶다면 주석 해제
-        }
-    }
-
-    /// <summary>
-    /// [설명]: 에디터에서 사거리를 시각적으로 확인하기 위한 기즈모를 그립니다.
-    /// </summary>
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, m_targetingRange);
     }
 
     private void Fire()
     {
-        if (m_bulletPrefab == null) return;
+        if (m_bulletPrefab == null) 
+        {
+            return;
+        }
 
-        // [수정]: 타겟 업데이트는 Update에서 수행하므로 여기선 사용만 함
         float baseAngle = 0f;
-
-        // [수정]: 드래그 중이 아닐 때만 추적된 타겟 방향으로 조준
         if (m_owner != null && !m_owner.IsDragging && CurrentTarget != null)
         {
-            Vector3 direction = (CurrentTarget.position - m_firePoints[0].position).normalized;
+            Vector3 direction = (CurrentTarget.transform.position - transform.position).normalized;
             baseAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
         }
+        else
+        {
+            baseAngle = transform.rotation.eulerAngles.z;
+        }
+
+        int totalBulletCount = 1;
+        float spreadAngle = 0f;
 
         switch (m_attackType)
         {
-            case PlayerAttackType.Single:
-                CreateBullet(m_firePoints[0].position, baseAngle);
+            case PlayerAttackType.Single: 
+                totalBulletCount = 1; 
+                spreadAngle = 5f; 
                 break;
-
-            case PlayerAttackType.Double:
-                if (m_firePoints.Length >= 2)
-                {
-                    CreateBullet(m_firePoints[0].position, baseAngle);
-                    CreateBullet(m_firePoints[1].position, baseAngle);
-                }
+            case PlayerAttackType.Double: 
+                totalBulletCount = 2; 
+                spreadAngle = 0f; 
                 break;
-
-            case PlayerAttackType.Spread:
-                CreateBullet(m_firePoints[0].position, baseAngle);
-                CreateBullet(m_firePoints[0].position, baseAngle - 15f);
-                CreateBullet(m_firePoints[0].position, baseAngle + 15f);
+            case PlayerAttackType.Spread: 
+                totalBulletCount = 3; 
+                spreadAngle = 60f; 
                 break;
         }
-    }
 
-    /// <summary>
-    /// [설명]: 사거리 내에서 가장 가까운 적을 탐색합니다.
-    /// </summary>
-    private Transform FindNearestEnemy()
-    {
-        Collider2D[] observers = Physics2D.OverlapCircleAll(transform.position, m_targetingRange);
-        Transform nearest = null;
-        float minDistance = Mathf.Infinity;
+        float baseSpread = spreadAngle; 
 
-        foreach (var col in observers)
+        if (m_owner != null && m_owner.Stats != null)
         {
-            if (col.CompareTag("Enemy") || col.GetComponent<EnemyController>() != null)
+            totalBulletCount += m_owner.Stats.BulletCountBonus;
+            spreadAngle = spreadAngle + m_owner.Stats.SpreadAngleBonus;
+        }
+
+        int firePointCount = m_firePoints != null ? m_firePoints.Length : 0;
+        if (firePointCount == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < totalBulletCount; i++)
+        {
+            float angleOffset = totalBulletCount > 1 ? -spreadAngle / 2f + (spreadAngle / (totalBulletCount - 1)) * i : 0f;
+            
+            Transform firePoint = m_firePoints[i % firePointCount];
+            Vector3 spawnPos = firePoint.position;
+
+            if (m_attackType == PlayerAttackType.Spread && baseSpread > 0)
             {
-                float dist = Vector2.Distance(transform.position, col.transform.position);
-                if (dist < minDistance)
+                float k = Mathf.Clamp01(spreadAngle / baseSpread);
+                
+                Vector3 localPos = transform.InverseTransformPoint(firePoint.position);
+                localPos.x *= k; 
+                spawnPos = transform.TransformPoint(localPos);
+
+                int indexInPoints = i % firePointCount;
+                if (indexInPoints == 0 || indexInPoints == 2)
                 {
-                    minDistance = dist;
-                    nearest = col.transform;
+                    angleOffset *= k; 
                 }
             }
+
+            float finalAngle = baseAngle + angleOffset;
+            CreateBullet(spawnPos, finalAngle);
         }
-        return nearest;
     }
 
-    /// <summary>
-    /// [설명]: 실시간으로 타겟 상태를 확인하고 필요 시 재탐색합니다.
-    /// </summary>
-    private void UpdateCurrentTarget()
+    private void UpdateTargeting()
     {
-        if (CurrentTarget == null || !CurrentTarget.gameObject.activeInHierarchy || 
-            Vector2.Distance(transform.position, CurrentTarget.position) > m_targetingRange)
+        if (CurrentTarget == null || CurrentTarget.gameObject.activeInHierarchy == false ||
+            Vector2.Distance(transform.position, CurrentTarget.transform.position) > m_targetingRange)
         {
             CurrentTarget = FindNearestEnemy();
         }
     }
 
+    private EnemyController FindNearestEnemy()
+    {
+        EnemyController[] enemies = FindObjectsByType<EnemyController>(FindObjectsSortMode.None);
+        EnemyController nearest = null;
+        float minDistance = float.MaxValue;
+
+        for (int i = 0; i < enemies.Length; i++)
+        {
+            if (enemies[i] == null || !enemies[i].gameObject.activeInHierarchy) continue;
+            float dist = Vector2.Distance(transform.position, enemies[i].transform.position);
+            if (dist < minDistance && dist <= m_targetingRange)
+            {
+                minDistance = dist;
+                nearest = enemies[i];
+            }
+        }
+        return nearest;
+    }
+
     private void CreateBullet(Vector3 position, float angle)
     {
-        GameObject bulletObj = Instantiate(m_bulletPrefab, position, Quaternion.Euler(0, 0, angle));
+        var pool = FindAnyObjectByType<ObjectPoolManager>();
+        GameObject bulletObj;
+        
+        if (pool != null) bulletObj = pool.GetFromPool(m_bulletPrefab, position, Quaternion.Euler(0, 0, angle));
+        else bulletObj = Instantiate(m_bulletPrefab, position, Quaternion.Euler(0, 0, angle));
+
         if (bulletObj.TryGetComponent<BulletProjectile>(out var projectile))
         {
             projectile.SetSpeed(m_bulletSpeed);
-            
-            // [추가]: 플레이어의 현재 데미지 수치를 총알에 주입
-            if (m_owner != null && m_owner.Stats != null)
-            {
-                projectile.Damage = m_owner.Stats.AttackDamage;
-            }
+            if (m_owner != null && m_owner.Stats != null) projectile.Damage = m_owner.Stats.AttackDamage;
         }
     }
+}
+
+public enum PlayerAttackType
+{
+    Single,
+    Double,
+    Spread
 }

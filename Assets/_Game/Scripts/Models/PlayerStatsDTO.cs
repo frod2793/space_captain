@@ -1,8 +1,5 @@
 using System;
 
-/// <summary>
-/// [설명]: 플레이어 캐릭터의 상태 및 능력치를 담는 DTO입니다.
-/// </summary>
 [Serializable]
 public class PlayerStatsDTO
 {
@@ -13,4 +10,6 @@ public class PlayerStatsDTO
     public int CurrentHp = 100;
     public bool IsActive = false;
     public float CurrentX = 0f;
+    public int BulletCountBonus = 0;
+    public float SpreadAngleBonus = 0f;
 }
