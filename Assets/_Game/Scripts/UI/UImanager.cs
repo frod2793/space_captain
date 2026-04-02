@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using System;
+using TMPro;
 
 public class UIManager : MonoBehaviour
 {
@@ -12,46 +14,78 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject m_upgradePanel;
     [SerializeField] private UpgradeButton[] m_upgradeButtons;
 
+    [SerializeField] private TMP_Text m_killCountText;
+ 
+    private MasterShip m_masterShip;
+    private PlayerSwapManager m_swapManager;
+
     private int m_killCount = 0;
+    private int m_totalKillCount = 0;
     private const int KILL_FOR_LEVEL_UP = 5;
 
     private void Start()
     {
-        if (m_startPanel != null) m_startPanel.SetActive(true);
-        if (m_gameOverPanel != null) m_gameOverPanel.SetActive(false);
-        if (m_upgradePanel != null) m_upgradePanel.SetActive(false);
-        
-        Time.timeScale = 0f;
-
-        var masterShip = Object.FindAnyObjectByType<MasterShip>();
-        if (masterShip != null)
+        if (m_startPanel != null)
         {
-            masterShip.OnMasterShipDestroyed += ShowGameOver;
-            masterShip.OnHpChanged += UpdateHpBar;
+            m_startPanel.SetActive(true);
+            Time.timeScale = 0f;
         }
 
-        var swapManager = Object.FindAnyObjectByType<PlayerSwapManager>();
-        if (swapManager != null)
+        if (m_gameOverPanel != null) m_gameOverPanel.SetActive(false);
+        if (m_upgradePanel != null) m_upgradePanel.SetActive(false);
+
+        UpdateKillCountUI();
+
+        m_masterShip = FindAnyObjectByType<MasterShip>();
+        if (m_masterShip != null)
         {
-            swapManager.OnAllPlayersDead += ShowGameOver;
+            m_masterShip.OnMasterShipDestroyed += ShowGameOver;
+            m_masterShip.OnHpChanged += UpdateHpBar;
+        }
+
+        m_swapManager = FindAnyObjectByType<PlayerSwapManager>();
+        if (m_swapManager != null)
+        {
+            m_swapManager.OnAllPlayersDead += ShowGameOver;
         }
 
         EnemyController.OnEnemyDead += HandleEnemyDead;
 
-        for (int i = 0; i < m_upgradeButtons.Length; i++)
+        if (m_upgradeButtons != null)
         {
-            m_upgradeButtons[i].Initialize(OnUpgradeSelected);
+            for (int i = 0; i < m_upgradeButtons.Length; i++)
+            {
+                if (m_upgradeButtons[i] != null)
+                {
+                    m_upgradeButtons[i].Initialize(OnUpgradeSelected);
+                }
+            }
         }
     }
 
     private void OnDestroy()
     {
+        if (m_masterShip != null)
+        {
+            m_masterShip.OnMasterShipDestroyed -= ShowGameOver;
+            m_masterShip.OnHpChanged -= UpdateHpBar;
+        }
+
+        if (m_swapManager != null)
+        {
+            m_swapManager.OnAllPlayersDead -= ShowGameOver;
+        }
+
         EnemyController.OnEnemyDead -= HandleEnemyDead;
     }
 
     private void HandleEnemyDead()
     {
         m_killCount++;
+        m_totalKillCount++;
+
+        UpdateKillCountUI();
+
         if (m_killCount >= KILL_FOR_LEVEL_UP)
         {
             m_killCount = 0;
@@ -59,44 +93,59 @@ public class UIManager : MonoBehaviour
         }
     }
 
+
+    private void UpdateKillCountUI()
+    {
+        m_killCountText.text = $"잡은놈수: {m_totalKillCount}";
+    }
+
     private void ShowUpgradePanel()
     {
-        m_isProcessingUpgrade = false; // 새 업그레이드 기회 제공
-
-        var swapManager = Object.FindAnyObjectByType<PlayerSwapManager>();
-        if (swapManager != null)
+        m_isProcessingUpgrade = false;
+        
+        if (m_swapManager != null)
         {
-            var characters = swapManager.Characters;
+            var characters = m_swapManager.Characters;
             if (characters != null)
             {
                 for (int i = 0; i < characters.Count; i++)
                 {
-                    if (characters[i] != null) characters[i].PlayLevelUpEffect();
+                    if (characters[i] != null)
+                    {
+                        characters[i].PlayLevelUpEffect();
+                    }
                 }
             }
         }
 
-        if (m_upgradePanel != null) m_upgradePanel.SetActive(true);
-        Time.timeScale = 0f;
+        if (m_upgradePanel != null)
+        {
+            m_upgradePanel.SetActive(true);
+            Time.timeScale = 0f;
+        }
     }
 
     private bool m_isProcessingUpgrade = false;
 
     private void OnUpgradeSelected(int index)
     {
-        if (m_isProcessingUpgrade) return;
+        if (m_isProcessingUpgrade)
+        {
+            return;
+        }
+
         m_isProcessingUpgrade = true;
 
-        var swapManager = Object.FindAnyObjectByType<PlayerSwapManager>();
-        if (swapManager == null || swapManager.Characters == null)
+        if (m_swapManager == null || m_swapManager.Characters == null)
         {
             m_isProcessingUpgrade = false;
             return;
         }
 
         string targetId = index == 0 ? "a" : (index == 1 ? "b" : "c");
-        var targetCharacter = swapManager.Characters.Find(c => c.CharacterID.Equals(targetId, System.StringComparison.OrdinalIgnoreCase));
-        
+        var targetCharacter =
+            m_swapManager.Characters.Find(c => c.CharacterID.Equals(targetId, StringComparison.OrdinalIgnoreCase));
+
         if (targetCharacter == null)
         {
             m_isProcessingUpgrade = false;
@@ -109,7 +158,7 @@ public class UIManager : MonoBehaviour
             m_isProcessingUpgrade = false;
             return;
         }
-        
+
 
         switch (index)
         {
@@ -117,14 +166,14 @@ public class UIManager : MonoBehaviour
                 targetStats.BulletCountBonus++;
                 break;
             case 1:
-                targetStats.SpreadAngleBonus += 10f; 
+                targetStats.SpreadAngleBonus += 10f;
                 break;
             case 2:
-                targetStats.SpreadAngleBonus -= 10f; 
+                targetStats.SpreadAngleBonus -= 10f;
                 break;
         }
-        
-        if (m_upgradePanel != null) 
+
+        if (m_upgradePanel != null)
         {
             m_upgradePanel.SetActive(false);
             Time.timeScale = 1f;
@@ -133,8 +182,11 @@ public class UIManager : MonoBehaviour
 
     public void OnStartButtonClicked()
     {
-        if (m_startPanel != null) m_startPanel.SetActive(false);
-        Time.timeScale = 1f;
+        if (m_startPanel != null)
+        {
+            m_startPanel.SetActive(false);
+            Time.timeScale = 1f;
+        }
     }
 
     public void OnRetryButtonClicked()
@@ -146,7 +198,10 @@ public class UIManager : MonoBehaviour
 
     public void SetProgressRatio(float ratio)
     {
-        if (m_progressSlider != null) m_progressSlider.value = ratio;
+        if (m_progressSlider != null)
+        {
+            m_progressSlider.value = ratio;
+        }
     }
 
     /// <summary>
@@ -154,7 +209,10 @@ public class UIManager : MonoBehaviour
     /// </summary>
     public void UpdateHpBar(float ratio)
     {
-        if (m_hpSlider != null) m_hpSlider.value = ratio;
+        if (m_hpSlider != null)
+        {
+            m_hpSlider.value = ratio;
+        }
     }
 
     /// <summary>
@@ -174,7 +232,10 @@ public class UIManager : MonoBehaviour
     /// </summary>
     public void ShowGameOver()
     {
-        if (m_gameOverPanel != null) m_gameOverPanel.SetActive(true);
-        Time.timeScale = 0f;
+        if (m_gameOverPanel != null)
+        {
+            m_gameOverPanel.SetActive(true);
+            Time.timeScale = 0f;
+        }
     }
 }
