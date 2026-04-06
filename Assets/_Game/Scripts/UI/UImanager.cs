@@ -23,6 +23,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private TMP_Text m_waveText;
     [SerializeField] private TMP_Text m_levelText;
     [SerializeField] private TMP_Text m_playTimeText;
+    [SerializeField] private TMP_Text m_barrierText;
 
     private MasterShip m_masterShip;
     private Barrier m_barrierSystem;
@@ -49,7 +50,7 @@ public class UIManager : MonoBehaviour
         {
             m_gameOverPanel.SetActive(false);
         }
-        
+
         if (m_upgradePanel != null)
         {
             m_upgradePanel.SetActive(false);
@@ -58,6 +59,20 @@ public class UIManager : MonoBehaviour
         UpdateKillCountUI();
         UpdateLevelUI();
         UpdateExpUI(true);
+        UpdatePlayTimeUI();
+
+
+        m_speedText.text = $"x{m_currentSpeed:F1}";
+        m_waveText.text = "WAVE 1";
+        m_barrierText.text = "100 / 100";
+        m_barrierText.gameObject.SetActive(true);
+
+
+        if (m_barrierSlider != null)
+        {
+            m_barrierSlider.value = 1f;
+            m_barrierSlider.gameObject.SetActive(true);
+        }
 
         m_masterShip = FindAnyObjectByType<MasterShip>();
         if (m_masterShip != null)
@@ -70,6 +85,7 @@ public class UIManager : MonoBehaviour
         if (m_barrierSystem != null)
         {
             m_barrierSystem.OnBarrierChanged += UpdateBarrierBar;
+            m_barrierSystem.OnBarrierValueWeightChanged += UpdateBarrierText;
         }
 
         m_swapManager = FindAnyObjectByType<PlayerSwapManager>();
@@ -118,6 +134,7 @@ public class UIManager : MonoBehaviour
         if (m_barrierSystem != null)
         {
             m_barrierSystem.OnBarrierChanged -= UpdateBarrierBar;
+            m_barrierSystem.OnBarrierValueWeightChanged -= UpdateBarrierText;
         }
 
         if (m_swapManager != null)
@@ -212,7 +229,7 @@ public class UIManager : MonoBehaviour
     private void ShowUpgradePanel()
     {
         m_isProcessingUpgrade = false;
-        
+
         if (m_swapManager != null)
         {
             var characters = m_swapManager.Characters;
@@ -252,7 +269,8 @@ public class UIManager : MonoBehaviour
         }
 
         string targetId = index == 0 ? "a" : (index == 1 ? "b" : "c");
-        var targetCharacter = m_swapManager.Characters.Find(c => c.CharacterID.Equals(targetId, StringComparison.OrdinalIgnoreCase));
+        var targetCharacter =
+            m_swapManager.Characters.Find(c => c.CharacterID.Equals(targetId, StringComparison.OrdinalIgnoreCase));
 
         if (targetCharacter == null)
         {
@@ -299,7 +317,8 @@ public class UIManager : MonoBehaviour
     public void OnRetryButtonClicked()
     {
         Time.timeScale = 1f;
-        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene()
+            .name);
     }
 
     public void SetProgressRatio(float ratio)
@@ -322,8 +341,17 @@ public class UIManager : MonoBehaviour
     {
         if (m_barrierSlider != null)
         {
-            m_barrierSlider.gameObject.SetActive(true);
+            m_barrierSlider.gameObject.SetActive(ratio > 0f);
             m_barrierSlider.value = ratio;
+        }
+    }
+
+    public void UpdateBarrierText(int current, int max)
+    {
+        if (m_barrierText != null)
+        {
+            m_barrierText.gameObject.SetActive(current > 0);
+            m_barrierText.text = $"{current} / {max}";
         }
     }
 

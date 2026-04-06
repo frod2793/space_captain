@@ -29,6 +29,10 @@ public class BarrierLogic
         if (m_data.CurrentBarrier >= damage)
         {
             m_data.CurrentBarrier -= damage;
+            if (m_data.CurrentBarrier <= 0)
+            {
+                m_data.IsBroken = true;
+            }
             return 0;
         }
         else
@@ -59,8 +63,10 @@ public class Barrier : MonoBehaviour
     [SerializeField] private Collider2D m_collider;
 
     private BarrierLogic m_logic;
+    private Color m_originalColor;
 
     public event Action<float> OnBarrierChanged;
+    public event Action<int, int> OnBarrierValueWeightChanged;
 
     private void Awake()
     {
@@ -72,6 +78,7 @@ public class Barrier : MonoBehaviour
         if (m_logic != null)
         {
             OnBarrierChanged?.Invoke(m_logic.GetBarrierRatio());
+            OnBarrierValueWeightChanged?.Invoke(m_barrierData.CurrentBarrier, m_barrierData.MaxBarrier);
         }
     }
 
@@ -138,6 +145,11 @@ public class Barrier : MonoBehaviour
         {
             m_spriteRenderer = GetComponent<SpriteRenderer>();
         }
+
+        if (m_spriteRenderer != null)
+        {
+            m_originalColor = m_spriteRenderer.color;
+        }
     }
 
     public int ResolveDamage(int damage)
@@ -152,6 +164,7 @@ public class Barrier : MonoBehaviour
         if (remainingDamage < damage)
         {
             OnBarrierChanged?.Invoke(m_logic.GetBarrierRatio());
+            OnBarrierValueWeightChanged?.Invoke(m_barrierData.CurrentBarrier, m_barrierData.MaxBarrier);
             PlayDamageEffect();
         }
 
@@ -168,7 +181,7 @@ public class Barrier : MonoBehaviour
         if (m_spriteRenderer != null)
         {
             m_spriteRenderer.DOKill();
-            m_spriteRenderer.color = Color.white;
+            m_spriteRenderer.color = m_originalColor;
             m_spriteRenderer.DOColor(Color.cyan, 0.05f).SetLoops(2, LoopType.Yoyo);
         }
     }
@@ -180,12 +193,6 @@ public class Barrier : MonoBehaviour
             m_collider.enabled = false;
         }
 
-        if (m_spriteRenderer != null)
-        {
-            m_spriteRenderer.DOFade(0f, 0.3f).OnComplete(() =>
-            {
-                gameObject.SetActive(false);
-            });
-        }
+        gameObject.SetActive(false);
     }
 }
