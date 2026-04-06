@@ -58,8 +58,24 @@ public class BossLogic
 /// [설명]: 보스 오브젝트의 시각적 제어 및 입력을 담당하는 메인 컨트롤러 클래스
 /// 활성 플레이어를 우선적으로 타겟팅하며 사격 패턴을 실행
 /// </summary>
-public class BossController : MonoBehaviour
+public class BossController : MonoBehaviour, IAttackTarget
 {
+    public Transform TargetTransform
+    {
+        get
+        {
+            return transform;
+        }
+    }
+
+    public bool IsActiveTarget
+    {
+        get
+        {
+            return m_bossData != null && !m_bossData.IsDead;
+        }
+    }
+
     [Header("보스 데이터")]
     [SerializeField] private BossDTO m_bossData;
 
@@ -217,12 +233,18 @@ public class BossController : MonoBehaviour
         if (bulletObj != null && bulletObj.TryGetComponent<EnemyBullet>(out var enemyBullet)) enemyBullet.Initialize(m_bossData.AttackDamage);
     }
 
-    /// <summary>
-    /// [설명]: 객체 충돌 시 후속 처리를 담당합니다.
-    /// </summary>
     private void HandleCollision(GameObject other)
     {
-        if (m_bossData.IsDead) return;
+        if (m_bossData != null && m_bossData.IsDead)
+        {
+            return;
+        }
+
+        Barrier barrier = other.GetComponentInParent<Barrier>();
+        if (barrier != null)
+        {
+            barrier.ResolveDamage(m_bossData.AttackDamage);
+        }
 
         if (other.TryGetComponent<PlayerCharacterController>(out var player))
         {
@@ -231,7 +253,10 @@ public class BossController : MonoBehaviour
         else if (other.TryGetComponent<BulletProjectile>(out var bullet))
         {
             TakeDamage(bullet.Damage);
-            Destroy(bullet.gameObject);
+            if (bullet.gameObject != null)
+            {
+                Destroy(bullet.gameObject);
+            }
         }
     }
 

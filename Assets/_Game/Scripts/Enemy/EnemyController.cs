@@ -37,9 +37,25 @@ public class EnemyLogic
     }
 }
 
-public class EnemyController : MonoBehaviour, IPoolable
+public class EnemyController : MonoBehaviour, IPoolable, IAttackTarget
 {
     public static event Action OnEnemyDead;
+
+    public Transform TargetTransform
+    {
+        get
+        {
+            return transform;
+        }
+    }
+
+    public bool IsActiveTarget
+    {
+        get
+        {
+            return m_enemyData != null && !m_enemyData.IsDead;
+        }
+    }
 
     [SerializeField] private EnemyDTO m_enemyData;
     [SerializeField] private SpriteRenderer m_spriteRenderer;
@@ -48,13 +64,14 @@ public class EnemyController : MonoBehaviour, IPoolable
     private EnemyLogic m_logic;
     private MasterShip m_targetMasterShip;
     private Action<GameObject> m_onRelease;
+    private Rigidbody2D m_rb;
 
     private void Awake()
     {
         Initialize();
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         UpdateMovement();
     }
@@ -71,6 +88,17 @@ public class EnemyController : MonoBehaviour, IPoolable
 
     private void HandleCollision(GameObject other)
     {
+        Barrier barrier = other.GetComponentInParent<Barrier>();
+        if (barrier != null)
+        {
+            if (m_enemyData != null && !m_enemyData.IsDead)
+            {
+                barrier.ResolveDamage(m_enemyData.AttackDamage);
+                DestroyEnemy();
+                return;
+            }
+        }
+
         if (other.TryGetComponent<MasterShip>(out var masterShip))
         {
             if (m_enemyData.IsDead) return;
@@ -96,12 +124,26 @@ public class EnemyController : MonoBehaviour, IPoolable
 
     private void Initialize()
     {
-        if (m_enemyData == null) m_enemyData = new EnemyDTO();
+        if (m_enemyData == null)
+        {
+            m_enemyData = new EnemyDTO();
+        }
+
         m_logic = new EnemyLogic(m_enemyData);
 
-        if (m_spriteRenderer == null) m_spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        if (m_spriteRenderer == null)
+        {
+            m_spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        }
 
         m_targetMasterShip = UnityEngine.Object.FindAnyObjectByType<MasterShip>();
+        m_rb = GetComponent<Rigidbody2D>();
+        
+        if (m_rb != null)
+        {
+            m_rb.bodyType = RigidbodyType2D.Kinematic;
+            m_rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+        }
     }
 
     public void OnSpawn()
@@ -150,10 +192,20 @@ public class EnemyController : MonoBehaviour, IPoolable
 
     private void UpdateMovement()
     {
-        if (m_targetMasterShip == null || m_logic == null || m_enemyData.IsDead) return;
+        if (m_targetMasterShip == null || m_logic == null || m_enemyData.IsDead)
+        {
+            return;
+        }
 
-        Vector3 nextPos = m_logic.CalculateNextPosition(transform.position, m_targetMasterShip.transform.position, Time.deltaTime);
-        transform.position = nextPos;
+        Vector3 nextPos = m_logic.CalculateNextPosition(transform.position, m_targetMasterShip.transform.position, Time.fixedDeltaTime);
+        if (m_rb != null)
+        {
+            m_rb.MovePosition(nextPos);
+        }
+        else
+        {
+            transform.position = nextPos;
+        }
 
         Vector3 direction = (m_targetMasterShip.transform.position - transform.position).normalized;
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;

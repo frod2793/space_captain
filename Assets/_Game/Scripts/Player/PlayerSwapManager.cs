@@ -90,6 +90,8 @@ public class PlayerSwapManager : MonoBehaviour
             return;
         }
 
+        Barrier barrier = FindAnyObjectByType<Barrier>();
+
         for (int i = 0; i < m_characters.Count; i++)
         {
             bool isActiveZero = (i == 0);
@@ -102,6 +104,7 @@ public class PlayerSwapManager : MonoBehaviour
             };
             
             m_characters[i].Initialize(stats);
+            m_characters[i].SetBarrier(barrier);
             m_characters[i].OnDead += HandlePlayerDead;
 
             if (isActiveZero)

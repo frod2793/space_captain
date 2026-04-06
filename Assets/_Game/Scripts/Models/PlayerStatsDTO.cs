@@ -12,4 +12,5 @@ public class PlayerStatsDTO
     public float CurrentX = 0f;
     public int BulletCountBonus = 0;
     public float SpreadAngleBonus = 0f;
+    public int Level = 1;
 }

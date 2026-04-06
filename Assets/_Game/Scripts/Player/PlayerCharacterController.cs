@@ -9,6 +9,7 @@ public class PlayerCharacterController : MonoBehaviour
     private Collider2D m_collider;
 
     private PlayerStatsDTO m_stats;
+    private Barrier m_barrier;
     private float m_targetX;
 
     public event Action<PlayerCharacterController> OnSelected;
@@ -35,6 +36,11 @@ public class PlayerCharacterController : MonoBehaviour
     {
         m_stats = stats;
         m_targetX = transform.position.x;
+    }
+
+    public void SetBarrier(Barrier barrier)
+    {
+        m_barrier = barrier;
     }
 
     public void SetActive(bool isActive)
@@ -72,13 +78,29 @@ public class PlayerCharacterController : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
-        if (m_stats == null || !m_stats.IsActive) return;
+        if (m_stats == null || !m_stats.IsActive)
+        {
+            return;
+        }
+
+        if (m_barrier != null)
+        {
+            damage = m_barrier.ResolveDamage(damage);
+        }
+
+        if (damage <= 0)
+        {
+            return;
+        }
 
         if (m_spriteRenderer != null)
         {
             m_spriteRenderer.DOKill();
             m_spriteRenderer.DOColor(Color.red, 0.1f).SetLoops(2, LoopType.Yoyo).OnComplete(() => {
-                if (m_spriteRenderer != null) m_spriteRenderer.color = Color.white;
+                if (m_spriteRenderer != null)
+                {
+                    m_spriteRenderer.color = Color.white;
+                }
             });
         }
 

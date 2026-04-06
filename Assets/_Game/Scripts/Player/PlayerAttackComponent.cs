@@ -11,17 +11,30 @@ public class PlayerAttackComponent : MonoBehaviour
     [SerializeField] private float m_bulletSpeed = 10f;
     [SerializeField] private float m_targetingRange = 10f;
 
-    public EnemyController CurrentTarget { get; set; }
+    public IAttackTarget CurrentTarget { get; set; }
     private float m_fireTimer;
 
     private void Update()
     {
-        if (m_owner == null || !m_owner.IsActive) return;
+        if (m_owner == null)
+        {
+            return;
+        }
 
         UpdateTargeting();
         
         m_fireTimer += Time.deltaTime;
-        if (m_fireTimer >= m_fireRate && (CurrentTarget != null || (m_owner != null && m_owner.IsDragging)))
+
+        bool canFire = false;
+        if (m_owner.Stats != null && m_owner.Stats.CurrentHp > 0 && m_owner.IsActive)
+        {
+            if (CurrentTarget != null || m_owner.IsDragging)
+            {
+                canFire = true;
+            }
+        }
+
+        if (m_fireTimer >= m_fireRate && canFire)
         {
             m_fireTimer = 0f;
             Fire();
@@ -38,7 +51,7 @@ public class PlayerAttackComponent : MonoBehaviour
         float baseAngle = 0f;
         if (m_owner != null && !m_owner.IsDragging && CurrentTarget != null)
         {
-            Vector3 direction = (CurrentTarget.transform.position - transform.position).normalized;
+            Vector3 direction = (CurrentTarget.TargetTransform.position - transform.position).normalized;
             baseAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
         }
         else
@@ -108,27 +121,34 @@ public class PlayerAttackComponent : MonoBehaviour
 
     private void UpdateTargeting()
     {
-        if (CurrentTarget == null || CurrentTarget.gameObject.activeInHierarchy == false ||
-            Vector2.Distance(transform.position, CurrentTarget.transform.position) > m_targetingRange)
+        if (CurrentTarget == null || CurrentTarget.IsActiveTarget == false ||
+            Vector2.Distance(transform.position, CurrentTarget.TargetTransform.position) > m_targetingRange)
         {
             CurrentTarget = FindNearestEnemy();
         }
     }
 
-    private EnemyController FindNearestEnemy()
+    private IAttackTarget FindNearestEnemy()
     {
-        EnemyController[] enemies = FindObjectsByType<EnemyController>(FindObjectsSortMode.None);
-        EnemyController nearest = null;
+        var targets = new List<IAttackTarget>();
+        targets.AddRange(FindObjectsByType<EnemyController>(FindObjectsSortMode.None));
+        targets.AddRange(FindObjectsByType<BossController>(FindObjectsSortMode.None));
+
+        IAttackTarget nearest = null;
         float minDistance = float.MaxValue;
 
-        for (int i = 0; i < enemies.Length; i++)
+        for (int i = 0; i < targets.Count; i++)
         {
-            if (enemies[i] == null || !enemies[i].gameObject.activeInHierarchy) continue;
-            float dist = Vector2.Distance(transform.position, enemies[i].transform.position);
+            if (targets[i] == null || !targets[i].IsActiveTarget)
+            {
+                continue;
+            }
+
+            float dist = Vector2.Distance(transform.position, targets[i].TargetTransform.position);
             if (dist < minDistance && dist <= m_targetingRange)
             {
                 minDistance = dist;
-                nearest = enemies[i];
+                nearest = targets[i];
             }
         }
         return nearest;
@@ -139,13 +159,22 @@ public class PlayerAttackComponent : MonoBehaviour
         var pool = FindAnyObjectByType<ObjectPoolManager>();
         GameObject bulletObj;
         
-        if (pool != null) bulletObj = pool.GetFromPool(m_bulletPrefab, position, Quaternion.Euler(0, 0, angle));
-        else bulletObj = Instantiate(m_bulletPrefab, position, Quaternion.Euler(0, 0, angle));
+        if (pool != null)
+        {
+            bulletObj = pool.GetFromPool(m_bulletPrefab, position, Quaternion.Euler(0, 0, angle));
+        }
+        else
+        {
+            bulletObj = Instantiate(m_bulletPrefab, position, Quaternion.Euler(0, 0, angle));
+        }
 
         if (bulletObj.TryGetComponent<BulletProjectile>(out var projectile))
         {
             projectile.SetSpeed(m_bulletSpeed);
-            if (m_owner != null && m_owner.Stats != null) projectile.Damage = m_owner.Stats.AttackDamage;
+            if (m_owner != null && m_owner.Stats != null)
+            {
+                projectile.Damage = m_owner.Stats.AttackDamage;
+            }
         }
     }
 }

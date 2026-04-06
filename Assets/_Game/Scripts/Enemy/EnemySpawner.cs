@@ -99,6 +99,8 @@ public class EnemySpawner : MonoBehaviour
     private Collider2D m_spawnAreaCollider;
     private bool m_isBossSpawned;
 
+    public event Action<int> OnWaveChanged;
+
     private void Awake()
     {
         Init();
@@ -114,10 +116,16 @@ public class EnemySpawner : MonoBehaviour
     /// </summary>
     private void Init()
     {
-        if (m_waveConfig == null) m_waveConfig = new WaveConfigDTO();
+        if (m_waveConfig == null)
+        {
+            m_waveConfig = new WaveConfigDTO();
+        }
         m_spawnLogic = new EnemySpawnLogic(m_waveConfig);
         m_spawnAreaCollider = GetComponent<Collider2D>();
-        if (m_spawnAreaCollider != null) m_spawnAreaCollider.isTrigger = true;
+        if (m_spawnAreaCollider != null)
+        {
+            m_spawnAreaCollider.isTrigger = true;
+        }
         StartNextWave();
     }
 
@@ -130,6 +138,7 @@ public class EnemySpawner : MonoBehaviour
         m_currentSpawnInterval = m_spawnLogic.GetSpawnIntervalForWave(m_currentWaveIndex);
         m_currentTimer = m_currentSpawnInterval;
 
+        OnWaveChanged?.Invoke(m_currentWaveIndex + 1);
         CheckBossSpawn();
     }
 

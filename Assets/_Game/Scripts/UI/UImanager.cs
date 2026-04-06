@@ -3,25 +3,39 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 using System;
 using TMPro;
+using DG.Tweening;
 
 public class UIManager : MonoBehaviour
 {
     [SerializeField] private Slider m_progressSlider;
     [SerializeField] private Slider m_hpSlider;
+    [SerializeField] private Slider m_barrierSlider;
     [SerializeField] private Slider m_bossHpSlider;
+    [SerializeField] private Slider m_expSlider;
+
     [SerializeField] private GameObject m_startPanel;
     [SerializeField] private GameObject m_gameOverPanel;
     [SerializeField] private GameObject m_upgradePanel;
     [SerializeField] private UpgradeButton[] m_upgradeButtons;
 
     [SerializeField] private TMP_Text m_killCountText;
- 
+    [SerializeField] private TMP_Text m_speedText;
+    [SerializeField] private TMP_Text m_waveText;
+    [SerializeField] private TMP_Text m_levelText;
+    [SerializeField] private TMP_Text m_playTimeText;
+
     private MasterShip m_masterShip;
+    private Barrier m_barrierSystem;
     private PlayerSwapManager m_swapManager;
+    private EnemySpawner m_enemySpawner;
 
     private int m_killCount = 0;
     private int m_totalKillCount = 0;
-    private const int KILL_FOR_LEVEL_UP = 5;
+    private int m_currentLevel = 0;
+    private float m_currentSpeed = 1f;
+    private float m_savedTimeScale = 1f;
+    private float m_playTime = 0f;
+    private bool m_isProcessingUpgrade = false;
 
     private void Start()
     {
@@ -31,10 +45,19 @@ public class UIManager : MonoBehaviour
             Time.timeScale = 0f;
         }
 
-        if (m_gameOverPanel != null) m_gameOverPanel.SetActive(false);
-        if (m_upgradePanel != null) m_upgradePanel.SetActive(false);
+        if (m_gameOverPanel != null)
+        {
+            m_gameOverPanel.SetActive(false);
+        }
+        
+        if (m_upgradePanel != null)
+        {
+            m_upgradePanel.SetActive(false);
+        }
 
         UpdateKillCountUI();
+        UpdateLevelUI();
+        UpdateExpUI(true);
 
         m_masterShip = FindAnyObjectByType<MasterShip>();
         if (m_masterShip != null)
@@ -43,10 +66,22 @@ public class UIManager : MonoBehaviour
             m_masterShip.OnHpChanged += UpdateHpBar;
         }
 
+        m_barrierSystem = FindAnyObjectByType<Barrier>();
+        if (m_barrierSystem != null)
+        {
+            m_barrierSystem.OnBarrierChanged += UpdateBarrierBar;
+        }
+
         m_swapManager = FindAnyObjectByType<PlayerSwapManager>();
         if (m_swapManager != null)
         {
             m_swapManager.OnAllPlayersDead += ShowGameOver;
+        }
+
+        m_enemySpawner = FindAnyObjectByType<EnemySpawner>();
+        if (m_enemySpawner != null)
+        {
+            m_enemySpawner.OnWaveChanged += UpdateWaveText;
         }
 
         EnemyController.OnEnemyDead += HandleEnemyDead;
@@ -63,6 +98,15 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (Time.timeScale > 0)
+        {
+            m_playTime += Time.unscaledDeltaTime;
+            UpdatePlayTimeUI();
+        }
+    }
+
     private void OnDestroy()
     {
         if (m_masterShip != null)
@@ -71,9 +115,19 @@ public class UIManager : MonoBehaviour
             m_masterShip.OnHpChanged -= UpdateHpBar;
         }
 
+        if (m_barrierSystem != null)
+        {
+            m_barrierSystem.OnBarrierChanged -= UpdateBarrierBar;
+        }
+
         if (m_swapManager != null)
         {
             m_swapManager.OnAllPlayersDead -= ShowGameOver;
+        }
+
+        if (m_enemySpawner != null)
+        {
+            m_enemySpawner.OnWaveChanged -= UpdateWaveText;
         }
 
         EnemyController.OnEnemyDead -= HandleEnemyDead;
@@ -85,18 +139,74 @@ public class UIManager : MonoBehaviour
         m_totalKillCount++;
 
         UpdateKillCountUI();
+        UpdateExpUI();
 
-        if (m_killCount >= KILL_FOR_LEVEL_UP)
+        int killsNeeded = (m_currentLevel + 1) * 5;
+        if (m_killCount >= killsNeeded)
         {
             m_killCount = 0;
+            m_currentLevel++;
+            UpdateLevelUI();
+            UpdateExpUI(true);
             ShowUpgradePanel();
         }
     }
 
-
     private void UpdateKillCountUI()
     {
-        m_killCountText.text = $"잡은놈수: {m_totalKillCount}";
+        if (m_killCountText != null)
+        {
+            m_killCountText.text = $"잡은놈수: {m_totalKillCount}";
+        }
+    }
+
+    private void UpdateLevelUI()
+    {
+        if (m_levelText != null)
+        {
+            m_levelText.text = $"LV.{m_currentLevel + 1}";
+        }
+    }
+
+    private void UpdateExpUI(bool immediate = false)
+    {
+        if (m_expSlider == null)
+        {
+            return;
+        }
+
+        int killsNeeded = (m_currentLevel + 1) * 5;
+        float ratio = (float)m_killCount / killsNeeded;
+
+        m_expSlider.DOKill();
+        if (immediate)
+        {
+            m_expSlider.value = ratio;
+        }
+        else
+        {
+            m_expSlider.DOValue(ratio, 0.3f).SetEase(Ease.OutQuad);
+        }
+    }
+
+    private void UpdateWaveText(int wave)
+    {
+        if (m_waveText != null)
+        {
+            m_waveText.text = $"WAVE {wave}";
+        }
+    }
+
+    private void UpdatePlayTimeUI()
+    {
+        if (m_playTimeText == null)
+        {
+            return;
+        }
+
+        int minutes = Mathf.FloorToInt(m_playTime / 60f);
+        int seconds = Mathf.FloorToInt(m_playTime % 60f);
+        m_playTimeText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
     }
 
     private void ShowUpgradePanel()
@@ -120,12 +230,11 @@ public class UIManager : MonoBehaviour
 
         if (m_upgradePanel != null)
         {
+            m_savedTimeScale = Time.timeScale > 0 ? Time.timeScale : m_currentSpeed;
             m_upgradePanel.SetActive(true);
             Time.timeScale = 0f;
         }
     }
-
-    private bool m_isProcessingUpgrade = false;
 
     private void OnUpgradeSelected(int index)
     {
@@ -143,8 +252,7 @@ public class UIManager : MonoBehaviour
         }
 
         string targetId = index == 0 ? "a" : (index == 1 ? "b" : "c");
-        var targetCharacter =
-            m_swapManager.Characters.Find(c => c.CharacterID.Equals(targetId, StringComparison.OrdinalIgnoreCase));
+        var targetCharacter = m_swapManager.Characters.Find(c => c.CharacterID.Equals(targetId, StringComparison.OrdinalIgnoreCase));
 
         if (targetCharacter == null)
         {
@@ -158,7 +266,6 @@ public class UIManager : MonoBehaviour
             m_isProcessingUpgrade = false;
             return;
         }
-
 
         switch (index)
         {
@@ -176,7 +283,7 @@ public class UIManager : MonoBehaviour
         if (m_upgradePanel != null)
         {
             m_upgradePanel.SetActive(false);
-            Time.timeScale = 1f;
+            Time.timeScale = m_savedTimeScale;
         }
     }
 
@@ -185,15 +292,14 @@ public class UIManager : MonoBehaviour
         if (m_startPanel != null)
         {
             m_startPanel.SetActive(false);
-            Time.timeScale = 1f;
+            Time.timeScale = m_currentSpeed;
         }
     }
 
     public void OnRetryButtonClicked()
     {
         Time.timeScale = 1f;
-        UnityEngine.SceneManagement.SceneManager.LoadScene(
-            UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
     }
 
     public void SetProgressRatio(float ratio)
@@ -204,9 +310,6 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// [설명]: 모선 HP 슬라이더의 값을 설정합니다 (0.0 ~ 1.0).
-    /// </summary>
     public void UpdateHpBar(float ratio)
     {
         if (m_hpSlider != null)
@@ -215,9 +318,15 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// [설명]: 보스 HP 슬라이더의 값을 설정하고 가시성을 제어합니다 (0.0 ~ 1.0).
-    /// </summary>
+    public void UpdateBarrierBar(float ratio)
+    {
+        if (m_barrierSlider != null)
+        {
+            m_barrierSlider.gameObject.SetActive(true);
+            m_barrierSlider.value = ratio;
+        }
+    }
+
     public void UpdateBossHpBar(float ratio)
     {
         if (m_bossHpSlider != null)
@@ -227,15 +336,46 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// [설명]: 게임 오버 패널을 표시하고 게임을 일시정지합니다.
-    /// </summary>
     public void ShowGameOver()
     {
         if (m_gameOverPanel != null)
         {
             m_gameOverPanel.SetActive(true);
             Time.timeScale = 0f;
+        }
+    }
+
+    public void ToggleBattleSpeed()
+    {
+        if (m_currentSpeed >= 2.5f)
+        {
+            m_currentSpeed = 1f;
+        }
+        else
+        {
+            m_currentSpeed += 0.5f;
+        }
+
+        if (Time.timeScale > 0)
+        {
+            Time.timeScale = m_currentSpeed;
+        }
+        else
+        {
+            m_savedTimeScale = m_currentSpeed;
+        }
+
+        if (m_speedText != null)
+        {
+            m_speedText.text = $"x{m_currentSpeed:F1}";
+        }
+    }
+
+    public void UseGuidedMissileSkill()
+    {
+        if (m_masterShip != null)
+        {
+            m_masterShip.ExecuteGuidedMissile();
         }
     }
 }

@@ -1,10 +1,9 @@
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 using DG.Tweening;
+using Cysharp.Threading.Tasks;
 
-/// <summary>
-/// [설명]: 모선의 현재 상태(체력, 생존 여부 등)를 담는 데이터 전송 객체입니다.
-/// </summary>
 [Serializable]
 public class MasterShipDTO
 {
@@ -13,9 +12,6 @@ public class MasterShipDTO
     public bool IsDestroyed = false;
 }
 
-/// <summary>
-/// [설명]: 모선의 핵심 비즈니스 로직(피격, 파괴 판정 등)을 처리하는 순수 C# 클래스입니다.
-/// </summary>
 public class MasterShipLogic
 {
     private MasterShipDTO m_data;
@@ -25,16 +21,17 @@ public class MasterShipLogic
         m_data = data;
     }
 
-    /// <summary>
-    /// [설명]: 외부로부터 데미지를 입었을 때 체력을 깎고 파괴 여부를 갱신합니다.
-    /// </summary>
-    /// <param name="damage">입힐 데미지 수치</param>
-    /// <returns>변경된 현재 체력 비율 (0.0 ~ 1.0)</returns>
     public float OnDamaged(int damage)
     {
-        if (m_data == null || m_data.IsDestroyed) return 0f;
+        if (m_data == null || m_data.IsDestroyed)
+        {
+            return 0f;
+        }
 
-        m_data.CurrentHp = Mathf.Max(0, m_data.CurrentHp - damage);
+        if (damage > 0)
+        {
+            m_data.CurrentHp = Mathf.Max(0, m_data.CurrentHp - damage);
+        }
 
         if (m_data.CurrentHp <= 0)
         {
@@ -47,38 +44,33 @@ public class MasterShipLogic
     public bool CheckIsDestroyed() => m_data != null && m_data.IsDestroyed;
 }
 
-/// <summary>
-/// [설명]: 게임 월드에서 보호 대상인 모선을 표현하고 이벤트를 수신하는 뷰 클래스입니다.
-/// </summary>
 public class MasterShip : MonoBehaviour
 {
     [Header("모선 설정")]
     [SerializeField] private MasterShipDTO m_shipData;
+    [SerializeField] private Barrier m_barrier;
 
     [Header("연출 설정")]
-    [Tooltip("피격 시 깜빡이는 효과를 줄 스프라이트 렌더러입니다.")]
     [SerializeField] private SpriteRenderer m_spriteRenderer;
+    
+    [Header("스킬(유도 미사일) 설정")]
+    [SerializeField] private int m_missileDamage = 50;
+    [SerializeField] private int m_missileCount = 12;
+    [SerializeField] private float m_missileFireInterval = 0.1f;
+    [SerializeField] private GameObject m_missilePrefab;
 
     private MasterShipLogic m_logic;
+    private ObjectPoolManager m_poolManager;
 
-    /// <summary>
-    /// [설명]: 모선이 파괴되었을 때 발생하는 이벤트입니다. (예: 게임 오버 처리용)
-    /// </summary>
     public event Action OnMasterShipDestroyed;
-
-    /// <summary>
-    /// [설명]: 모선의 체력이 변경되었을 때 발생하는 이벤트입니다. (0.0 ~ 1.0 비율 전달)
-    /// </summary>
     public event Action<float> OnHpChanged;
 
     private void Awake()
     {
         Initialize();
+        m_poolManager = FindAnyObjectByType<ObjectPoolManager>();
     }
 
-    /// <summary>
-    /// [설명]: 데이터와 로직을 연결하고 초기 상태를 설정합니다.
-    /// </summary>
     private void Initialize()
     {
         if (m_shipData == null)
@@ -89,24 +81,28 @@ public class MasterShip : MonoBehaviour
         m_logic = new MasterShipLogic(m_shipData);
     }
 
-    /// <summary>
-    /// [설명]: 적의 총알이나 충돌 등으로 인해 데미지를 입을 때 호출되는 메서드입니다.
-    /// </summary>
-    /// <param name="damageAmount">데미지 수치</param>
     public void TakeDamage(int damageAmount)
     {
-        if (m_logic == null || m_logic.CheckIsDestroyed()) return;
+        if (m_logic == null || m_logic.CheckIsDestroyed())
+        {
+            return;
+        }
 
-        // 1. 로직 처리 (체력 감소 및 파괴 판정)
+        if (m_barrier != null)
+        {
+            damageAmount = m_barrier.ResolveDamage(damageAmount);
+        }
+
+        if (damageAmount <= 0)
+        {
+            return;
+        }
+
         float hpRatio = m_logic.OnDamaged(damageAmount);
 
-        // 2. 이벤트 발생 (UI 갱신용)
         OnHpChanged?.Invoke(hpRatio);
-
-        // 3. 피격 연출
         PlayDamageEffect();
 
-        // 4. 파괴 시 처리
         if (m_logic.CheckIsDestroyed())
         {
             HandleDestruction();
@@ -117,23 +113,75 @@ public class MasterShip : MonoBehaviour
     {
         if (m_spriteRenderer != null)
         {
-            // DOTween을 사용한 붉은색 점멸 효과 (0.1초 동안 빨간색으로 변했다가 복구)
-            m_spriteRenderer.DOKill(); // 기존 트윈 중단
-            m_spriteRenderer.color = Color.white; // 초기화
+            m_spriteRenderer.DOKill();
+            m_spriteRenderer.color = Color.white;
             m_spriteRenderer.DOColor(Color.red, 0.05f).SetLoops(2, LoopType.Yoyo);
         }
-        
-#if UNITY_EDITOR
-        Debug.Log($"[MasterShip] 피격됨! 현재 체력: {m_shipData.CurrentHp}");
-#endif
     }
 
     private void HandleDestruction()
     {
-        Debug.LogError("[MasterShip] 모선이 파괴되었습니다! 게임 오버!");
         OnMasterShipDestroyed?.Invoke();
-        
-        // 파괴 연출 후 비활성화 등
         gameObject.SetActive(false);
+    }
+
+    public async void ExecuteGuidedMissile()
+    {
+        if (m_missilePrefab == null)
+        {
+            return;
+        }
+
+        var potentialTargets = new List<IAttackTarget>();
+        potentialTargets.AddRange(FindObjectsByType<EnemyController>(FindObjectsSortMode.None));
+        potentialTargets.AddRange(FindObjectsByType<BossController>(FindObjectsSortMode.None));
+
+        List<IAttackTarget> activeTargets = new List<IAttackTarget>();
+        for (int i = 0; i < potentialTargets.Count; i++)
+        {
+            if (potentialTargets[i] != null && potentialTargets[i].IsActiveTarget)
+            {
+                activeTargets.Add(potentialTargets[i]);
+            }
+        }
+
+        for (int i = 0; i < m_missileCount; i++)
+        {
+            GameObject missileObj = null;
+            if (m_poolManager != null)
+            {
+                missileObj = m_poolManager.GetFromPool(m_missilePrefab, transform.position, Quaternion.identity);
+            }
+            else
+            {
+                missileObj = Instantiate(m_missilePrefab, transform.position, Quaternion.identity);
+            }
+
+            if (missileObj != null)
+            {
+                HomingMissile missile = missileObj.GetComponent<HomingMissile>();
+                if (missile != null)
+                {
+                    missile.InitializeMissile(new MissileParams { Target = GetTarget(activeTargets, i), Damage = m_missileDamage });
+                }
+            }
+
+            await UniTask.Delay(TimeSpan.FromSeconds(m_missileFireInterval), cancellationToken: this.GetCancellationTokenOnDestroy());
+        }
+    }
+
+    private IAttackTarget GetTarget(List<IAttackTarget> targets, int index)
+    {
+        if (targets == null || targets.Count == 0)
+        {
+            return null;
+        }
+        return targets[index % targets.Count];
+    }
+
+    public class MissileParams
+    {
+        public IAttackTarget Target;
+        public int Damage;
     }
 }
