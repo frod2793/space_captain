@@ -17,6 +17,7 @@ public class GameProgressController : MonoBehaviour
 
     private void Awake()
     {
+        Application.targetFrameRate = 120;
         m_backgroundScroll = FindFirstObjectByType<TopScrollContrl>();
         
         // 데이터 초기화

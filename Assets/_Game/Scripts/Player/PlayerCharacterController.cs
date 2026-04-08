@@ -11,6 +11,7 @@ public class PlayerCharacterController : MonoBehaviour
     private PlayerStatsDTO m_stats;
     private Barrier m_barrier;
     private float m_targetX;
+    [SerializeField] private ActiveSkill m_activeSkill;
 
     public event Action<PlayerCharacterController> OnSelected;
     public event Action<float> OnHpChanged;
@@ -21,10 +22,15 @@ public class PlayerCharacterController : MonoBehaviour
     public PlayerStatsDTO Stats => m_stats;
     public Collider2D Collider => m_collider;
     public string CharacterID => m_characterID;
+    public ActiveSkill Skill => m_activeSkill;
 
     private void Awake()
     {
-        if (m_collider == null) m_collider = GetComponent<Collider2D>();
+        m_collider = GetComponent<Collider2D>();
+        if (m_activeSkill == null)
+        {
+            m_activeSkill = GetComponent<ActiveSkill>();
+        }
     }
 
     private void Update()
@@ -36,6 +42,11 @@ public class PlayerCharacterController : MonoBehaviour
     {
         m_stats = stats;
         m_targetX = transform.position.x;
+        
+        if (m_activeSkill != null)
+        {
+            m_activeSkill.Initialize(this);
+        }
     }
 
     public void SetBarrier(Barrier barrier)
@@ -45,13 +56,19 @@ public class PlayerCharacterController : MonoBehaviour
 
     public void SetActive(bool isActive)
     {
-        if (m_stats == null) return;
+        if (m_stats == null)
+        {
+            return;
+        }
         m_stats.IsActive = isActive;
     }
 
     private void HandleMovementUpdate()
     {
-        if (m_stats == null || !m_stats.IsActive) return;
+        if (m_stats == null || !m_stats.IsActive)
+        {
+            return;
+        }
 
         Vector3 pos = transform.position;
         if (Mathf.Abs(pos.x - m_targetX) > 0.001f)
@@ -64,7 +81,10 @@ public class PlayerCharacterController : MonoBehaviour
 
     public void MoveToX(float x, bool immediate = false)
     {
-        if (m_stats == null || !m_stats.IsActive) return;
+        if (m_stats == null || !m_stats.IsActive)
+        {
+            return;
+        }
         m_targetX = x;
         
         if (immediate)
@@ -93,22 +113,19 @@ public class PlayerCharacterController : MonoBehaviour
             return;
         }
 
-        if (m_spriteRenderer != null)
-        {
-            m_spriteRenderer.DOKill();
-            m_spriteRenderer.DOColor(Color.red, 0.1f).SetLoops(2, LoopType.Yoyo).OnComplete(() => {
-                if (m_spriteRenderer != null)
-                {
-                    m_spriteRenderer.color = Color.white;
-                }
-            });
-        }
+        m_spriteRenderer.DOKill();
+        m_spriteRenderer.DOColor(Color.red, 0.1f).SetLoops(2, LoopType.Yoyo).OnComplete(() => {
+            m_spriteRenderer.color = Color.white;
+        });
 
         m_stats.CurrentHp = Mathf.Max(0, m_stats.CurrentHp - damage);
         float ratio = (float)m_stats.CurrentHp / m_stats.MaxHp;
         OnHpChanged?.Invoke(ratio);
 
-        if (m_stats.CurrentHp <= 0) ExecuteDeath();
+        if (m_stats.CurrentHp <= 0)
+        {
+            ExecuteDeath();
+        }
     }
 
     private void ExecuteDeath()
@@ -116,18 +133,15 @@ public class PlayerCharacterController : MonoBehaviour
         m_stats.IsActive = false;
         OnDead?.Invoke(this);
         
-        if (m_spriteRenderer != null) m_spriteRenderer.enabled = false;
-        if (m_collider != null) m_collider.enabled = false;
+        m_spriteRenderer.enabled = false;
+        m_collider.enabled = false;
     }
 
     public void PlayLevelUpEffect()
     {
-        if (m_spriteRenderer != null)
-        {
-            m_spriteRenderer.DOKill();
-            m_spriteRenderer.DOColor(Color.yellow, 0.1f).SetLoops(6, LoopType.Yoyo).OnComplete(() => {
-                if (m_spriteRenderer != null) m_spriteRenderer.color = Color.white;
-            });
-        }
+        m_spriteRenderer.DOKill();
+        m_spriteRenderer.DOColor(Color.yellow, 0.1f).SetLoops(6, LoopType.Yoyo).OnComplete(() => {
+            m_spriteRenderer.color = Color.white;
+        });
     }
 }

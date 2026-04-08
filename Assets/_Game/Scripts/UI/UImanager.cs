@@ -24,6 +24,8 @@ public class UIManager : MonoBehaviour
     [SerializeField] private TMP_Text m_levelText;
     [SerializeField] private TMP_Text m_playTimeText;
     [SerializeField] private TMP_Text m_barrierText;
+    [SerializeField] private SkillSlotUI[] m_skillSlots;
+    [SerializeField] private SkillCutInUI m_skillCutInUI;
 
     private MasterShip m_masterShip;
     private Barrier m_barrierSystem;
@@ -61,12 +63,10 @@ public class UIManager : MonoBehaviour
         UpdateExpUI(true);
         UpdatePlayTimeUI();
 
-
         m_speedText.text = $"x{m_currentSpeed:F1}";
         m_waveText.text = "WAVE 1";
         m_barrierText.text = "100 / 100";
         m_barrierText.gameObject.SetActive(true);
-
 
         if (m_barrierSlider != null)
         {
@@ -109,6 +109,18 @@ public class UIManager : MonoBehaviour
                 if (m_upgradeButtons[i] != null)
                 {
                     m_upgradeButtons[i].Initialize(OnUpgradeSelected);
+                }
+            }
+        }
+
+        if (m_swapManager != null)
+        {
+            var characters = m_swapManager.Characters;
+            for (int i = 0; i < m_skillSlots.Length; i++)
+            {
+                if (i < characters.Count)
+                {
+                    m_skillSlots[i].Bind(characters[i].Skill);
                 }
             }
         }
