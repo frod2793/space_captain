@@ -291,7 +291,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAttackComponent
   m_owner: {fileID: 9191243}
-  m_attackType: 2
+  m_attackType: 0
   m_bulletPrefab: {fileID: 942881188349769917, guid: c3ad2d485a16b4eb7a09ef676a37d054, type: 3}
   m_firePoints:
   - {fileID: 739744821}
@@ -703,6 +703,42 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1132365519}
     m_Modifications:
+    - target: {fileID: 1905541837941318046, guid: e4e90cf56a00a4f16b895a406546d51c, type: 3}
+      propertyPath: renderStyle
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1905541837941318046, guid: e4e90cf56a00a4f16b895a406546d51c, type: 3}
+      propertyPath: outlineLayer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1905541837941318046, guid: e4e90cf56a00a4f16b895a406546d51c, type: 3}
+      propertyPath: outlineTargets.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1905541837941318046, guid: e4e90cf56a00a4f16b895a406546d51c, type: 3}
+      propertyPath: outlineTargets.Array.data[0].renderer
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 1905541837941318046, guid: e4e90cf56a00a4f16b895a406546d51c, type: 3}
+      propertyPath: outlineTargets.Array.data[0].CutoutMask
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1905541837941318046, guid: e4e90cf56a00a4f16b895a406546d51c, type: 3}
+      propertyPath: outlineTargets.Array.data[0].CutoutThreshold
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1905541837941318046, guid: e4e90cf56a00a4f16b895a406546d51c, type: 3}
+      propertyPath: outlineTargets.Array.data[0].Bounds.m_Extent.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1905541837941318046, guid: e4e90cf56a00a4f16b895a406546d51c, type: 3}
+      propertyPath: outlineTargets.Array.data[0].Bounds.m_Extent.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1905541837941318046, guid: e4e90cf56a00a4f16b895a406546d51c, type: 3}
+      propertyPath: outlineTargets.Array.data[0].Bounds.m_Extent.z
+      value: 0.5
+      objectReference: {fileID: 0}
     - target: {fileID: 5360916851005528993, guid: e4e90cf56a00a4f16b895a406546d51c, type: 3}
       propertyPath: m_Name
       value: AcriveSkill_Button_2
@@ -790,14 +826,17 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5360916851005528993, guid: e4e90cf56a00a4f16b895a406546d51c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 120118637}
   m_SourcePrefab: {fileID: 100100000, guid: e4e90cf56a00a4f16b895a406546d51c, type: 3}
 --- !u!114 &120118634 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6126145218719802994, guid: e4e90cf56a00a4f16b895a406546d51c, type: 3}
   m_PrefabInstance: {fileID: 120118633}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 120118636}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9cb7b206ef0de49809a8fc97f94275fc, type: 3}
@@ -808,6 +847,23 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 8350090573325350609, guid: e4e90cf56a00a4f16b895a406546d51c, type: 3}
   m_PrefabInstance: {fileID: 120118633}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &120118636 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5360916851005528993, guid: e4e90cf56a00a4f16b895a406546d51c, type: 3}
+  m_PrefabInstance: {fileID: 120118633}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &120118637
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 120118636}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 034bc47afcbf5e141a58d5c20b7808e4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: EPO::EPOOutline.TargetStateListener
 --- !u!1 &161121372
 GameObject:
   m_ObjectHideFlags: 0
@@ -1572,6 +1628,7 @@ GameObject:
   - component: {fileID: 330585545}
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
+  - component: {fileID: 330585548}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -1634,7 +1691,7 @@ Camera:
   m_HDR: 1
   m_AllowMSAA: 1
   m_AllowDynamicResolution: 0
-  m_ForceIntoRT: 0
+  m_ForceIntoRT: 1
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
@@ -1697,6 +1754,18 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &330585548
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 330585543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bb42831ee5422f409e7f24f9e7488ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: EPO::EPOOutline.Outliner
 --- !u!1001 &338056070
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1869,7 +1938,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAttackComponent
   m_owner: {fileID: 338056073}
-  m_attackType: 2
+  m_attackType: 0
   m_bulletPrefab: {fileID: 942881188349769917, guid: c3ad2d485a16b4eb7a09ef676a37d054, type: 3}
   m_firePoints:
   - {fileID: 521697521}
@@ -2644,7 +2713,7 @@ Transform:
   m_GameObject: {fileID: 376038341}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.25, y: -2.6499999, z: 0}
+  m_LocalPosition: {x: 0, y: -4.68, z: 0}
   m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -4059,8 +4128,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1195165435}
-        m_TargetAssemblyTypeName: UIManager, Assembly-CSharp
-        m_MethodName: ToggleBattleSpeed
+        m_TargetAssemblyTypeName: BattleHUDView, Assembly-CSharp
+        m_MethodName: UI_ToggleBattleSpeed
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -4144,7 +4213,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 45, y: -736}
+  m_AnchoredPosition: {x: 0, y: -736}
   m_SizeDelta: {x: 309.3461, y: 83.6558}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &856492841
@@ -5899,7 +5968,7 @@ GameObject:
   - component: {fileID: 1195165436}
   - component: {fileID: 1195165435}
   m_Layer: 0
-  m_Name: UImanager
+  m_Name: BattleHUDView
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5929,6 +5998,7 @@ MonoBehaviour:
   - {fileID: 1081482251}
   - {fileID: 112983455}
   - {fileID: 662338455}
+  m_shipSkillButton: {fileID: 798437702}
   m_killCountText: {fileID: 1056148289}
   m_speedText: {fileID: 274287388}
   m_waveText: {fileID: 161121374}
@@ -5941,6 +6011,13 @@ MonoBehaviour:
   - {fileID: 120118634}
   - {fileID: 1199066256}
   - {fileID: 527040505}
+  m_fieldSlotPositions:
+  - {x: 80, y: -80}
+  - {x: 80, y: -240}
+  - {x: 80, y: -400}
+  m_reserveSlotPositions:
+  - {x: 80, y: -560}
+  - {x: 80, y: -720}
   m_skillCutInUI: {fileID: 1605565296}
   m_swapCooldownFill: {fileID: 465321680}
 --- !u!4 &1195165436
@@ -7177,6 +7254,52 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 3968663484842372456, guid: 4eb6e2683eb0646b38b24335c4f701f2, type: 3}
   m_PrefabInstance: {fileID: 8198981828042745467}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1534405340
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1534405341}
+  - component: {fileID: 1534405342}
+  m_Layer: 0
+  m_Name: BattleSceneInitializer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1534405341
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1534405340}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1634041485}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1534405342
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1534405340}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 308250b2346444b84b3970ee27ab7f08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BattleSceneInitializer
+  m_hudView: {fileID: 1195165435}
+  m_progressController: {fileID: 1779697493}
 --- !u!1 &1548163810
 GameObject:
   m_ObjectHideFlags: 0
@@ -7550,13 +7673,14 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 1534405341}
   - {fileID: 1195165436}
   - {fileID: 1127945287}
   - {fileID: 1816508018}
-  - {fileID: 183253630}
   - {fileID: 1042753736}
   - {fileID: 1779697494}
   - {fileID: 165172343}
+  - {fileID: 183253630}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1669120073 stripped
@@ -8382,7 +8506,7 @@ GameObject:
   - component: {fileID: 1779697494}
   - component: {fileID: 1779697493}
   m_Layer: 0
-  m_Name: GameManager
+  m_Name: GameProgressController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8400,7 +8524,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0b381b38f77e4522b1062a38b37473a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameProgressController
-  m_uiManager: {fileID: 1195165435}
   m_targetDistance: 3000
   m_scrollSpeedMultiplier: 5
 --- !u!4 &1779697494
@@ -8447,12 +8570,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f014a8d1d491448797ca5c23e27dec0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSwapManager
-  m_characters:
-  - {fileID: 1669120074}
-  - {fileID: 2506540453273269688}
-  - {fileID: 8198981828042745468}
-  - {fileID: 338056073}
-  - {fileID: 9191243}
   m_activePosition: {fileID: 574228451}
   m_standbyPositions:
   - {fileID: 1529155376}
@@ -8463,17 +8580,16 @@ MonoBehaviour:
   m_characterLayer:
     serializedVersion: 2
     m_Bits: 64
-  m_touchRadius: 1.5
   m_swapDuration: 0.3
   m_swapCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
-      tangentMode: 0
+      tangentMode: 34
       weightedMode: 0
       inWeight: 0
       outWeight: 0
@@ -8482,14 +8598,13 @@ MonoBehaviour:
       value: 1
       inSlope: 0
       outSlope: 0
-      tangentMode: 0
+      tangentMode: 34
       weightedMode: 0
       inWeight: 0
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  m_playerHUD: {fileID: 1705496458}
   m_swapCooldownDuration: 2
   m_reserveSwapCooldownDuration: 60
 --- !u!4 &1816508018
@@ -9883,6 +9998,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 1006107323}
     m_Modifications:
     - target: {fileID: 201584861908156850, guid: 873a4de72efca487e8d5ad9f09d20091, type: 3}
+      propertyPath: m_swapState
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 201584861908156850, guid: 873a4de72efca487e8d5ad9f09d20091, type: 3}
       propertyPath: m_activeSkill
       value: 
       objectReference: {fileID: 1669120082}
@@ -10088,6 +10207,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7002374812378733989, guid: 151111b57a3d64d06b13a1ba99f00ef9, type: 3}
+      propertyPath: m_swapState
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7002374812378733989, guid: 151111b57a3d64d06b13a1ba99f00ef9, type: 3}
       propertyPath: m_activeSkill
       value: 
       objectReference: {fileID: 2506540453273269695}
@@ -10244,7 +10367,7 @@ MonoBehaviour:
   m_cooldownTime: 10
   m_performanceDuration: 1.5
   m_performanceType: 0
-  m_skillEffectPrefab: {fileID: 7454064173378217344, guid: d8b3d01e131e54ddcb31b19d9bc74a2e, type: 3}
+  m_skillEffectPrefab: {fileID: 0}
 --- !u!1001 &3435829204867570912
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10598,6 +10721,10 @@ PrefabInstance:
     - target: {fileID: 3968663484842372456, guid: 4eb6e2683eb0646b38b24335c4f701f2, type: 3}
       propertyPath: m_TagString
       value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 6254238286547050432, guid: 4eb6e2683eb0646b38b24335c4f701f2, type: 3}
+      propertyPath: m_swapState
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6254238286547050432, guid: 4eb6e2683eb0646b38b24335c4f701f2, type: 3}
       propertyPath: m_activeSkill

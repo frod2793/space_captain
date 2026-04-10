@@ -97,8 +97,8 @@ public class BossController : MonoBehaviour, IAttackTarget
     private BossLogic m_logic;
     private Transform m_currentTarget;
     private MasterShip m_masterShip;
-    private List<PlayerCharacterController> m_players = new List<PlayerCharacterController>();
-    private UIManager m_uiManager;
+    private PlayerSwapManager m_swapManager;
+    private BattleHUDView m_hudView;
     private float m_fireTimer;
 
     private void Awake()
@@ -140,8 +140,8 @@ public class BossController : MonoBehaviour, IAttackTarget
 
         if (m_spriteRenderer == null) m_spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         m_masterShip = UnityEngine.Object.FindAnyObjectByType<MasterShip>();
-        m_players.AddRange(UnityEngine.Object.FindObjectsByType<PlayerCharacterController>(FindObjectsSortMode.None));
-        m_uiManager = UnityEngine.Object.FindAnyObjectByType<UIManager>();
+        m_swapManager = UnityEngine.Object.FindAnyObjectByType<PlayerSwapManager>();
+        m_hudView = UnityEngine.Object.FindAnyObjectByType<BattleHUDView>();
 
         if (m_bossHUD == null)
         {
@@ -160,9 +160,9 @@ public class BossController : MonoBehaviour, IAttackTarget
             m_bossHUD.UpdateHP(1.0f);
         }
 
-        if (m_uiManager != null)
+        if (m_hudView != null)
         {
-            m_uiManager.UpdateBossHpBar(1.0f);
+            m_hudView.UpdateBossHpBar(1.0f);
         }
     }
 
@@ -171,11 +171,9 @@ public class BossController : MonoBehaviour, IAttackTarget
     /// </summary>
     private void UpdateTargeting()
     {
-        PlayerCharacterController activePlayer = m_players.Find(p => p != null && p.IsActive);
-
-        if (activePlayer != null)
+        if (m_swapManager != null && m_swapManager.ActiveCharacter != null && m_swapManager.ActiveCharacter.IsActive)
         {
-            m_currentTarget = activePlayer.transform;
+            m_currentTarget = m_swapManager.ActiveCharacter.transform;
         }
         else
         {
@@ -272,7 +270,7 @@ public class BossController : MonoBehaviour, IAttackTarget
             Instantiate(m_explosionPrefab, transform.position, Quaternion.identity);
         }
 
-        if (m_uiManager != null) m_uiManager.UpdateBossHpBar(0f);
+        if (m_hudView != null) m_hudView.UpdateBossHpBar(0f);
         
         OnDefeated?.Invoke();
         Destroy(gameObject);
@@ -298,7 +296,7 @@ public class BossController : MonoBehaviour, IAttackTarget
         float hpRatio = m_logic.OnDamaged(amount);
 
         if (m_bossHUD != null) m_bossHUD.UpdateHP(hpRatio);
-        if (m_uiManager != null) m_uiManager.UpdateBossHpBar(hpRatio);
+        if (m_hudView != null) m_hudView.UpdateBossHpBar(hpRatio);
 
         if (m_bossData.IsDead)
         {

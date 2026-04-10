@@ -1,127 +1,117 @@
-using UnityEngine;
-using UnityEngine.InputSystem;
-using System.Collections.Generic;
-using System.Collections;
 using System;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using SpaceCaptain.Player;
+using SpaceCaptain.Player.Swap;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
-/// <summary>
-/// [설명]: 활성 캐릭터의 드래그 조작 및 캐릭터 간 스왑을 관리하는 매니저 클래스입니다.
-/// 화면 터치 시 정면 사격(Straight Fire), 정지 시 자동 타겟팅(Auto Targeting) 로직을 연계하여 처리합니다.
-/// </summary>
+
 public class PlayerSwapManager : MonoBehaviour
-{
-    [Header("캐릭터 리스트")]
-    [Tooltip("게임에 참여하는 플레이어 캐릭터 슬롯입니다.")]
-    [SerializeField] private List<PlayerCharacterController> m_characters;
+{ 
+    private List<PlayerCharacterController> m_characters = new List<PlayerCharacterController>();
 
     [Header("위치 설정")]
-    [Tooltip("활성 캐릭터가 위치할 기준 지점(중앙)입니다.")]
     [SerializeField] private Transform m_activePosition;
-    [Tooltip("대기 캐릭터들이 대기할 지점 리스트입니다.")]
     [SerializeField] private Transform[] m_standbyPositions;
-    [Tooltip("예비 인원 대기 지점")]
     [SerializeField] private Transform[] m_reservePositions;
 
     [Header("판정 설정")]
-    [Tooltip("캐릭터 터치 인식을 위한 레이어 마스크입니다.")]
     [SerializeField] private LayerMask m_characterLayer;
-    [Tooltip("캐릭터 터치 인식을 위한 유효 반경입니다.")]
-    [SerializeField] private float m_touchRadius = 1.5f;
 
     [Header("애니메이션")]
-    [Tooltip("스왑 시 이동 속도에 영향을 주는 소요 시간입니다.")]
     [SerializeField] private float m_swapDuration = 0.3f;
-    [Tooltip("이동 보간에 사용될 애니메이션 곡선입니다.")]
     [SerializeField] private AnimationCurve m_swapCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
-    [Header("UI 연동")]
-    [Tooltip("플레이어를 따라다니는 체력바 UI입니다.")]
-    [SerializeField] private PlayerHpBar m_playerHUD;
-
     [Header("쿨다운 설정")]
-    [Tooltip("스왑 재사용 대기 시간 (전역)")]
     [SerializeField] private float m_swapCooldownDuration = 2.0f;
-    [Tooltip("예비요원 전환 시 부여되는 개별 대기 시간")]
     [SerializeField] private float m_reserveSwapCooldownDuration = 10.0f;
-
-    private float m_currentSwapCooldown;
-
-    public event Action OnAllPlayersDead;
-    public event Action<PlayerCharacterController, PlayerCharacterController, bool> OnCharactersSwapped;
-    public List<PlayerCharacterController> Characters => m_characters;
-    public float CooldownRatio => m_swapCooldownDuration > 0 ? Mathf.Clamp01(m_currentSwapCooldown / m_swapCooldownDuration) : 0f;
-    public float CurrentSwapCooldown => m_currentSwapCooldown;
-    public PlayerCharacterController ActiveCharacter => m_activeCharacter;
 
     private PlayerCharacterController m_activeCharacter;
     private Camera m_mainCamera;
-
+    private bool m_isInputLocked;
     private bool m_isDraggingActive;
     private bool m_isAnimating;
     private Vector2 m_lastScreenPos;
 
+    private Dictionary<PlayerCharacterController, PlayerAttackComponent> m_attackComponentCache = new Dictionary<PlayerCharacterController, PlayerAttackComponent>();
+    private Dictionary<PlayerCharacterController, float> m_individualCooldownEnds = new Dictionary<PlayerCharacterController, float>();
+    private float m_swapCooldownEndTime;
+    private int m_aliveCount;
+
+    private readonly ISwapStrategy m_fieldSwap = new FieldSwapStrategy();
+    private readonly ISwapStrategy m_reserveSwap = new ReserveSwapStrategy();
+    private readonly ISwapStrategy m_deathSwap = new DeathSwapStrategy();
+
+    private float m_regenTimer;
+    private const float REGEN_INTERVAL = 10f;
+    private const float REGEN_PERCENT = 0.05f;
+
+    public event Action OnAllPlayersDead;
+    public event Action OnCharactersInitialized;
+    public event Action<PlayerCharacterController, PlayerCharacterController> OnSwapStarted;
+    public event Action<PlayerCharacterController> OnSwapCompleted;
+    public event Action<PlayerCharacterController, PlayerCharacterController> OnCharacterReplaced;
+
+    public List<PlayerCharacterController> Characters => m_characters;
+    public float CooldownRatio => m_swapCooldownDuration > 0 ? Mathf.Clamp01((m_swapCooldownEndTime - Time.time) / m_swapCooldownDuration) : 0f;
+    public float CurrentSwapCooldown => Mathf.Max(0, m_swapCooldownEndTime - Time.time);
+    public PlayerCharacterController ActiveCharacter => m_activeCharacter;
+    public bool IsAnimating => m_isAnimating;
+
+    public Barrier Barrier { get; set; }
+    public PlayerHpBar PlayerHUD { get; set; }
+
     private void Awake()
     {
         m_mainCamera = Camera.main;
-        InitializeCharacters();
     }
 
     private void Start()
     {
+        InitializeCharacters();
         AlignCharactersToPositions();
-        m_currentSwapCooldown = m_swapCooldownDuration;
+        m_swapCooldownEndTime = Time.time + m_swapCooldownDuration;
     }
 
     private void Update()
     {
-        if (m_currentSwapCooldown > 0)
-        {
-            m_currentSwapCooldown -= Time.deltaTime;
-        }
+        HandleRegenTick();
 
-        for (int i = 0; i < m_characters.Count; i++)
-        {
-            if (m_characters[i] != null)
-            {
-                m_characters[i].SetSwapCooldown(Mathf.Max(0, m_characters[i].RemainingSwapCooldown - Time.deltaTime));
-            }
-        }
-
-        if (m_isAnimating)
+        if (m_isInputLocked)
         {
             return;
         }
 
         HandleInput();
-
-#if UNITY_EDITOR
-        if (Keyboard.current != null && Keyboard.current.tKey.wasPressedThisFrame)
-        {
-            if (m_activeCharacter != null)
-            {
-                m_activeCharacter.TakeDamage(10);
-            }
-        }
-#endif
     }
 
-    /// <summary>
-    /// [설명]: 등록된 모든 캐릭터(최대 5명)를 초기화하고 초기 배치를 수행합니다.
-    /// </summary>
     private void InitializeCharacters()
     {
-        if (m_characters == null || m_characters.Count == 0)
+        m_characters.Clear();
+        var foundCharacters = FindObjectsByType<PlayerCharacterController>(FindObjectsSortMode.None);
+        
+        for (int i = 0; i < foundCharacters.Length; i++)
+        {
+            if (foundCharacters[i] != null)
+            {
+                m_characters.Add(foundCharacters[i]);
+            }
+        }
+
+        if (m_characters.Count == 0)
         {
             return;
         }
 
-        Barrier barrier = FindAnyObjectByType<Barrier>();
+        m_characters.Sort((a, b) => a.SwapState.CompareTo(b.SwapState));
 
+        m_aliveCount = 0;
         for (int i = 0; i < m_characters.Count; i++)
         {
-            if (m_characters[i] == null) continue;
+            var character = m_characters[i];
+            m_aliveCount++;
 
             bool isActiveZero = (i == 0);
             var stats = new PlayerStatsDTO
@@ -129,37 +119,51 @@ public class PlayerSwapManager : MonoBehaviour
                 ID = $"Player_{i}",
                 IsActive = isActiveZero,
                 MoveSpeed = 20f,
-                CurrentX = m_characters[i].transform.position.x
+                CurrentX = character.transform.position.x
             };
 
-            m_characters[i].Initialize(stats);
-            m_characters[i].SetBarrier(barrier);
-            m_characters[i].OnDead += HandlePlayerDead;
+            character.Initialize(stats);
+
+            if (Barrier != null)
+            {
+                character.SetBarrier(Barrier);
+            }
+
+            if (character.TryGetComponent<PlayerAttackComponent>(out var attack))
+            {
+                m_attackComponentCache[character] = attack;
+            }
+
+            character.OnDead += HandlePlayerDead;
 
             if (isActiveZero)
             {
-                m_activeCharacter = m_characters[i];
-                if (m_playerHUD != null)
+                m_activeCharacter = character;
+                if (PlayerHUD != null)
                 {
-                    m_playerHUD.SetTarget(m_activeCharacter.transform);
-                    m_activeCharacter.OnHpChanged += m_playerHUD.UpdateHP;
+                    PlayerHUD.SetTarget(m_activeCharacter.transform);
+                    m_activeCharacter.OnHpChanged += PlayerHUD.UpdateHP;
                 }
             }
         }
+
+        OnCharactersInitialized?.Invoke();
     }
 
-    /// <summary>
-    /// [설명]: 현재 활성 상태와 인덱스에 따라 캐릭터들을 지정된 앵커 위치로 즉시 이동시킵니다.
-    /// </summary>
     private void AlignCharactersToPositions()
     {
         for (int i = 0; i < m_characters.Count; i++)
         {
             var character = m_characters[i];
-            if (character == null || character.Stats.CurrentHp <= 0) continue;
+            if (character.Stats.CurrentHp <= 0)
+            {
+                character.SwapState = CharacterSwapState.Dead;
+                continue;
+            }
 
             if (character == m_activeCharacter)
             {
+                character.SwapState = CharacterSwapState.Active;
                 if (m_activePosition != null)
                 {
                     character.transform.position = m_activePosition.position;
@@ -169,19 +173,15 @@ public class PlayerSwapManager : MonoBehaviour
                 continue;
             }
 
-
-            int standbyIdx = -1;
-            if (i == 1 || i == 2) standbyIdx = i - 1;
-            else if (m_characters.IndexOf(m_activeCharacter) > 2 && (i == 1 || i == 2)) standbyIdx = i - 1; // 특수 케이스 대응
-
-
             if (i >= 1 && i <= 2 && m_standbyPositions != null && (i - 1) < m_standbyPositions.Length)
             {
+                character.SwapState = CharacterSwapState.Standby;
                 character.transform.position = m_standbyPositions[i - 1].position;
                 character.SetActive(false);
             }
             else if (i >= 3 && m_reservePositions != null && (i - 3) < m_reservePositions.Length)
             {
+                character.SwapState = CharacterSwapState.Reserve;
                 character.transform.position = m_reservePositions[i - 3].position;
                 character.SetActive(false);
                 character.gameObject.SetActive(false);
@@ -192,31 +192,41 @@ public class PlayerSwapManager : MonoBehaviour
     private void HandleInput()
     {
         var pointer = Pointer.current;
-        if (pointer == null) return;
+        if (pointer == null)
+        {
+            return;
+        }
 
-        bool isPressed = pointer.press.isPressed;
-        bool wasPressed = pointer.press.wasPressedThisFrame;
-        bool wasReleased = pointer.press.wasReleasedThisFrame;
         Vector2 screenPos = pointer.position.ReadValue();
 
-        if (wasPressed)
+        if (pointer.press.wasPressedThisFrame)
         {
+            if (m_isAnimating)
+            {
+                return;
+            }
+
             m_lastScreenPos = screenPos;
             bool swapTriggered = TrySwapCharacter(screenPos);
             m_isDraggingActive = !swapTriggered;
-
-            if (m_activeCharacter != null)
-            {
-                m_activeCharacter.IsDragging = m_isDraggingActive;
-            }
+        }
+        else if (pointer.press.isPressed && !m_isDraggingActive)
+        {
+            m_isDraggingActive = true;
+            m_lastScreenPos = screenPos;
         }
 
-        if (isPressed && m_isDraggingActive)
+        if (m_activeCharacter != null)
+        {
+            m_activeCharacter.IsDragging = m_isDraggingActive;
+        }
+
+        if (m_isDraggingActive && pointer.press.isPressed)
         {
             MoveActiveCharacter(screenPos);
         }
 
-        if (wasReleased)
+        if (pointer.press.wasReleasedThisFrame)
         {
             m_isDraggingActive = false;
             if (m_activeCharacter != null)
@@ -230,29 +240,42 @@ public class PlayerSwapManager : MonoBehaviour
 
     private bool TrySwapCharacter(Vector2 screenPos)
     {
-        if (m_mainCamera == null) return false;
+        if (m_mainCamera == null)
+        {
+            return false;
+        }
 
         float dist = Mathf.Abs(m_mainCamera.transform.position.z);
         Vector3 worldPos3D = m_mainCamera.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, dist));
         Vector2 worldPos = new Vector2(worldPos3D.x, worldPos3D.y);
 
-        foreach (var character in m_characters)
+        float currentCooldown = CurrentSwapCooldown;
+        const float touchRadius = 0.5f;
+
+        for (int i = 0; i < m_characters.Count; i++)
         {
-            if (character == m_activeCharacter || !character.gameObject.activeSelf)
+            var character = m_characters[i];
+            if (character == null || character == m_activeCharacter || !character.gameObject.activeSelf)
             {
                 continue;
             }
 
-            if (character.Collider != null && character.Collider.OverlapPoint(worldPos))
+            if (character.Collider != null)
             {
-                if (m_currentSwapCooldown > 0 || character.RemainingSwapCooldown > 0)
+                Vector2 closestPoint = character.Collider.ClosestPoint(worldPos);
+                float sqrDist = (closestPoint - worldPos).sqrMagnitude;
+
+                if (sqrDist <= touchRadius * touchRadius)
                 {
-                    character.PlayCooldownFeedback();
+                    if (currentCooldown > 0 || character.RemainingSwapCooldown > 0)
+                    {
+                        character.PlayCooldownFeedback();
+                        return true;
+                    }
+
+                    SwitchToCharacter(character).Forget();
                     return true;
                 }
-
-                SwitchToCharacter(character);
-                return true;
             }
         }
 
@@ -261,23 +284,26 @@ public class PlayerSwapManager : MonoBehaviour
 
     private void MoveActiveCharacter(Vector2 screenPos)
     {
-        if (m_activeCharacter == null || m_mainCamera == null) return;
+        if (m_activeCharacter == null || m_mainCamera == null)
+        {
+            return;
+        }
 
         Vector3 lastPoint = m_mainCamera.ScreenToWorldPoint(new Vector3(m_lastScreenPos.x, m_lastScreenPos.y, Mathf.Abs(m_mainCamera.transform.position.z)));
         Vector3 currPoint = m_mainCamera.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, Mathf.Abs(m_mainCamera.transform.position.z)));
         float deltaX = currPoint.x - lastPoint.x;
 
-        float dist = Mathf.Abs(m_mainCamera.transform.position.z);
+        float camDist = Mathf.Abs(m_mainCamera.transform.position.z);
         float camX = m_mainCamera.transform.position.x;
         float camHalfWidth = m_mainCamera.orthographic
             ? m_mainCamera.orthographicSize * m_mainCamera.aspect
-            : dist * Mathf.Tan(m_mainCamera.fieldOfView * 0.5f * Mathf.Deg2Rad) * m_mainCamera.aspect;
+            : camDist * Mathf.Tan(m_mainCamera.fieldOfView * 0.5f * Mathf.Deg2Rad) * m_mainCamera.aspect;
 
         const float margin = 0.5f;
         float targetX = Mathf.Clamp(m_activeCharacter.transform.position.x + deltaX, camX - camHalfWidth + margin, camX + camHalfWidth - margin);
         m_activeCharacter.MoveToX(targetX, true);
     }
-
+    
     public async UniTask SwitchToCharacter(PlayerCharacterController targetCharacter)
     {
         if (targetCharacter == null || targetCharacter == m_activeCharacter || m_isAnimating)
@@ -285,25 +311,28 @@ public class PlayerSwapManager : MonoBehaviour
             return;
         }
 
-        bool isReserve = !targetCharacter.gameObject.activeSelf;
-        if (isReserve)
+        if (CurrentSwapCooldown > 0 || targetCharacter.RemainingSwapCooldown > 0)
         {
-            targetCharacter.gameObject.SetActive(true);
+            targetCharacter.PlayCooldownFeedback();
+            return;
         }
 
-        await SwapAnimationAsync(targetCharacter, isReserve);
-    }
+        bool isReserve = !targetCharacter.gameObject.activeSelf;
+        ISwapStrategy strategy = isReserve ? m_reserveSwap : m_fieldSwap;
 
+        await ExecuteSwapAsync(strategy, targetCharacter, m_activeCharacter);
+    }
+    
     public async UniTask ExecuteCharacterActionAsync(PlayerCharacterController target)
     {
-        if (target == null)
+        if (target == null || m_isAnimating)
         {
             return;
         }
 
         bool isAlreadyActive = (target == m_activeCharacter);
         bool isSkillReady = target.Skill != null && target.Skill.IsReady;
-        bool isSwapCooldown = m_currentSwapCooldown > 0;
+        bool isSwapCooldown = CurrentSwapCooldown > 0;
 
         if (!isAlreadyActive && isSwapCooldown && !isSkillReady)
         {
@@ -322,145 +351,164 @@ public class PlayerSwapManager : MonoBehaviour
             await SwitchToCharacter(target);
         }
 
-        // 2. 스킬 실행 (규칙 1: 아웃라인 이펙트(준비 완료) 시 발동)
         if (isSkillReady && target == m_activeCharacter)
         {
-            await target.Skill.ExecuteAsync();
+            try
+            {
+                m_isInputLocked = true;
+                m_isDraggingActive = false;
+                m_activeCharacter.IsDragging = false;
+
+                await target.Skill.ExecuteAsync();
+            }
+            finally
+            {
+                m_isInputLocked = false;
+            }
         }
-        // 규칙 2: 스킬 쿨타임인 경우 여기서 스킬 실행 없이 종료 (스왑만 완료된 상태)
     }
 
-    private async UniTask SwapAnimationAsync(PlayerCharacterController targetCharacter, bool isReserveSwap)
+    private async UniTask ExecuteSwapAsync(ISwapStrategy strategy, PlayerCharacterController entering, PlayerCharacterController leaving, bool isDeathSwap = false)
     {
+        m_isAnimating = true;
+
         try
         {
-            m_isAnimating = true;
-            m_isDraggingActive = false;
-
-            PlayerCharacterController oldActive = m_activeCharacter;
-
-            if (oldActive != null)
+            var context = new SwapContextDTO
             {
-                var oldAttack = oldActive.GetComponent<PlayerAttackComponent>();
-                var newAttack = targetCharacter.GetComponent<PlayerAttackComponent>();
-                if (oldAttack != null && newAttack != null)
+                EnteringCharacter = entering,
+                LeavingCharacter = leaving,
+                ActivePosition = m_activePosition,
+                SwapDuration = m_swapDuration,
+                MainCamera = m_mainCamera,
+                IsDraggingActive = leaving != null && leaving.IsDragging,
+                CancellationToken = this.GetCancellationTokenOnDestroy()
+            };
+
+            if (leaving != null)
+            {
+                OnSwapStarted?.Invoke(entering, leaving);
+                TransferTarget(leaving, entering);
+
+                if (PlayerHUD != null)
                 {
-                    newAttack.CurrentTarget = oldAttack.CurrentTarget;
+                    leaving.OnHpChanged -= PlayerHUD.UpdateHP;
                 }
-                oldActive.IsDragging = false;
-                if (m_playerHUD != null) oldActive.OnHpChanged -= m_playerHUD.UpdateHP;
+            }
 
-                if (isReserveSwap)
+            await strategy.PrepareAsync(context);
+            await strategy.AnimateAsync(context);
+            await strategy.FinalizeAsync(context);
+
+            m_activeCharacter = entering;
+            if (PlayerHUD != null)
+            {
+                PlayerHUD.SetTarget(m_activeCharacter.transform);
+                m_activeCharacter.OnHpChanged += PlayerHUD.UpdateHP;
+                PlayerHUD.UpdateHP((float)m_activeCharacter.Stats.CurrentHp / m_activeCharacter.Stats.MaxHp);
+            }
+
+            if (isDeathSwap)
+            {
+                m_swapCooldownEndTime = 0f;
+            }
+            else
+            {
+                m_swapCooldownEndTime = Time.time + m_swapCooldownDuration;
+                if (strategy == m_reserveSwap && leaving != null)
                 {
-                    oldActive.SetSwapCooldown(m_reserveSwapCooldownDuration);
+                    leaving.SetSwapCooldown(m_reserveSwapCooldownDuration);
                 }
             }
 
-            m_activeCharacter = targetCharacter;
-            m_activeCharacter.SetActive(true);
+            OnSwapCompleted?.Invoke(m_activeCharacter);
 
-            if (m_playerHUD != null)
+            if (isDeathSwap)
             {
-                m_playerHUD.SetTarget(m_activeCharacter.transform);
-                m_activeCharacter.OnHpChanged += m_playerHUD.UpdateHP;
-                m_playerHUD.UpdateHP((float)m_activeCharacter.Stats.CurrentHp / m_activeCharacter.Stats.MaxHp);
+                OnCharacterReplaced?.Invoke(entering, leaving);
             }
-
-            OnCharactersSwapped?.Invoke(oldActive, targetCharacter, isReserveSwap);
-
-            Vector3 targetEnd = m_activePosition != null ? m_activePosition.position : targetCharacter.transform.position;
-            Vector3 oldEnd = targetCharacter.transform.position;
-
-            var cts = this.GetCancellationTokenOnDestroy();
-            Sequence swapSequence = DOTween.Sequence();
-
-            if (oldActive != null)
-            {
-                swapSequence.Join(oldActive.transform.DOMove(oldEnd, m_swapDuration).SetEase(m_swapCurve));
-            }
-            swapSequence.Join(targetCharacter.transform.DOMove(targetEnd, m_swapDuration).SetEase(m_swapCurve));
-
-            await swapSequence.Play().ToUniTask(cancellationToken: cts);
-
-            if (oldActive != null)
-            {
-                oldActive.SetActive(false);
-                bool isReservePos = false;
-                if (m_reservePositions != null)
-                {
-                    foreach (var p in m_reservePositions)
-                    {
-                        if (Vector3.Distance(oldActive.transform.position, p.position) < 0.1f)
-                        {
-                            isReservePos = true;
-                            break;
-                        }
-                    }
-                }
-                if (isReservePos) oldActive.gameObject.SetActive(false);
-            }
-
-            targetCharacter.MoveToX(targetEnd.x, true);
-            m_isAnimating = false;
-            m_currentSwapCooldown = m_swapCooldownDuration;
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) { }
+        finally
         {
             m_isAnimating = false;
         }
     }
 
-    /// <summary>
-    /// [설명]: 캐릭터 사망 시 호출됩니다. 필드 요원 사망 시 예비 인원을 즉시 충원합니다.
-    /// </summary>
+    private void TransferTarget(PlayerCharacterController from, PlayerCharacterController to)
+    {
+        if (from == null || to == null) return;
+        if (m_attackComponentCache.TryGetValue(from, out var fromAttack) && 
+            m_attackComponentCache.TryGetValue(to, out var toAttack))
+        {
+            toAttack.CurrentTarget = fromAttack.CurrentTarget;
+        }
+    }
+
     private void HandlePlayerDead(PlayerCharacterController deadPlayer)
     {
-        Debug.LogWarning($"[PLAYER DEAD]: {deadPlayer.Stats.ID}");
+        m_aliveCount--;
+        
+        if (deadPlayer == m_activeCharacter)
+        {
+        }
 
-        PlayerCharacterController reserveCandidate = m_characters.Find(c =>
-            c != null &&
-            c.Stats.CurrentHp > 0 &&
-            !c.gameObject.activeSelf);
+        PlayerCharacterController reserveCandidate = null;
+        for (int i = 0; i < m_characters.Count; i++)
+        {
+            var character = m_characters[i];
+            if (character != null && character.Stats.CurrentHp > 0 && !character.gameObject.activeSelf)
+            {
+                reserveCandidate = character;
+                break;
+            }
+        }
 
         if (reserveCandidate != null)
         {
-            Vector3 spawnPos = deadPlayer.transform.position;
-            reserveCandidate.gameObject.SetActive(true);
-            reserveCandidate.transform.position = spawnPos;
-
-            Debug.LogWarning($"[RESERVE DEPLOYED]: {reserveCandidate.Stats.ID}가 {deadPlayer.Stats.ID}의 자리를 대체합니다.");
-
-            if (deadPlayer == m_activeCharacter)
+            ExecuteSwapAsync(m_reserveSwap, reserveCandidate, deadPlayer, true).Forget();
+        }
+        else if (deadPlayer == m_activeCharacter)
+        {
+            PlayerCharacterController nextField = null;
+            for (int i = 0; i < m_characters.Count; i++)
             {
-                m_activeCharacter = reserveCandidate;
-                if (m_playerHUD != null)
+                var character = m_characters[i];
+                if (character != deadPlayer && character != null && character.Stats.CurrentHp > 0 && character.gameObject.activeSelf)
                 {
-                    m_playerHUD.SetTarget(m_activeCharacter.transform);
-                    m_activeCharacter.OnHpChanged += m_playerHUD.UpdateHP;
-                    m_playerHUD.UpdateHP(1f);
+                    nextField = character;
+                    break;
                 }
             }
 
-            m_currentSwapCooldown = 0f;
-        }
-        else
-        {
-            if (deadPlayer == m_activeCharacter)
+            if (nextField != null)
             {
-                PlayerCharacterController nextField = m_characters.Find(c => c != deadPlayer && c.Stats.CurrentHp > 0 && c.gameObject.activeSelf);
-                if (nextField != null)
-                {
-                    SwitchToCharacter(nextField);
-                    return;
-                }
+                ExecuteSwapAsync(m_deathSwap, nextField, deadPlayer, true).Forget();
             }
         }
 
-        // 모든 캐릭터 사망 체크
-        if (!m_characters.Exists(c => c.Stats.CurrentHp > 0))
+        if (m_aliveCount <= 0)
         {
-            Debug.LogError("[Game Over]: ALL PLAYERS DEAD");
             OnAllPlayersDead?.Invoke();
+        }
+    }
+    private void HandleRegenTick()
+    {
+        m_regenTimer += Time.deltaTime;
+        if (m_regenTimer >= REGEN_INTERVAL)
+        {
+            m_regenTimer = 0f;
+            RegenInactiveCharacters();
+        }
+    }
+
+    private void RegenInactiveCharacters()
+    {
+        for (int i = 3; i < m_characters.Count; i++)
+        {
+            var character = m_characters[i];
+            int regenAmount = Mathf.CeilToInt(character.Stats.MaxHp * REGEN_PERCENT);
+            character.Heal(regenAmount);
         }
     }
 }

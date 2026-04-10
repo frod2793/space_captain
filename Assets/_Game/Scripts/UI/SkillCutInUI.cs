@@ -110,10 +110,13 @@ public class SkillCutInUI : MonoBehaviour
 
             DOVirtual.DelayedCall(1.2f, () =>
             {
-                m_canvasGroup.DOFade(0f, 0.3f).SetUpdate(true).OnComplete(() =>
+                if (m_canvasGroup != null)
                 {
-                    m_canvasGroup.gameObject.SetActive(false);
-                });
+                    m_canvasGroup.DOFade(0f, 0.3f).SetUpdate(true).OnComplete(() =>
+                    {
+                        if (m_canvasGroup != null) m_canvasGroup.gameObject.SetActive(false);
+                    });
+                }
             }).SetUpdate(true);
         }
     }

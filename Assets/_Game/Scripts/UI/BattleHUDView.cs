@@ -1,0 +1,511 @@
+using UnityEngine;
+using UnityEngine.UI;
+using System.Collections.Generic;
+using System;
+using TMPro;
+using DG.Tweening;
+
+public class BattleHUDView : MonoBehaviour
+{
+    [Header("슬라이더")] [SerializeField] private Slider m_progressSlider;
+    [SerializeField] private Slider m_hpSlider;
+    [SerializeField] private Slider m_barrierSlider;
+    [SerializeField] private Slider m_bossHpSlider;
+    [SerializeField] private Slider m_expSlider;
+
+    [Header("패널")] [SerializeField] private GameObject m_startPanel;
+    [SerializeField] private GameObject m_gameOverPanel;
+    [SerializeField] private GameObject m_upgradePanel;
+    [SerializeField] private UpgradeButton[] m_upgradeButtons;
+    [SerializeField] private Button m_shipSkillButton;
+
+    [Header("텍스트")] [SerializeField] private TMP_Text m_killCountText;
+    [SerializeField] private TMP_Text m_speedText;
+    [SerializeField] private TMP_Text m_waveText;
+    [SerializeField] private TMP_Text m_levelText;
+    [SerializeField] private TMP_Text m_playTimeText;
+    [SerializeField] private TMP_Text m_barrierText;
+
+    [Header("스킬 슬롯")] [SerializeField] private List<SkillSlotView> m_skillSlots = new List<SkillSlotView>();
+    [SerializeField] private Vector2[] m_fieldSlotPositions = new Vector2[3];
+    [SerializeField] private Vector2[] m_reserveSlotPositions = new Vector2[2];
+
+    public IReadOnlyList<SkillSlotView> SkillSlots => m_skillSlots;
+
+    [Header("스왑 및 효과")] [SerializeField] private SkillCutInUI m_skillCutInUI;
+    [SerializeField] private Image m_swapCooldownFill;
+
+    public IBattleHUDViewModel ViewModel { get; set; }
+    public IGameProgressViewModel ProgressViewModel { get; set; }
+    private float m_savedTimeScale = 1f;
+    private PlayerSwapManager m_cachedSwapManager;
+    private bool m_isSwapCooldownActive;
+    private Dictionary<SkillSlotView, int> m_slotToIndexMap = new Dictionary<SkillSlotView, int>();
+
+    private Dictionary<PlayerCharacterController, SkillSlotView> m_characterToSlotMap =
+        new Dictionary<PlayerCharacterController, SkillSlotView>();
+
+    private struct ViewState
+    {
+        public int KillCount;
+        public int Level;
+        public float ExpRatio;
+        public int Wave;
+        public int PlayTimeMinutes;
+        public int PlayTimeSeconds;
+        public float BattleSpeed;
+        public float HpRatio;
+        public float BarrierRatio;
+        public int BarrierCurrent;
+        public float ProgressRatio;
+        public float SwapRatio;
+    }
+
+    private ViewState m_lastState = new ViewState
+    {
+        KillCount = -1, Level = -1, ExpRatio = -1f, Wave = -1, PlayTimeMinutes = -1, PlayTimeSeconds = -1,
+        BattleSpeed = -1f, HpRatio = -1f, BarrierRatio = -1f, BarrierCurrent = -1, ProgressRatio = -1f, SwapRatio = -1f
+    };
+
+    public void Initialize()
+    {
+        if (ViewModel == null)
+        {
+            return;
+        }
+
+        if (m_startPanel != null)
+        {
+            m_startPanel.SetActive(true);
+            Time.timeScale = 0f;
+        }
+
+        if (m_gameOverPanel != null)
+        {
+            m_gameOverPanel.SetActive(false);
+        }
+
+        if (m_upgradePanel != null)
+        {
+            m_upgradePanel.SetActive(false);
+        }
+
+        UpdateKillCountUI(ViewModel.BattleData.TotalKillCount);
+        UpdateLevelUI(ViewModel.BattleData.CurrentLevel + 1);
+        UpdateExpUI(0f);
+        UpdateWaveText(ViewModel.BattleData.CurrentWave);
+        UpdatePlayTimeUI(ViewModel.BattleData.PlayTime);
+        UpdateBattleSpeedUI(ViewModel.BattleData.BattleSpeed);
+
+        if (ViewModel.SwapManager != null)
+        {
+            m_cachedSwapManager = ViewModel.SwapManager;
+        }
+
+        BindEvents();
+    }
+
+    private void BindEvents()
+    {
+        ViewModel.OnTotalKillCountChanged += UpdateKillCountUI;
+        ViewModel.OnLevelChanged += UpdateLevelUI;
+        ViewModel.OnExpRatioChanged += UpdateExpUI;
+        ViewModel.OnWaveChanged += UpdateWaveText;
+        ViewModel.OnPlayTimeChanged += UpdatePlayTimeUI;
+        ViewModel.OnBattleSpeedChanged += UpdateBattleSpeedUI;
+        ViewModel.OnShowUpgradePanel += ShowUpgradePanel;
+        ViewModel.OnHideUpgradePanel += HideUpgradePanel;
+        ViewModel.OnShowGameOver += ShowGameOver;
+        ViewModel.OnShipHpChanged += UpdateHpBar;
+        ViewModel.OnBarrierChanged += UpdateBarrierBar;
+        ViewModel.OnBarrierValueWeightChanged += UpdateBarrierText;
+
+        if (ProgressViewModel != null)
+        {
+            ProgressViewModel.OnProgressChanged += SetProgressRatio;
+            ProgressViewModel.OnGameCleared += ShowGameOver;
+        }
+
+        if (m_cachedSwapManager != null)
+        {
+            m_cachedSwapManager.OnCharactersInitialized += SyncAllSkillSlots;
+            m_cachedSwapManager.OnSwapStarted += HandleSwapStarted;
+            m_cachedSwapManager.OnSwapCompleted += HandleSwapCompleted;
+            m_cachedSwapManager.OnCharacterReplaced += HandleCharacterReplaced;
+        }
+
+        SyncAllSkillSlots();
+
+        if (m_upgradeButtons != null)
+        {
+            for (int i = 0; i < m_upgradeButtons.Length; i++)
+            {
+                if (m_upgradeButtons[i] != null)
+                {
+                    m_upgradeButtons[i].OnSelect = ViewModel.SelectUpgrade;
+                    m_upgradeButtons[i].Initialize();
+                }
+            }
+        }
+
+        if (m_shipSkillButton != null)
+        {
+            m_shipSkillButton.onClick.AddListener(ViewModel.ExecuteShipSkill);
+        }
+    }
+
+    private void UnbindEvents()
+    {
+        if (ViewModel != null)
+        {
+            ViewModel.OnTotalKillCountChanged -= UpdateKillCountUI;
+            ViewModel.OnLevelChanged -= UpdateLevelUI;
+            ViewModel.OnExpRatioChanged -= UpdateExpUI;
+            ViewModel.OnWaveChanged -= UpdateWaveText;
+            ViewModel.OnPlayTimeChanged -= UpdatePlayTimeUI;
+            ViewModel.OnBattleSpeedChanged -= UpdateBattleSpeedUI;
+            ViewModel.OnShowUpgradePanel -= ShowUpgradePanel;
+            ViewModel.OnHideUpgradePanel -= HideUpgradePanel;
+            ViewModel.OnShowGameOver -= ShowGameOver;
+            ViewModel.OnShipHpChanged -= UpdateHpBar;
+            ViewModel.OnBarrierChanged -= UpdateBarrierBar;
+            ViewModel.OnBarrierValueWeightChanged -= UpdateBarrierText;
+
+            if (ProgressViewModel != null)
+            {
+                ProgressViewModel.OnProgressChanged -= SetProgressRatio;
+                ProgressViewModel.OnGameCleared -= ShowGameOver;
+            }
+
+            if (m_cachedSwapManager != null)
+            {
+                m_cachedSwapManager.OnCharactersInitialized -= SyncAllSkillSlots;
+                m_cachedSwapManager.OnSwapStarted -= HandleSwapStarted;
+                m_cachedSwapManager.OnSwapCompleted -= HandleSwapCompleted;
+                m_cachedSwapManager.OnCharacterReplaced -= HandleCharacterReplaced;
+            }
+
+            if (m_shipSkillButton != null)
+            {
+                m_shipSkillButton.onClick.RemoveListener(ViewModel.ExecuteShipSkill);
+            }
+        }
+    }
+
+    private Vector2 GetPositionByIndex(int index)
+    {
+        if (index < m_fieldSlotPositions.Length)
+        {
+            return m_fieldSlotPositions[index];
+        }
+
+        int reserveIdx = index - m_fieldSlotPositions.Length;
+        if (reserveIdx >= 0 && reserveIdx < m_reserveSlotPositions.Length)
+        {
+            return m_reserveSlotPositions[reserveIdx];
+        }
+
+        return Vector2.zero;
+    }
+
+    private void OnDestroy()
+    {
+        UnbindEvents();
+    }
+
+    private void Update()
+    {
+        if (ViewModel != null && Time.timeScale > 0)
+        {
+            ViewModel.UpdatePlayTime(Time.unscaledDeltaTime);
+
+            if (m_cachedSwapManager != null)
+            {
+                UpdateSwapCooldownUI();
+            }
+        }
+    }
+
+    public void SetProgressRatio(float ratio)
+    {
+        if (m_lastState.ProgressRatio != ratio)
+        {
+            m_progressSlider.value = m_lastState.ProgressRatio = ratio;
+        }
+    }
+
+    public void UpdateHpBar(float ratio)
+    {
+        if (m_lastState.HpRatio != ratio)
+        {
+            m_hpSlider.value = m_lastState.HpRatio = ratio;
+        }
+    }
+
+    public void UpdateBarrierBar(float ratio)
+    {
+        if (m_lastState.BarrierRatio != ratio)
+        {
+            m_lastState.BarrierRatio = ratio;
+            m_barrierSlider.gameObject.SetActive(ratio > 0f);
+            m_barrierSlider.value = ratio;
+        }
+    }
+
+    public void UpdateBarrierText(int current, int max)
+    {
+        if (m_lastState.BarrierCurrent != current)
+        {
+            m_lastState.BarrierCurrent = current;
+            m_barrierText.gameObject.SetActive(current > 0);
+            m_barrierText.text = $"{current} / {max}";
+        }
+    }
+
+    public void UpdateBossHpBar(float ratio)
+    {
+        if (m_bossHpSlider != null)
+        {
+            m_bossHpSlider.gameObject.SetActive(ratio > 0);
+            m_bossHpSlider.value = ratio;
+        }
+    }
+
+    private void UpdateKillCountUI(int totalKills)
+    {
+        if (m_lastState.KillCount != totalKills)
+        {
+            m_lastState.KillCount = totalKills;
+            m_killCountText.text = $"잡은놈수: {totalKills}";
+        }
+    }
+
+    private void UpdateLevelUI(int level)
+    {
+        if (m_lastState.Level != level)
+        {
+            m_lastState.Level = level;
+            m_levelText.text = $"LV.{level}";
+        }
+    }
+
+    private void UpdateExpUI(float ratio)
+    {
+        if (m_lastState.ExpRatio != ratio)
+        {
+            m_lastState.ExpRatio = ratio;
+            m_expSlider.DOKill();
+            m_expSlider.DOValue(ratio, 0.3f).SetEase(Ease.OutQuad);
+        }
+    }
+
+    private void UpdateWaveText(int wave)
+    {
+        if (m_lastState.Wave != wave)
+        {
+            m_lastState.Wave = wave;
+            m_waveText.text = $"WAVE {wave}";
+        }
+    }
+
+    private void UpdatePlayTimeUI(float playTime)
+    {
+        int minutes = Mathf.FloorToInt(playTime / 60f);
+        int seconds = Mathf.FloorToInt(playTime % 60f);
+
+        if (m_lastState.PlayTimeMinutes != minutes || m_lastState.PlayTimeSeconds != seconds)
+        {
+            m_lastState.PlayTimeMinutes = minutes;
+            m_lastState.PlayTimeSeconds = seconds;
+            m_playTimeText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
+        }
+    }
+
+    private void UpdateBattleSpeedUI(float speed)
+    {
+        if (m_lastState.BattleSpeed != speed)
+        {
+            m_lastState.BattleSpeed = speed;
+            m_speedText.text = $"x{speed:F1}";
+
+            if (Time.timeScale > 0)
+            {
+                Time.timeScale = speed;
+            }
+            else
+            {
+                m_savedTimeScale = speed;
+            }
+        }
+    }
+
+    private void ShowUpgradePanel()
+    {
+        if (m_upgradePanel != null)
+        {
+            if (Time.timeScale > 0f)
+            {
+                m_savedTimeScale = Time.timeScale;
+            }
+            else
+            {
+                m_savedTimeScale = ViewModel?.Progress?.BattleSpeed ?? 1f;
+            }
+
+            m_upgradePanel.SetActive(true);
+            Time.timeScale = 0f;
+        }
+    }
+
+    private void HideUpgradePanel()
+    {
+        if (m_upgradePanel != null)
+        {
+            m_upgradePanel.SetActive(false);
+            Time.timeScale = m_savedTimeScale;
+        }
+    }
+
+    public void ShowGameOver()
+    {
+        if (m_gameOverPanel != null)
+        {
+            m_gameOverPanel.SetActive(true);
+            Time.timeScale = 0f;
+        }
+    }
+
+    private void UpdateSwapCooldownUI()
+    {
+        float ratio = m_cachedSwapManager.CooldownRatio;
+
+        if (m_lastState.SwapRatio != ratio)
+        {
+            m_lastState.SwapRatio = m_swapCooldownFill.fillAmount = ratio;
+
+            bool isActive = ratio > 0;
+            if (m_isSwapCooldownActive != isActive)
+            {
+                m_isSwapCooldownActive = isActive;
+                m_swapCooldownFill.gameObject.SetActive(isActive);
+            }
+        }
+    }
+
+    private void HandleSwapStarted(PlayerCharacterController entering, PlayerCharacterController leaving)
+    {
+        if (m_characterToSlotMap.TryGetValue(entering, out var enteringSlot) &&
+            m_characterToSlotMap.TryGetValue(leaving, out var leavingSlot))
+        {
+            int enteringIdx = m_slotToIndexMap[enteringSlot];
+            int leavingIdx = m_slotToIndexMap[leavingSlot];
+
+            m_slotToIndexMap[enteringSlot] = leavingIdx;
+            m_slotToIndexMap[leavingSlot] = enteringIdx;
+
+            enteringSlot.Rect.DOKill();
+            leavingSlot.Rect.DOKill();
+
+            enteringSlot.Rect.DOAnchorPos(GetPositionByIndex(leavingIdx), 0.4f).SetEase(Ease.InOutCubic);
+            leavingSlot.Rect.DOAnchorPos(GetPositionByIndex(enteringIdx), 0.4f).SetEase(Ease.InOutCubic);
+        }
+    }
+
+    private void HandleSwapCompleted(PlayerCharacterController activeCharacter)
+    {
+    }
+
+    private void HandleCharacterReplaced(PlayerCharacterController entering, PlayerCharacterController leaving)
+    {
+        if (m_characterToSlotMap.TryGetValue(leaving, out var leavingSlot))
+        {
+            if (m_characterToSlotMap.TryGetValue(entering, out var enteringSlot))
+            {
+                m_characterToSlotMap[entering] = leavingSlot;
+                m_characterToSlotMap[leaving] = enteringSlot;
+
+                if (enteringSlot != null)
+                {
+                    enteringSlot.UpdateCharacter(leaving);
+                }
+
+                if (leavingSlot != null)
+                {
+                    leavingSlot.UpdateCharacter(entering);
+                }
+            }
+            else
+            {
+                m_characterToSlotMap.Remove(leaving);
+                m_characterToSlotMap[entering] = leavingSlot;
+
+                if (leavingSlot != null)
+                {
+                    leavingSlot.UpdateCharacter(entering);
+                }
+            }
+        }
+    }
+
+    public void OnStartButtonClicked()
+    {
+        if (m_startPanel != null)
+        {
+            m_startPanel.SetActive(false);
+            Time.timeScale = ViewModel?.Progress.BattleSpeed ?? 1f;
+        }
+    }
+
+    public void OnRetryButtonClicked()
+    {
+        Time.timeScale = 1f;
+        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene()
+            .name);
+    }
+
+    public void UI_ToggleBattleSpeed()
+    {
+        ViewModel?.ToggleBattleSpeed();
+    }
+
+    private void SyncAllSkillSlots()
+    {
+        if (m_cachedSwapManager == null || m_cachedSwapManager.Characters == null)
+        {
+            return;
+        }
+
+        m_slotToIndexMap.Clear();
+        m_characterToSlotMap.Clear();
+
+        var characters = m_cachedSwapManager.Characters;
+        for (int i = 0; i < m_skillSlots.Count; i++)
+        {
+            var slot = m_skillSlots[i];
+            if (slot == null)
+            {
+                continue;
+            }
+
+            m_slotToIndexMap[slot] = i;
+
+            if (i < characters.Count)
+            {
+                var targetCharacter = characters[i];
+                if (targetCharacter != null)
+                {
+                    if (slot.ViewModel == null)
+                    {
+                        slot.ViewModel = new SkillSlotViewModel { SwapManager = m_cachedSwapManager };
+                        slot.Initialize();
+                    }
+
+                    slot.UpdateCharacter(targetCharacter);
+                    m_characterToSlotMap[targetCharacter] = slot;
+                }
+            }
+
+            slot.Rect.anchoredPosition = GetPositionByIndex(i);
+        }
+    }
+}

@@ -8,7 +8,6 @@ public enum SkillPerformanceType { Default, Laser }
 
 public class ActiveSkill : MonoBehaviour
 {
-    [FormerlySerializedAs("m_skillName")]
     [SerializeField] private string m_characterName;
     [SerializeField] private float m_cooldownTime = 10f;
     [SerializeField] private float m_performanceDuration = 2.4f;
@@ -44,33 +43,29 @@ public class ActiveSkill : MonoBehaviour
         }
         m_isExecuting = true;
 
-        float originalTimeScale = Time.timeScale;
-        Time.timeScale = 0.1f;
-
-        SkillCutInUI cutInUI = FindAnyObjectByType<SkillCutInUI>();
-        if (cutInUI != null)
-        {
-            cutInUI.Show(m_owner.CharacterID, m_owner.CharacterName, m_performanceType);
-        }
-
-        await UniTask.Delay(TimeSpan.FromSeconds(m_performanceDuration), ignoreTimeScale: true);
-
-        await UniTask.Delay(TimeSpan.FromSeconds(1f), ignoreTimeScale: true);
-
-        Time.timeScale = originalTimeScale;
-
         if (m_skillEffectPrefab != null)
         {
+            float originalTimeScale = Time.timeScale;
+            Time.timeScale = 0.1f;
+
+            SkillCutInUI cutInUI = FindAnyObjectByType<SkillCutInUI>();
+            if (cutInUI != null)
+            {
+                cutInUI.Show(m_owner.CharacterID, m_owner.CharacterName, m_performanceType);
+            }
+
+            await UniTask.Delay(TimeSpan.FromSeconds(m_performanceDuration), ignoreTimeScale: true);
+            await UniTask.Delay(TimeSpan.FromSeconds(1f), ignoreTimeScale: true);
+
+            Time.timeScale = originalTimeScale;
+
             var effect = Instantiate(m_skillEffectPrefab, m_owner.transform.position, m_owner.transform.rotation, m_owner.transform);
             effect.transform.localPosition = Vector3.zero;
             effect.Trigger(m_owner);
         }
-        else
-        {
-            Debug.Log($"[Skill] {m_characterName} 발동. 이펙트 없음.");
-        }
 
         m_currentCooldown = m_cooldownTime;
         m_isExecuting = false;
+
     }
 }

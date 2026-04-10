@@ -26,9 +26,9 @@ public class PlayerAttackComponent : MonoBehaviour
         m_fireTimer += Time.deltaTime;
 
         bool canFire = false;
-        if (m_owner.Stats != null && m_owner.Stats.CurrentHp > 0 && m_owner.IsActive)
+        if (m_owner.Stats != null && m_owner.Stats.CurrentHp > 0 && m_owner.IsOnField)
         {
-            if (CurrentTarget != null || m_owner.IsDragging)
+            if (CurrentTarget != null || (m_owner.IsActive && m_owner.IsDragging))
             {
                 canFire = true;
             }
@@ -49,7 +49,7 @@ public class PlayerAttackComponent : MonoBehaviour
         }
 
         float baseAngle = 0f;
-        if (!m_owner.IsDragging && CurrentTarget != null)
+        if ((!m_owner.IsActive || !m_owner.IsDragging) && CurrentTarget != null)
         {
             Vector3 direction = (CurrentTarget.TargetTransform.position - transform.position).normalized;
             baseAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
@@ -92,6 +92,8 @@ public class PlayerAttackComponent : MonoBehaviour
             return;
         }
 
+        float multiplier = m_owner.IsActive ? 1.0f : 0.5f;
+
         for (int i = 0; i < totalBulletCount; i++)
         {
             float angleOffset = totalBulletCount > 1 ? -spreadAngle / 2f + (spreadAngle / (totalBulletCount - 1)) * i : 0f;
@@ -115,20 +117,22 @@ public class PlayerAttackComponent : MonoBehaviour
             }
 
             float finalAngle = baseAngle + angleOffset;
-            CreateBullet(spawnPos, finalAngle);
+            CreateBullet(spawnPos, finalAngle, multiplier);
         }
     }
 
     private void UpdateTargeting()
     {
+        float currentTargetingRange = m_targetingRange * (m_owner.IsActive ? 1.0f : 0.5f);
+
         if (CurrentTarget == null || CurrentTarget.IsActiveTarget == false ||
-            Vector2.Distance(transform.position, CurrentTarget.TargetTransform.position) > m_targetingRange)
+            Vector2.Distance(transform.position, CurrentTarget.TargetTransform.position) > currentTargetingRange)
         {
-            CurrentTarget = FindNearestEnemy();
+            CurrentTarget = FindNearestEnemy(currentTargetingRange);
         }
     }
 
-    private IAttackTarget FindNearestEnemy()
+    private IAttackTarget FindNearestEnemy(float range)
     {
         var targets = new List<IAttackTarget>();
         targets.AddRange(FindObjectsByType<EnemyController>(FindObjectsSortMode.None));
@@ -145,7 +149,7 @@ public class PlayerAttackComponent : MonoBehaviour
             }
 
             float dist = Vector2.Distance(transform.position, targets[i].TargetTransform.position);
-            if (dist < minDistance && dist <= m_targetingRange)
+            if (dist < minDistance && dist <= range)
             {
                 minDistance = dist;
                 nearest = targets[i];
@@ -154,7 +158,7 @@ public class PlayerAttackComponent : MonoBehaviour
         return nearest;
     }
 
-    private void CreateBullet(Vector3 position, float angle)
+    private void CreateBullet(Vector3 position, float angle, float scaleMultiplier)
     {
         var pool = FindAnyObjectByType<ObjectPoolManager>();
         GameObject bulletObj;
@@ -168,12 +172,17 @@ public class PlayerAttackComponent : MonoBehaviour
             bulletObj = Instantiate(m_bulletPrefab, position, Quaternion.Euler(0, 0, angle));
         }
 
-        if (bulletObj.TryGetComponent<BulletProjectile>(out var projectile))
+        if (bulletObj != null)
         {
-            projectile.SetSpeed(m_bulletSpeed);
-            if (m_owner.Stats != null)
+            bulletObj.transform.localScale = Vector3.one * scaleMultiplier;
+
+            if (bulletObj.TryGetComponent<BulletProjectile>(out var projectile))
             {
-                projectile.Damage = m_owner.Stats.AttackDamage;
+                projectile.SetSpeed(m_bulletSpeed);
+                if (m_owner.Stats != null)
+                {
+                    projectile.Damage = m_owner.Stats.AttackDamage;
+                }
             }
         }
     }

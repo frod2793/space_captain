@@ -171,7 +171,7 @@ public class EnemyController : MonoBehaviour, IPoolable, IAttackTarget
         if (m_spriteRenderer != null)
         {
             m_spriteRenderer.DOKill();
-            m_spriteRenderer.DOColor(Color.red, 0.1f).SetLoops(2, LoopType.Yoyo).OnComplete(() => {
+            m_spriteRenderer.DOColor(Color.red, 0.05f).SetLoops(2, LoopType.Yoyo).OnComplete(() => {
                 if (m_spriteRenderer != null) m_spriteRenderer.color = Color.white;
             });
         }
@@ -218,7 +218,7 @@ public class EnemyController : MonoBehaviour, IPoolable, IAttackTarget
 
         m_onRelease?.Invoke(gameObject);
 
-        var pool = UnityEngine.Object.FindAnyObjectByType<ObjectPoolManager>();
+        var pool =FindAnyObjectByType<ObjectPoolManager>();
         if (pool != null) pool.ReturnToPool(gameObject);
         else Destroy(gameObject);
     }

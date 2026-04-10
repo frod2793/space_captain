@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using DG.Tweening;
+using SpaceCaptain.Player;
 
 public class PlayerCharacterController : MonoBehaviour
 {
@@ -13,9 +14,8 @@ public class PlayerCharacterController : MonoBehaviour
     private Barrier m_barrier;
     private float m_targetX;
     [SerializeField] private ActiveSkill m_activeSkill;
-    private float m_currentSwapCooldown = 0f;
+    private float m_swapCooldownEndTime = 0f;
 
-    public event Action<PlayerCharacterController> OnSelected;
     public event Action<float> OnHpChanged;
     public event Action<PlayerCharacterController> OnDead;
 
@@ -28,7 +28,15 @@ public class PlayerCharacterController : MonoBehaviour
     public string CharacterID => m_characterID;
     public string CharacterName => (m_activeSkill != null) ? m_activeSkill.CharacterName : m_characterID;
     public ActiveSkill Skill => m_activeSkill;
-    public float RemainingSwapCooldown => m_currentSwapCooldown;
+
+    [SerializeField] private CharacterSwapState m_swapState = CharacterSwapState.Reserve;
+    public CharacterSwapState SwapState
+    {
+        get { return m_swapState; }
+        set { m_swapState = value; }
+    }
+
+    public float RemainingSwapCooldown => Mathf.Max(0f, m_swapCooldownEndTime - Time.time);
 
     private void Awake()
     {
@@ -66,12 +74,13 @@ public class PlayerCharacterController : MonoBehaviour
         {
             return;
         }
+
         m_stats.IsActive = isActive;
     }
 
     private void HandleMovementUpdate()
     {
-        if (m_stats == null || !m_stats.IsActive)
+        if (!m_stats.IsActive)
         {
             return;
         }
@@ -87,10 +96,11 @@ public class PlayerCharacterController : MonoBehaviour
 
     public void MoveToX(float x, bool immediate = false)
     {
-        if (m_stats == null || !m_stats.IsActive)
+        if (!m_stats.IsActive)
         {
             return;
         }
+
         m_targetX = x;
 
         if (immediate)
@@ -135,13 +145,42 @@ public class PlayerCharacterController : MonoBehaviour
         }
     }
 
+
+    public void Heal(int amount)
+    {
+        if (m_stats == null || m_stats.CurrentHp <= 0)
+        {
+            return;
+        }
+
+        m_stats.CurrentHp = Mathf.Min(m_stats.MaxHp, m_stats.CurrentHp + amount);
+        float ratio = (float)m_stats.CurrentHp / m_stats.MaxHp;
+        OnHpChanged?.Invoke(ratio);
+    }
+
     private void ExecuteDeath()
     {
         m_stats.IsActive = false;
-        OnDead?.Invoke(this);
-
+        SwapState = CharacterSwapState.Dead;
         m_spriteRenderer.enabled = false;
         m_collider.enabled = false;
+
+        OnDead?.Invoke(this);
+    }
+
+    public void RestoreComponents()
+    {
+        if (m_spriteRenderer != null)
+        {
+            m_spriteRenderer.DOKill();
+            m_spriteRenderer.enabled = true;
+            m_spriteRenderer.color = Color.white;
+        }
+
+        if (m_collider != null)
+        {
+            m_collider.enabled = true;
+        }
     }
 
     public void PlayCooldownFeedback()
@@ -167,16 +206,8 @@ public class PlayerCharacterController : MonoBehaviour
         });
     }
 
-    private void UpdateSwapCooldown(float deltaTime)
-    {
-        if (m_currentSwapCooldown > 0f)
-        {
-            m_currentSwapCooldown -= deltaTime;
-        }
-    }
-
     public void SetSwapCooldown(float duration)
     {
-        m_currentSwapCooldown = duration;
+        m_swapCooldownEndTime = Time.time + duration;
     }
 }
