@@ -49,7 +49,7 @@ public class PlayerAttackComponent : MonoBehaviour
         }
 
         float baseAngle = 0f;
-        if (m_owner != null && !m_owner.IsDragging && CurrentTarget != null)
+        if (!m_owner.IsDragging && CurrentTarget != null)
         {
             Vector3 direction = (CurrentTarget.TargetTransform.position - transform.position).normalized;
             baseAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
@@ -80,7 +80,7 @@ public class PlayerAttackComponent : MonoBehaviour
 
         float baseSpread = spreadAngle; 
 
-        if (m_owner != null && m_owner.Stats != null)
+        if (m_owner.Stats != null)
         {
             totalBulletCount += m_owner.Stats.BulletCountBonus;
             spreadAngle = spreadAngle + m_owner.Stats.SpreadAngleBonus;
@@ -171,7 +171,7 @@ public class PlayerAttackComponent : MonoBehaviour
         if (bulletObj.TryGetComponent<BulletProjectile>(out var projectile))
         {
             projectile.SetSpeed(m_bulletSpeed);
-            if (m_owner != null && m_owner.Stats != null)
+            if (m_owner.Stats != null)
             {
                 projectile.Damage = m_owner.Stats.AttackDamage;
             }

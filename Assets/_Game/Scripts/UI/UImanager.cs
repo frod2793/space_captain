@@ -26,6 +26,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private TMP_Text m_barrierText;
     [SerializeField] private SkillSlotUI[] m_skillSlots;
     [SerializeField] private SkillCutInUI m_skillCutInUI;
+    [SerializeField] private Image m_swapCooldownFill;
 
     private MasterShip m_masterShip;
     private Barrier m_barrierSystem;
@@ -132,6 +133,7 @@ public class UIManager : MonoBehaviour
         {
             m_playTime += Time.unscaledDeltaTime;
             UpdatePlayTimeUI();
+            UpdateSwapCooldownUI();
         }
     }
 
@@ -417,5 +419,17 @@ public class UIManager : MonoBehaviour
         {
             m_masterShip.ExecuteGuidedMissile();
         }
+    }
+
+    private void UpdateSwapCooldownUI()
+    {
+        if (m_swapCooldownFill == null || m_swapManager == null)
+        {
+            return;
+        }
+
+        float ratio = m_swapManager.CooldownRatio;
+        m_swapCooldownFill.fillAmount = ratio;
+        m_swapCooldownFill.gameObject.SetActive(ratio > 0);
     }
 }

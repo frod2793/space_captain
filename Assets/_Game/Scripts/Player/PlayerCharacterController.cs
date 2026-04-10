@@ -16,8 +16,9 @@ public class PlayerCharacterController : MonoBehaviour
     public event Action<PlayerCharacterController> OnSelected;
     public event Action<float> OnHpChanged;
     public event Action<PlayerCharacterController> OnDead;
-    
+
     public bool IsActive => m_stats != null && m_stats.IsActive;
+    public bool IsOnField => gameObject.activeSelf;
     public bool IsDragging { get; set; }
     public PlayerStatsDTO Stats => m_stats;
     public Collider2D Collider => m_collider;
@@ -42,7 +43,7 @@ public class PlayerCharacterController : MonoBehaviour
     {
         m_stats = stats;
         m_targetX = transform.position.x;
-        
+
         if (m_activeSkill != null)
         {
             m_activeSkill.Initialize(this);
@@ -86,7 +87,7 @@ public class PlayerCharacterController : MonoBehaviour
             return;
         }
         m_targetX = x;
-        
+
         if (immediate)
         {
             Vector3 pos = transform.position;
@@ -98,7 +99,7 @@ public class PlayerCharacterController : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
-        if (m_stats == null || !m_stats.IsActive)
+        if (m_stats == null || !IsOnField)
         {
             return;
         }
@@ -114,7 +115,8 @@ public class PlayerCharacterController : MonoBehaviour
         }
 
         m_spriteRenderer.DOKill();
-        m_spriteRenderer.DOColor(Color.red, 0.1f).SetLoops(2, LoopType.Yoyo).OnComplete(() => {
+        m_spriteRenderer.DOColor(Color.red, 0.1f).SetLoops(2, LoopType.Yoyo).OnComplete(() =>
+        {
             m_spriteRenderer.color = Color.white;
         });
 
@@ -132,15 +134,30 @@ public class PlayerCharacterController : MonoBehaviour
     {
         m_stats.IsActive = false;
         OnDead?.Invoke(this);
-        
+
         m_spriteRenderer.enabled = false;
         m_collider.enabled = false;
+    }
+
+    public void PlayCooldownFeedback()
+    {
+        if (m_spriteRenderer == null)
+        {
+            return;
+        }
+
+        m_spriteRenderer.DOKill();
+        m_spriteRenderer.DOColor(Color.red, 0.05f).SetLoops(4, LoopType.Yoyo).OnComplete(() =>
+        {
+            m_spriteRenderer.color = Color.white;
+        });
     }
 
     public void PlayLevelUpEffect()
     {
         m_spriteRenderer.DOKill();
-        m_spriteRenderer.DOColor(Color.yellow, 0.1f).SetLoops(6, LoopType.Yoyo).OnComplete(() => {
+        m_spriteRenderer.DOColor(Color.yellow, 0.1f).SetLoops(6, LoopType.Yoyo).OnComplete(() =>
+        {
             m_spriteRenderer.color = Color.white;
         });
     }

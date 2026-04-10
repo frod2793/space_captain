@@ -15,10 +15,28 @@ public class SkillSlotUI : MonoBehaviour
     public void Bind(ActiveSkill skill)
     {
         m_boundSkill = skill;
-        m_skillNameText.text = skill.SkillName;
+        if (m_skillNameText != null) m_skillNameText.text = skill.SkillName;
 
         m_skillButton.onClick.RemoveAllListeners();
-        m_skillButton.onClick.AddListener(() => skill.ExecuteAsync().Forget());
+        m_skillButton.onClick.AddListener(() => OnSkillButtonClicked());
+    }
+
+    private void OnSkillButtonClicked()
+    {
+        if (m_boundSkill == null) return;
+
+        var character = m_boundSkill.GetComponent<PlayerCharacterController>();
+        var swapManager = FindAnyObjectByType<PlayerSwapManager>();
+
+        if (character != null && swapManager != null)
+        {
+            if (!character.gameObject.activeSelf)
+            {
+                swapManager.SwitchToCharacter(character);
+            }
+        }
+
+        m_boundSkill.ExecuteAsync().Forget();
     }
 
     private void Update()
