@@ -9,13 +9,22 @@ public class SkillSlotUI : MonoBehaviour
     [SerializeField] private Image m_cooldownImage;
     [SerializeField] private Button m_skillButton;
     [SerializeField] private TMP_Text m_skillNameText;
+    [SerializeField] private TMP_Text m_swapCooldownText;
+    [SerializeField] private Image m_outlineImage;
 
     private ActiveSkill m_boundSkill;
+    public PlayerCharacterController BoundCharacter => m_boundSkill != null ? m_boundSkill.GetComponent<PlayerCharacterController>() : null;
 
-    public void Bind(ActiveSkill skill)
+    public void Bind(PlayerCharacterController character)
     {
-        m_boundSkill = skill;
-        if (m_skillNameText != null) m_skillNameText.text = skill.SkillName;
+        if (character == null || character.Skill == null) return;
+
+        m_boundSkill = character.Skill;
+        if (m_skillNameText != null) m_skillNameText.text = character.CharacterName;
+        if (m_skillIcon != null && character.UI_Icon != null)
+        {
+            m_skillIcon.sprite = character.UI_Icon;
+        }
 
         m_skillButton.onClick.RemoveAllListeners();
         m_skillButton.onClick.AddListener(() => OnSkillButtonClicked());
@@ -30,13 +39,8 @@ public class SkillSlotUI : MonoBehaviour
 
         if (character != null && swapManager != null)
         {
-            if (!character.gameObject.activeSelf)
-            {
-                swapManager.SwitchToCharacter(character);
-            }
+            swapManager.ExecuteCharacterActionAsync(character).Forget();
         }
-
-        m_boundSkill.ExecuteAsync().Forget();
     }
 
     private void Update()
@@ -47,6 +51,22 @@ public class SkillSlotUI : MonoBehaviour
         }
 
         m_cooldownImage.fillAmount = m_boundSkill.CooldownRatio;
-        m_skillButton.interactable = m_boundSkill.IsReady;
+
+        var swapManager = FindAnyObjectByType<PlayerSwapManager>();
+        var character = m_boundSkill.GetComponent<PlayerCharacterController>();
+        if (swapManager != null && character != null && m_swapCooldownText != null)
+        {
+            bool isReserve = character != swapManager.ActiveCharacter;
+            float individualCD = character.RemainingSwapCooldown;
+            m_swapCooldownText.text = (isReserve && individualCD > 0.01f) ? $"{individualCD:F1}" : string.Empty;
+        }
+
+        if (m_outlineImage != null)
+        {
+            m_outlineImage.enabled = m_boundSkill.IsReady;
+        }
+
+        bool isDead = character != null && character.Stats != null && character.Stats.CurrentHp <= 0;
+        m_skillButton.interactable = !isDead;
     }
 }

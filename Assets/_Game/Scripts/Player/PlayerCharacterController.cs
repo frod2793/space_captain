@@ -6,12 +6,14 @@ public class PlayerCharacterController : MonoBehaviour
 {
     [SerializeField] private string m_characterID;
     [SerializeField] private SpriteRenderer m_spriteRenderer;
+    [SerializeField] private Sprite m_uiIcon;
     private Collider2D m_collider;
 
     private PlayerStatsDTO m_stats;
     private Barrier m_barrier;
     private float m_targetX;
     [SerializeField] private ActiveSkill m_activeSkill;
+    private float m_currentSwapCooldown = 0f;
 
     public event Action<PlayerCharacterController> OnSelected;
     public event Action<float> OnHpChanged;
@@ -22,8 +24,11 @@ public class PlayerCharacterController : MonoBehaviour
     public bool IsDragging { get; set; }
     public PlayerStatsDTO Stats => m_stats;
     public Collider2D Collider => m_collider;
+    public Sprite UI_Icon => m_uiIcon;
     public string CharacterID => m_characterID;
+    public string CharacterName => (m_activeSkill != null) ? m_activeSkill.CharacterName : m_characterID;
     public ActiveSkill Skill => m_activeSkill;
+    public float RemainingSwapCooldown => m_currentSwapCooldown;
 
     private void Awake()
     {
@@ -160,5 +165,18 @@ public class PlayerCharacterController : MonoBehaviour
         {
             m_spriteRenderer.color = Color.white;
         });
+    }
+
+    private void UpdateSwapCooldown(float deltaTime)
+    {
+        if (m_currentSwapCooldown > 0f)
+        {
+            m_currentSwapCooldown -= deltaTime;
+        }
+    }
+
+    public void SetSwapCooldown(float duration)
+    {
+        m_currentSwapCooldown = duration;
     }
 }

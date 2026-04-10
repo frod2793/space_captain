@@ -93,6 +93,7 @@ public class UIManager : MonoBehaviour
         if (m_swapManager != null)
         {
             m_swapManager.OnAllPlayersDead += ShowGameOver;
+            m_swapManager.OnCharactersSwapped += HandleCharactersSwapped;
         }
 
         m_enemySpawner = FindAnyObjectByType<EnemySpawner>();
@@ -121,7 +122,7 @@ public class UIManager : MonoBehaviour
             {
                 if (i < characters.Count)
                 {
-                    m_skillSlots[i].Bind(characters[i].Skill);
+                    m_skillSlots[i].Bind(characters[i]);
                 }
             }
         }
@@ -154,6 +155,7 @@ public class UIManager : MonoBehaviour
         if (m_swapManager != null)
         {
             m_swapManager.OnAllPlayersDead -= ShowGameOver;
+            m_swapManager.OnCharactersSwapped -= HandleCharactersSwapped;
         }
 
         if (m_enemySpawner != null)
@@ -431,5 +433,40 @@ public class UIManager : MonoBehaviour
         float ratio = m_swapManager.CooldownRatio;
         m_swapCooldownFill.fillAmount = ratio;
         m_swapCooldownFill.gameObject.SetActive(ratio > 0);
+    }
+
+    private void HandleCharactersSwapped(PlayerCharacterController oldActive, PlayerCharacterController newActive, bool isReserveSwap)
+    {
+        if (!isReserveSwap) return;
+        if (m_skillSlots == null || m_skillSlots.Length == 0) return;
+
+        SkillSlotUI oldSlot = null;
+        SkillSlotUI newSlot = null;
+
+        for (int i = 0; i < m_skillSlots.Length; i++)
+        {
+            if (m_skillSlots[i] == null) continue;
+
+            if (m_skillSlots[i].BoundCharacter == oldActive) oldSlot = m_skillSlots[i];
+            if (m_skillSlots[i].BoundCharacter == newActive) newSlot = m_skillSlots[i];
+        }
+
+        if (oldSlot != null && newSlot != null)
+        {
+            RectTransform oldRect = oldSlot.GetComponent<RectTransform>();
+            RectTransform newRect = newSlot.GetComponent<RectTransform>();
+
+            if (oldRect != null && newRect != null)
+            {
+                Vector2 oldPos = oldRect.anchoredPosition;
+                Vector2 newPos = newRect.anchoredPosition;
+
+                oldRect.DOKill();
+                newRect.DOKill();
+
+                oldRect.DOAnchorPos(newPos, 0.4f).SetEase(Ease.InOutCubic);
+                newRect.DOAnchorPos(oldPos, 0.4f).SetEase(Ease.InOutCubic);
+            }
+        }
     }
 }

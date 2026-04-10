@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 using System;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
@@ -7,7 +8,8 @@ public enum SkillPerformanceType { Default, Laser }
 
 public class ActiveSkill : MonoBehaviour
 {
-    [SerializeField] private string m_skillName;
+    [FormerlySerializedAs("m_skillName")]
+    [SerializeField] private string m_characterName;
     [SerializeField] private float m_cooldownTime = 10f;
     [SerializeField] private float m_performanceDuration = 2.4f;
     [SerializeField] private SkillPerformanceType m_performanceType = SkillPerformanceType.Default;
@@ -17,7 +19,7 @@ public class ActiveSkill : MonoBehaviour
     private bool m_isExecuting = false;
     private PlayerCharacterController m_owner;
 
-    public string SkillName => m_skillName;
+    public string CharacterName => m_characterName;
     public float CooldownRatio => Mathf.Clamp01(m_currentCooldown / m_cooldownTime);
     public bool IsReady => m_currentCooldown <= 0f && !m_isExecuting;
 
@@ -48,7 +50,7 @@ public class ActiveSkill : MonoBehaviour
         SkillCutInUI cutInUI = FindAnyObjectByType<SkillCutInUI>();
         if (cutInUI != null)
         {
-            cutInUI.Show(m_owner.CharacterID, m_skillName, m_performanceType);
+            cutInUI.Show(m_owner.CharacterID, m_owner.CharacterName, m_performanceType);
         }
 
         await UniTask.Delay(TimeSpan.FromSeconds(m_performanceDuration), ignoreTimeScale: true);
@@ -62,6 +64,10 @@ public class ActiveSkill : MonoBehaviour
             var effect = Instantiate(m_skillEffectPrefab, m_owner.transform.position, m_owner.transform.rotation, m_owner.transform);
             effect.transform.localPosition = Vector3.zero;
             effect.Trigger(m_owner);
+        }
+        else
+        {
+            Debug.Log($"[Skill] {m_characterName} 발동. 이펙트 없음.");
         }
 
         m_currentCooldown = m_cooldownTime;

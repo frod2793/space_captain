@@ -41,14 +41,19 @@ public class PlayerSwapManager : MonoBehaviour
     [SerializeField] private PlayerHpBar m_playerHUD;
 
     [Header("쿨다운 설정")]
-    [Tooltip("스왑 재사용 대기 시간")]
+    [Tooltip("스왑 재사용 대기 시간 (전역)")]
     [SerializeField] private float m_swapCooldownDuration = 2.0f;
+    [Tooltip("예비요원 전환 시 부여되는 개별 대기 시간")]
+    [SerializeField] private float m_reserveSwapCooldownDuration = 10.0f;
 
     private float m_currentSwapCooldown;
 
     public event Action OnAllPlayersDead;
+    public event Action<PlayerCharacterController, PlayerCharacterController, bool> OnCharactersSwapped;
     public List<PlayerCharacterController> Characters => m_characters;
     public float CooldownRatio => m_swapCooldownDuration > 0 ? Mathf.Clamp01(m_currentSwapCooldown / m_swapCooldownDuration) : 0f;
+    public float CurrentSwapCooldown => m_currentSwapCooldown;
+    public PlayerCharacterController ActiveCharacter => m_activeCharacter;
 
     private PlayerCharacterController m_activeCharacter;
     private Camera m_mainCamera;
@@ -74,6 +79,14 @@ public class PlayerSwapManager : MonoBehaviour
         if (m_currentSwapCooldown > 0)
         {
             m_currentSwapCooldown -= Time.deltaTime;
+        }
+
+        for (int i = 0; i < m_characters.Count; i++)
+        {
+            if (m_characters[i] != null)
+            {
+                m_characters[i].SetSwapCooldown(Mathf.Max(0, m_characters[i].RemainingSwapCooldown - Time.deltaTime));
+            }
         }
 
         if (m_isAnimating)
@@ -232,7 +245,7 @@ public class PlayerSwapManager : MonoBehaviour
 
             if (character.Collider != null && character.Collider.OverlapPoint(worldPos))
             {
-                if (m_currentSwapCooldown > 0)
+                if (m_currentSwapCooldown > 0 || character.RemainingSwapCooldown > 0)
                 {
                     character.PlayCooldownFeedback();
                     return true;
@@ -265,22 +278,59 @@ public class PlayerSwapManager : MonoBehaviour
         m_activeCharacter.MoveToX(targetX, true);
     }
 
-    public void SwitchToCharacter(PlayerCharacterController targetCharacter)
+    public async UniTask SwitchToCharacter(PlayerCharacterController targetCharacter)
     {
         if (targetCharacter == null || targetCharacter == m_activeCharacter || m_isAnimating)
         {
             return;
         }
 
-        if (!targetCharacter.gameObject.activeSelf)
+        bool isReserve = !targetCharacter.gameObject.activeSelf;
+        if (isReserve)
         {
             targetCharacter.gameObject.SetActive(true);
         }
 
-        SwapAnimationAsync(targetCharacter).Forget();
+        await SwapAnimationAsync(targetCharacter, isReserve);
     }
 
-    private async UniTaskVoid SwapAnimationAsync(PlayerCharacterController targetCharacter)
+    public async UniTask ExecuteCharacterActionAsync(PlayerCharacterController target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        bool isAlreadyActive = (target == m_activeCharacter);
+        bool isSkillReady = target.Skill != null && target.Skill.IsReady;
+        bool isSwapCooldown = m_currentSwapCooldown > 0;
+
+        if (!isAlreadyActive && isSwapCooldown && !isSkillReady)
+        {
+            target.PlayCooldownFeedback();
+            return;
+        }
+
+        if (!isAlreadyActive)
+        {
+            if (isSwapCooldown || target.RemainingSwapCooldown > 0)
+            {
+                target.PlayCooldownFeedback();
+                return;
+            }
+
+            await SwitchToCharacter(target);
+        }
+
+        // 2. 스킬 실행 (규칙 1: 아웃라인 이펙트(준비 완료) 시 발동)
+        if (isSkillReady && target == m_activeCharacter)
+        {
+            await target.Skill.ExecuteAsync();
+        }
+        // 규칙 2: 스킬 쿨타임인 경우 여기서 스킬 실행 없이 종료 (스왑만 완료된 상태)
+    }
+
+    private async UniTask SwapAnimationAsync(PlayerCharacterController targetCharacter, bool isReserveSwap)
     {
         try
         {
@@ -299,6 +349,11 @@ public class PlayerSwapManager : MonoBehaviour
                 }
                 oldActive.IsDragging = false;
                 if (m_playerHUD != null) oldActive.OnHpChanged -= m_playerHUD.UpdateHP;
+
+                if (isReserveSwap)
+                {
+                    oldActive.SetSwapCooldown(m_reserveSwapCooldownDuration);
+                }
             }
 
             m_activeCharacter = targetCharacter;
@@ -310,6 +365,8 @@ public class PlayerSwapManager : MonoBehaviour
                 m_activeCharacter.OnHpChanged += m_playerHUD.UpdateHP;
                 m_playerHUD.UpdateHP((float)m_activeCharacter.Stats.CurrentHp / m_activeCharacter.Stats.MaxHp);
             }
+
+            OnCharactersSwapped?.Invoke(oldActive, targetCharacter, isReserveSwap);
 
             Vector3 targetEnd = m_activePosition != null ? m_activePosition.position : targetCharacter.transform.position;
             Vector3 oldEnd = targetCharacter.transform.position;
@@ -328,7 +385,6 @@ public class PlayerSwapManager : MonoBehaviour
             if (oldActive != null)
             {
                 oldActive.SetActive(false);
-                // 만약 구 활성 캐릭터가 예비 위치로 갔다면 게임 오브젝트 끔
                 bool isReservePos = false;
                 if (m_reservePositions != null)
                 {
@@ -384,6 +440,8 @@ public class PlayerSwapManager : MonoBehaviour
                     m_playerHUD.UpdateHP(1f);
                 }
             }
+
+            m_currentSwapCooldown = 0f;
         }
         else
         {
