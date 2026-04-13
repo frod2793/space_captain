@@ -19,15 +19,17 @@ public class BattleSceneInitializer : MonoBehaviour
     {
         EnemyController.OnEnemyDead -= HandleEnemyKill;
         
-        if (m_enemySpawner != null && m_hudViewModel != null)
+        if (m_hudViewModel == null) return;
+
+        if (m_enemySpawner != null)
         {
             m_enemySpawner.OnWaveChanged -= m_hudViewModel.SetWave;
         }
 
         var masterShip = FindAnyObjectByType<MasterShip>();
-        if (masterShip != null && m_hudViewModel != null)
+        if (masterShip != null)
         {
-            m_hudViewModel.OnShipSkillExecuted -= masterShip.ExecuteGuidedMissile;
+            m_hudViewModel.OnShipSkillExecuted -= masterShip.ExecuteSkill;
         }
     }
 
@@ -55,7 +57,7 @@ public class BattleSceneInitializer : MonoBehaviour
         if (masterShip != null)
         {
             masterShip.OnHpChanged += m_hudViewModel.NotifyShipHpChanged;
-            m_hudViewModel.OnShipSkillExecuted += masterShip.ExecuteGuidedMissile;
+            m_hudViewModel.OnShipSkillExecuted += masterShip.ExecuteSkill;
             m_hudViewModel.NotifyShipHpChanged(1.0f); 
         }
 
@@ -93,6 +95,8 @@ public class BattleSceneInitializer : MonoBehaviour
                 {
                     for (int i = 0; i < slotViews.Count && i < characters.Count; i++)
                     {
+                        if (slotViews[i] == null) continue;
+
                         ISkillSlotViewModel slotVM = new SkillSlotViewModel();
                         slotVM.Character = characters[i];
                         slotVM.SwapManager = swapManager;

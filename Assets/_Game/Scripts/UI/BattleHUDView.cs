@@ -17,7 +17,7 @@ public class BattleHUDView : MonoBehaviour
     [SerializeField] private GameObject m_gameOverPanel;
     [SerializeField] private GameObject m_upgradePanel;
     [SerializeField] private UpgradeButton[] m_upgradeButtons;
-    [SerializeField] private Button m_shipSkillButton;
+    private List<ShipSkillButton> m_shipSkillButtons = new List<ShipSkillButton>();
 
     [Header("텍스트")] [SerializeField] private TMP_Text m_killCountText;
     [SerializeField] private TMP_Text m_speedText;
@@ -26,7 +26,8 @@ public class BattleHUDView : MonoBehaviour
     [SerializeField] private TMP_Text m_playTimeText;
     [SerializeField] private TMP_Text m_barrierText;
 
-    [Header("스킬 슬롯")] [SerializeField] private List<SkillSlotView> m_skillSlots = new List<SkillSlotView>();
+    [Header("스킬 슬롯")] 
+    [SerializeField] private List<SkillSlotView> m_skillSlots = new List<SkillSlotView>();
     [SerializeField] private Vector2[] m_fieldSlotPositions = new Vector2[3];
     [SerializeField] private Vector2[] m_reserveSlotPositions = new Vector2[2];
 
@@ -102,7 +103,14 @@ public class BattleHUDView : MonoBehaviour
             m_cachedSwapManager = ViewModel.SwapManager;
         }
 
+        FindShipSkillButtons();
         BindEvents();
+    }
+
+    private void FindShipSkillButtons()
+    {
+        m_shipSkillButtons.Clear();
+        m_shipSkillButtons.AddRange(FindObjectsByType<ShipSkillButton>(FindObjectsInactive.Include, FindObjectsSortMode.None));
     }
 
     private void BindEvents()
@@ -140,17 +148,23 @@ public class BattleHUDView : MonoBehaviour
         {
             for (int i = 0; i < m_upgradeButtons.Length; i++)
             {
-                if (m_upgradeButtons[i] != null)
+                var upgradeBtn = m_upgradeButtons[i];
+                if (upgradeBtn != null)
                 {
-                    m_upgradeButtons[i].OnSelect = ViewModel.SelectUpgrade;
-                    m_upgradeButtons[i].Initialize();
+                    upgradeBtn.OnSelect = ViewModel.SelectUpgrade;
+                    upgradeBtn.Initialize();
                 }
             }
         }
 
-        if (m_shipSkillButton != null)
+        for (int i = 0; i < m_shipSkillButtons.Count; i++)
         {
-            m_shipSkillButton.onClick.AddListener(ViewModel.ExecuteShipSkill);
+            var skillButton = m_shipSkillButtons[i];
+            if (skillButton != null && skillButton.Button != null)
+            {
+                int skillIndex = skillButton.SkillIndex;
+                skillButton.Button.onClick.AddListener(() => ViewModel.ExecuteShipSkill(skillIndex));
+            }
         }
     }
 
@@ -185,9 +199,13 @@ public class BattleHUDView : MonoBehaviour
                 m_cachedSwapManager.OnCharacterReplaced -= HandleCharacterReplaced;
             }
 
-            if (m_shipSkillButton != null)
+            for (int i = 0; i < m_shipSkillButtons.Count; i++)
             {
-                m_shipSkillButton.onClick.RemoveListener(ViewModel.ExecuteShipSkill);
+                var skillButton = m_shipSkillButtons[i];
+                if (skillButton != null && skillButton.Button != null)
+                {
+                    skillButton.Button.onClick.RemoveAllListeners();
+                }
             }
         }
     }

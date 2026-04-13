@@ -33,7 +33,7 @@ public class BattleHUDViewModel : IBattleHUDViewModel
     public event Action<float> OnShipHpChanged;
     public event Action<float> OnBarrierChanged;
     public event Action<int, int> OnBarrierValueWeightChanged;
-    public event Action OnShipSkillExecuted;
+    public event Action<int> OnShipSkillExecuted;
 
     public void AddKill()
     {
@@ -149,9 +149,9 @@ public class BattleHUDViewModel : IBattleHUDViewModel
         OnBarrierValueWeightChanged?.Invoke(current, max);
     }
 
-    public void ExecuteShipSkill()
+    public void ExecuteShipSkill(int index)
     {
-        OnShipSkillExecuted?.Invoke();
+        OnShipSkillExecuted?.Invoke(index);
     }
 
     private void LevelUp()

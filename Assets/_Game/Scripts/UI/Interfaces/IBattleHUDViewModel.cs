@@ -18,7 +18,7 @@ public interface IBattleHUDViewModel
     event Action<float> OnShipHpChanged;
     event Action<float> OnBarrierChanged;
     event Action<int, int> OnBarrierValueWeightChanged;
-    event Action OnShipSkillExecuted;
+    event Action<int> OnShipSkillExecuted;
 
     void AddKill();
     void UpdatePlayTime(float deltaTime);
@@ -29,5 +29,5 @@ public interface IBattleHUDViewModel
     void NotifyShipHpChanged(float ratio);
     void NotifyBarrierChanged(float ratio);
     void NotifyBarrierValueWeightChanged(int current, int max);
-    void ExecuteShipSkill();
+    void ExecuteShipSkill(int index);
 }

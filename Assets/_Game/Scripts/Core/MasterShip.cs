@@ -125,9 +125,22 @@ public class MasterShip : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    public async void ExecuteGuidedMissile()
+
+    public void ExecuteSkill(int index)
     {
-        if (m_missilePrefab == null)
+        switch (index)
+        {
+            case 0:
+                ExecuteGuidedMissile(index);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public async void ExecuteGuidedMissile(int index)
+    {
+        if (index != 0 || m_missilePrefab == null)
         {
             return;
         }
