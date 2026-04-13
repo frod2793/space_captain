@@ -21,11 +21,20 @@ public class PlayerHpBar : MonoBehaviour
     private Transform m_target;
     private Vector3 m_currentVelocity;
     private Camera m_mainCamera;
+    private CanvasGroup m_canvasGroup;
+    private bool m_isBlinking;
+    private const float LOW_HP_THRESHOLD = 0.3f;
 
     private void Awake()
     {
         m_mainCamera = Camera.main;
         
+        m_canvasGroup = GetComponent<CanvasGroup>();
+        if (m_canvasGroup == null)
+        {
+            m_canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        }
+
         Canvas parentCanvas = GetComponentInParent<Canvas>();
         if (parentCanvas != null)
         {
@@ -37,7 +46,10 @@ public class PlayerHpBar : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (m_target == null || m_mainCamera == null) return;
+        if (m_target == null || m_mainCamera == null)
+        {
+            return;
+        }
 
         Vector3 targetPos = m_target.position + m_offset;
         Vector3 finalPos;
@@ -61,10 +73,6 @@ public class PlayerHpBar : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// [설명]: 추적할 대상 캐릭터를 설정합니다. 대상을 변경하면 UI를 즉시 활성화합니다.
-    /// </summary>
-    /// <param name="target">추적할 Transform</param>
     public void SetTarget(Transform target)
     {
         m_target = target;
@@ -83,25 +91,60 @@ public class PlayerHpBar : MonoBehaviour
                     float ratio = (float)controller.Stats.CurrentHp / controller.Stats.MaxHp;
                     m_hpSlider.DOKill();
                     m_hpSlider.value = ratio;
+                    UpdateBlinking(ratio);
                 }
             }
         }
         else
         {
+            StopBlinking();
             gameObject.SetActive(false);
         }
     }
 
-    /// <summary>
-    /// [설명]: 체력 슬라이더의 값을 부드럽게 갱신합니다.
-    /// </summary>
-    /// <param name="ratio">현재 체력 비율 (0.0 ~ 1.0)</param>
     public void UpdateHP(float ratio)
     {
         if (m_hpSlider != null)
         {
             m_hpSlider.DOKill();
             m_hpSlider.DOValue(ratio, 0.25f).SetEase(Ease.OutQuad);
+        }
+
+        UpdateBlinking(ratio);
+    }
+
+    private void UpdateBlinking(float ratio)
+    {
+        bool shouldBlink = (ratio > 0 && ratio <= LOW_HP_THRESHOLD);
+
+        if (shouldBlink)
+        {
+            if (!m_isBlinking)
+            {
+                m_isBlinking = true;
+                if (m_canvasGroup != null)
+                {
+                    m_canvasGroup.DOKill();
+                    m_canvasGroup.DOFade(0.2f, 0.25f).SetLoops(-1, LoopType.Yoyo).SetEase(Ease.InOutSine);
+                }
+            }
+        }
+        else
+        {
+            StopBlinking();
+        }
+    }
+
+    private void StopBlinking()
+    {
+        if (m_isBlinking)
+        {
+            m_isBlinking = false;
+            if (m_canvasGroup != null)
+            {
+                m_canvasGroup.DOKill();
+                m_canvasGroup.alpha = 1f;
+            }
         }
     }
 }

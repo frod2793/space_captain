@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using SpaceCaptain.Player;
 
@@ -15,6 +16,7 @@ public class PlayerCharacterController : MonoBehaviour
     private float m_targetX;
     [SerializeField] private ActiveSkill m_activeSkill;
     private float m_swapCooldownEndTime = 0f;
+    private bool m_isDying = false;
 
     public event Action<float> OnHpChanged;
     public event Action<PlayerCharacterController> OnDead;
@@ -114,7 +116,7 @@ public class PlayerCharacterController : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
-        if (m_stats == null || !IsOnField)
+        if (m_stats == null || !IsOnField || m_isDying)
         {
             return;
         }
@@ -141,8 +143,28 @@ public class PlayerCharacterController : MonoBehaviour
 
         if (m_stats.CurrentHp <= 0)
         {
-            ExecuteDeath();
+            HandleDeathSequence().Forget();
         }
+    }
+
+    private async Cysharp.Threading.Tasks.UniTaskVoid HandleDeathSequence()
+    {
+        if (m_isDying)
+        {
+            return;
+        }
+
+        m_isDying = true;
+        m_stats.IsActive = false;
+
+        if (m_spriteRenderer != null)
+        {
+            m_spriteRenderer.DOKill();
+            
+            await transform.DOShakePosition(0.5f, 0.2f, 20, 90, false, true).GetAwaiter();
+        }
+
+        ExecuteDeath();
     }
 
 
@@ -161,7 +183,6 @@ public class PlayerCharacterController : MonoBehaviour
     private void ExecuteDeath()
     {
         m_stats.IsActive = false;
-        SwapState = CharacterSwapState.Dead;
         m_spriteRenderer.enabled = false;
         m_collider.enabled = false;
 
@@ -170,6 +191,7 @@ public class PlayerCharacterController : MonoBehaviour
 
     public void RestoreComponents()
     {
+        m_isDying = false;
         if (m_spriteRenderer != null)
         {
             m_spriteRenderer.DOKill();

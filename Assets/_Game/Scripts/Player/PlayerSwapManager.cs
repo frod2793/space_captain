@@ -10,8 +10,6 @@ using UnityEngine.InputSystem;
 
 public class PlayerSwapManager : MonoBehaviour
 { 
-    private List<PlayerCharacterController> m_characters = new List<PlayerCharacterController>();
-
     [Header("위치 설정")]
     [SerializeField] private Transform m_activePosition;
     [SerializeField] private Transform[] m_standbyPositions;
@@ -28,6 +26,7 @@ public class PlayerSwapManager : MonoBehaviour
     [SerializeField] private float m_swapCooldownDuration = 2.0f;
     [SerializeField] private float m_reserveSwapCooldownDuration = 10.0f;
 
+    private List<PlayerCharacterController> m_characters = new List<PlayerCharacterController>();
     private PlayerCharacterController m_activeCharacter;
     private Camera m_mainCamera;
     private bool m_isInputLocked;
@@ -39,6 +38,7 @@ public class PlayerSwapManager : MonoBehaviour
     private Dictionary<PlayerCharacterController, float> m_individualCooldownEnds = new Dictionary<PlayerCharacterController, float>();
     private float m_swapCooldownEndTime;
     private int m_aliveCount;
+    private HashSet<PlayerCharacterController> m_deadProcessedCharacters = new HashSet<PlayerCharacterController>();
 
     private readonly ISwapStrategy m_fieldSwap = new FieldSwapStrategy();
     private readonly ISwapStrategy m_reserveSwap = new ReserveSwapStrategy();
@@ -79,12 +79,10 @@ public class PlayerSwapManager : MonoBehaviour
     {
         HandleRegenTick();
 
-        if (m_isInputLocked)
+        if (!m_isInputLocked)
         {
-            return;
+            HandleInput();
         }
-
-        HandleInput();
     }
 
     private void InitializeCharacters()
@@ -92,11 +90,17 @@ public class PlayerSwapManager : MonoBehaviour
         m_characters.Clear();
         var foundCharacters = FindObjectsByType<PlayerCharacterController>(FindObjectsSortMode.None);
         
+        if (foundCharacters == null || foundCharacters.Length == 0)
+        {
+            return;
+        }
+
         for (int i = 0; i < foundCharacters.Length; i++)
         {
-            if (foundCharacters[i] != null)
+            var character = foundCharacters[i];
+            if (character != null)
             {
-                m_characters.Add(foundCharacters[i]);
+                m_characters.Add(character);
             }
         }
 
@@ -107,7 +111,9 @@ public class PlayerSwapManager : MonoBehaviour
 
         m_characters.Sort((a, b) => a.SwapState.CompareTo(b.SwapState));
 
+        m_deadProcessedCharacters.Clear();
         m_aliveCount = 0;
+
         for (int i = 0; i < m_characters.Count; i++)
         {
             var character = m_characters[i];
@@ -139,11 +145,7 @@ public class PlayerSwapManager : MonoBehaviour
             if (isActiveZero)
             {
                 m_activeCharacter = character;
-                if (PlayerHUD != null)
-                {
-                    PlayerHUD.SetTarget(m_activeCharacter.transform);
-                    m_activeCharacter.OnHpChanged += PlayerHUD.UpdateHP;
-                }
+                SubscribeHUD(character);
             }
         }
 
@@ -155,12 +157,11 @@ public class PlayerSwapManager : MonoBehaviour
         for (int i = 0; i < m_characters.Count; i++)
         {
             var character = m_characters[i];
-            if (character.Stats.CurrentHp <= 0)
+            if (character == null)
             {
-                character.SwapState = CharacterSwapState.Dead;
                 continue;
             }
-
+            
             if (character == m_activeCharacter)
             {
                 character.SwapState = CharacterSwapState.Active;
@@ -201,14 +202,12 @@ public class PlayerSwapManager : MonoBehaviour
 
         if (pointer.press.wasPressedThisFrame)
         {
-            if (m_isAnimating)
+            if (!m_isAnimating)
             {
-                return;
+                m_lastScreenPos = screenPos;
+                bool swapTriggered = TrySwapCharacter(screenPos);
+                m_isDraggingActive = !swapTriggered;
             }
-
-            m_lastScreenPos = screenPos;
-            bool swapTriggered = TrySwapCharacter(screenPos);
-            m_isDraggingActive = !swapTriggered;
         }
         else if (pointer.press.isPressed && !m_isDraggingActive)
         {
@@ -251,6 +250,7 @@ public class PlayerSwapManager : MonoBehaviour
 
         float currentCooldown = CurrentSwapCooldown;
         const float touchRadius = 0.5f;
+        const float sqrTouchRadius = touchRadius * touchRadius;
 
         for (int i = 0; i < m_characters.Count; i++)
         {
@@ -263,9 +263,7 @@ public class PlayerSwapManager : MonoBehaviour
             if (character.Collider != null)
             {
                 Vector2 closestPoint = character.Collider.ClosestPoint(worldPos);
-                float sqrDist = (closestPoint - worldPos).sqrMagnitude;
-
-                if (sqrDist <= touchRadius * touchRadius)
+                if ((closestPoint - worldPos).sqrMagnitude <= sqrTouchRadius)
                 {
                     if (currentCooldown > 0 || character.RemainingSwapCooldown > 0)
                     {
@@ -331,14 +329,9 @@ public class PlayerSwapManager : MonoBehaviour
         }
 
         bool isAlreadyActive = (target == m_activeCharacter);
-        bool isSkillReady = target.Skill != null && target.Skill.IsReady;
-        bool isSwapCooldown = CurrentSwapCooldown > 0;
-
-        if (!isAlreadyActive && isSwapCooldown && !isSkillReady)
-        {
-            target.PlayCooldownFeedback();
-            return;
-        }
+        var skill = target.Skill;
+        bool isSkillReady = (skill != null) && skill.IsReady;
+        bool isSwapCooldown = (CurrentSwapCooldown > 0);
 
         if (!isAlreadyActive)
         {
@@ -357,13 +350,23 @@ public class PlayerSwapManager : MonoBehaviour
             {
                 m_isInputLocked = true;
                 m_isDraggingActive = false;
-                m_activeCharacter.IsDragging = false;
+                if (m_activeCharacter != null)
+                {
+                    m_activeCharacter.IsDragging = false;
+                }
 
-                await target.Skill.ExecuteAsync();
+                await skill.ExecuteAsync();
+            }
+            catch (Exception) 
+            {
             }
             finally
             {
                 m_isInputLocked = false;
+                if (m_activeCharacter != null)
+                {
+                    m_activeCharacter.IsDragging = false;
+                }
             }
         }
     }
@@ -381,36 +384,48 @@ public class PlayerSwapManager : MonoBehaviour
                 ActivePosition = m_activePosition,
                 SwapDuration = m_swapDuration,
                 MainCamera = m_mainCamera,
-                IsDraggingActive = leaving != null && leaving.IsDragging,
-                CancellationToken = this.GetCancellationTokenOnDestroy()
+                IsDraggingActive = (leaving != null) && leaving.IsDragging,
+                CancellationToken = this.GetCancellationTokenOnDestroy(),
+                LeavingOriginPos = (leaving != null) ? leaving.transform.position : Vector3.zero,
+                EnteringOriginPos = (entering != null) ? entering.transform.position : Vector3.zero
             };
 
             if (leaving != null)
             {
                 OnSwapStarted?.Invoke(entering, leaving);
                 TransferTarget(leaving, entering);
-
-                if (PlayerHUD != null)
-                {
-                    leaving.OnHpChanged -= PlayerHUD.UpdateHP;
-                }
+                UnsubscribeHUD(leaving);
             }
 
             await strategy.PrepareAsync(context);
             await strategy.AnimateAsync(context);
             await strategy.FinalizeAsync(context);
 
-            m_activeCharacter = entering;
-            if (PlayerHUD != null)
+            int enteringIdx = m_characters.IndexOf(entering);
+            int leavingIdx = (leaving != null) ? m_characters.IndexOf(leaving) : -1;
+
+            if (enteringIdx != -1 && leavingIdx != -1)
             {
-                PlayerHUD.SetTarget(m_activeCharacter.transform);
-                m_activeCharacter.OnHpChanged += PlayerHUD.UpdateHP;
-                PlayerHUD.UpdateHP((float)m_activeCharacter.Stats.CurrentHp / m_activeCharacter.Stats.MaxHp);
+                m_characters[enteringIdx] = leaving;
+                m_characters[leavingIdx] = entering;
             }
+
+            entering.SwapState = CharacterSwapState.Active;
+            if (leaving != null && leaving.Stats.CurrentHp > 0)
+            {
+                leaving.SwapState = (strategy == m_reserveSwap) ? CharacterSwapState.Reserve : CharacterSwapState.Standby;
+            }
+
+            m_activeCharacter = entering;
+            SubscribeHUD(m_activeCharacter);
 
             if (isDeathSwap)
             {
                 m_swapCooldownEndTime = 0f;
+                if (leaving != null)
+                {
+                    leaving.SwapState = CharacterSwapState.Dead;
+                }
             }
             else
             {
@@ -422,13 +437,10 @@ public class PlayerSwapManager : MonoBehaviour
             }
 
             OnSwapCompleted?.Invoke(m_activeCharacter);
-
-            if (isDeathSwap)
-            {
-                OnCharacterReplaced?.Invoke(entering, leaving);
-            }
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException)
+        {
+        }
         finally
         {
             m_isAnimating = false;
@@ -437,7 +449,11 @@ public class PlayerSwapManager : MonoBehaviour
 
     private void TransferTarget(PlayerCharacterController from, PlayerCharacterController to)
     {
-        if (from == null || to == null) return;
+        if (from == null || to == null)
+        {
+            return;
+        }
+
         if (m_attackComponentCache.TryGetValue(from, out var fromAttack) && 
             m_attackComponentCache.TryGetValue(to, out var toAttack))
         {
@@ -447,51 +463,69 @@ public class PlayerSwapManager : MonoBehaviour
 
     private void HandlePlayerDead(PlayerCharacterController deadPlayer)
     {
-        m_aliveCount--;
-        
-        if (deadPlayer == m_activeCharacter)
+        HandlePlayerDeadAsync(deadPlayer).Forget();
+    }
+
+    private async UniTaskVoid HandlePlayerDeadAsync(PlayerCharacterController deadPlayer)
+    {
+        if (deadPlayer == null || m_deadProcessedCharacters.Contains(deadPlayer))
         {
+            return;
         }
 
-        PlayerCharacterController reserveCandidate = null;
-        for (int i = 0; i < m_characters.Count; i++)
+        await UniTask.Yield();
+
+        if (m_isAnimating)
+        {
+            await UniTask.WaitUntil(() => !m_isAnimating);
+        }
+
+        if (m_aliveCount == 0)
+        {
+            OnAllPlayersDead?.Invoke();
+            return;
+        }
+
+        m_deadProcessedCharacters.Add(deadPlayer);
+        m_aliveCount = Mathf.Max(0, m_aliveCount - 1);
+
+        PlayerCharacterController candidate = null;
+        int count = m_characters.Count;
+
+        for (int i = count - 1; i >= 0; i--)
         {
             var character = m_characters[i];
-            if (character != null && character.Stats.CurrentHp > 0 && !character.gameObject.activeSelf)
+            if (character != null && character.Stats.CurrentHp > 0 && character.SwapState == CharacterSwapState.Reserve)
             {
-                reserveCandidate = character;
+                candidate = character;
                 break;
             }
         }
 
-        if (reserveCandidate != null)
+        if (candidate == null)
         {
-            ExecuteSwapAsync(m_reserveSwap, reserveCandidate, deadPlayer, true).Forget();
-        }
-        else if (deadPlayer == m_activeCharacter)
-        {
-            PlayerCharacterController nextField = null;
-            for (int i = 0; i < m_characters.Count; i++)
+            for (int i = count - 1; i >= 0; i--)
             {
                 var character = m_characters[i];
-                if (character != deadPlayer && character != null && character.Stats.CurrentHp > 0 && character.gameObject.activeSelf)
+                if (character != null && character.Stats.CurrentHp > 0 && character.SwapState == CharacterSwapState.Standby)
                 {
-                    nextField = character;
+                    candidate = character;
                     break;
                 }
             }
-
-            if (nextField != null)
-            {
-                ExecuteSwapAsync(m_deathSwap, nextField, deadPlayer, true).Forget();
-            }
         }
 
-        if (m_aliveCount <= 0)
+        if (candidate != null)
+        {
+            ISwapStrategy strategy = (candidate.SwapState == CharacterSwapState.Reserve) ? m_reserveSwap : m_fieldSwap;
+            ExecuteSwapAsync(strategy, candidate, deadPlayer, true).Forget();
+        }
+        else if (m_aliveCount <= 0)
         {
             OnAllPlayersDead?.Invoke();
         }
     }
+
     private void HandleRegenTick()
     {
         m_regenTimer += Time.deltaTime;
@@ -504,11 +538,36 @@ public class PlayerSwapManager : MonoBehaviour
 
     private void RegenInactiveCharacters()
     {
-        for (int i = 3; i < m_characters.Count; i++)
+        int count = m_characters.Count;
+        for (int i = 3; i < count; i++)
         {
             var character = m_characters[i];
-            int regenAmount = Mathf.CeilToInt(character.Stats.MaxHp * REGEN_PERCENT);
-            character.Heal(regenAmount);
+            if (character != null && character.Stats != null)
+            {
+                int regenAmount = Mathf.CeilToInt(character.Stats.MaxHp * REGEN_PERCENT);
+                character.Heal(regenAmount);
+            }
+        }
+    }
+
+    private void SubscribeHUD(PlayerCharacterController character)
+    {
+        if (PlayerHUD != null && character != null)
+        {
+            character.OnHpChanged -= PlayerHUD.UpdateHP;
+            character.OnHpChanged += PlayerHUD.UpdateHP;
+            PlayerHUD.SetTarget(character.transform);
+            
+            float ratio = (character.Stats.MaxHp > 0) ? (float)character.Stats.CurrentHp / character.Stats.MaxHp : 0f;
+            PlayerHUD.UpdateHP(ratio);
+        }
+    }
+
+    private void UnsubscribeHUD(PlayerCharacterController character)
+    {
+        if (PlayerHUD != null && character != null)
+        {
+            character.OnHpChanged -= PlayerHUD.UpdateHP;
         }
     }
 }

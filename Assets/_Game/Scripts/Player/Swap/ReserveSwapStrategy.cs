@@ -39,6 +39,11 @@ namespace SpaceCaptain.Player.Swap
             
             context.LeavingCharacter.gameObject.SetActive(false);
             
+            if (context.EnteringCharacter.Stats.CurrentHp <= 0)
+            {
+                context.EnteringCharacter.gameObject.SetActive(false);
+            }
+            
             await UniTask.CompletedTask;
         }
     }

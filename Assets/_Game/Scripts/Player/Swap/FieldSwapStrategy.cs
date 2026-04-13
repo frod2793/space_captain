@@ -6,18 +6,12 @@ namespace SpaceCaptain.Player.Swap
 {
     public class FieldSwapStrategy : ISwapStrategy
     {
-        private Vector3 m_leavingOriginPos;
-        private Vector3 m_enteringOriginPos;
-
         public async UniTask PrepareAsync(SwapContextDTO context)
         {
             if (context == null || !context.IsValid) return;
 
             context.LeavingCharacter.IsDragging = false;
             context.LeavingCharacter.SetActive(false);
-            
-            m_leavingOriginPos = context.LeavingCharacter.transform.position;
-            m_enteringOriginPos = context.EnteringCharacter.transform.position;
             
             context.EnteringCharacter.gameObject.SetActive(true);
             
@@ -27,7 +21,7 @@ namespace SpaceCaptain.Player.Swap
         public async UniTask AnimateAsync(SwapContextDTO context)
         {
             var seq = DOTween.Sequence()
-                .Join(context.LeavingCharacter.transform.DOMove(m_enteringOriginPos, context.SwapDuration).SetEase(Ease.OutSine))
+                .Join(context.LeavingCharacter.transform.DOMove(context.EnteringOriginPos, context.SwapDuration).SetEase(Ease.OutSine))
                 .Join(context.EnteringCharacter.transform.DOMove(context.ActivePosition.position, context.SwapDuration).SetEase(Ease.OutSine));
 
             await seq.Play().ToUniTask(cancellationToken: context.CancellationToken);
@@ -38,8 +32,15 @@ namespace SpaceCaptain.Player.Swap
             context.EnteringCharacter.SetActive(true);
             context.EnteringCharacter.MoveToX(context.ActivePosition.position.x, true);
             
-            context.LeavingCharacter.MoveToX(m_enteringOriginPos.x, true);
-            context.LeavingCharacter.gameObject.SetActive(true);
+            context.LeavingCharacter.MoveToX(context.EnteringOriginPos.x, true);
+            if (context.LeavingCharacter.Stats.CurrentHp > 0)
+            {
+                context.LeavingCharacter.gameObject.SetActive(true);
+            }
+            else
+            {
+                context.LeavingCharacter.gameObject.SetActive(false);
+            }
             
             await UniTask.CompletedTask;
         }

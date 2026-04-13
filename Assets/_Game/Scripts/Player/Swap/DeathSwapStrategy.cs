@@ -36,6 +36,7 @@ namespace SpaceCaptain.Player.Swap
             context.EnteringCharacter.MoveToX(context.EnteringCharacter.transform.position.x, true);
             
             context.EnteringCharacter.SetSwapCooldown(0);
+            context.LeavingCharacter.gameObject.SetActive(false);
             
             await UniTask.CompletedTask;
         }

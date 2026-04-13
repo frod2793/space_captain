@@ -1,5 +1,6 @@
 using System;
 using Cysharp.Threading.Tasks;
+using SpaceCaptain.Player;
 using UnityEngine;
 
 public class SkillSlotViewModel : ISkillSlotViewModel
@@ -19,13 +20,16 @@ public class SkillSlotViewModel : ISkillSlotViewModel
             return;
         }
 
-        bool isReserve = !Character.gameObject.activeSelf;
-        float cooldownRatio = Character.Skill != null ? Character.Skill.CooldownRatio : 0f;
+        var skill = Character.Skill;
+        bool isReserve = Character.SwapState == CharacterSwapState.Reserve;
+        float cooldownRatio = (skill != null) ? skill.CooldownRatio : 0f;
         
-        string swapText = "";
-        if (isReserve && Character.RemainingSwapCooldown > 0)
+        string swapText = string.Empty;
+        float remainingCooldown = Character.RemainingSwapCooldown;
+
+        if (isReserve && remainingCooldown > 0)
         {
-            int currentCooldownInt = Mathf.CeilToInt(Character.RemainingSwapCooldown);
+            int currentCooldownInt = Mathf.CeilToInt(remainingCooldown);
             if (currentCooldownInt != m_lastSwapCooldownInt)
             {
                 m_lastSwapCooldownInt = currentCooldownInt;
@@ -36,11 +40,12 @@ public class SkillSlotViewModel : ISkillSlotViewModel
         else
         {
             m_lastSwapCooldownInt = -1;
-            m_cachedSwapText = "";
+            m_cachedSwapText = string.Empty;
         }
 
-        bool isReady = Character.Skill != null && Character.Skill.IsReady;
-        bool isInteractable = Character.Stats.CurrentHp > 0 && (SwapManager == null || !SwapManager.IsAnimating);
+        bool isReady = (skill != null) && skill.IsReady;
+        bool isAnimating = (SwapManager != null) && SwapManager.IsAnimating;
+        bool isInteractable = (Character.SwapState != CharacterSwapState.Dead) && !isAnimating;
 
         OnStateUpdated?.Invoke(cooldownRatio, swapText, isReady, isInteractable, isReserve);
     }

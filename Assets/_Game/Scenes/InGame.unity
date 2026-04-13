@@ -2698,7 +2698,7 @@ MonoBehaviour:
     MaxHp: 1000
     CurrentHp: 1000
     IsDestroyed: 0
-  m_barrier: {fileID: 0}
+  m_barrier: {fileID: 356210616}
   m_spriteRenderer: {fileID: 376038342}
   m_missileDamage: 50
   m_missileCount: 12
@@ -3874,6 +3874,7 @@ GameObject:
   - component: {fileID: 798437704}
   - component: {fileID: 798437703}
   - component: {fileID: 798437702}
+  - component: {fileID: 798437705}
   m_Layer: 5
   m_Name: MasterSkill_1_Button
   m_TagString: Untagged
@@ -3944,19 +3945,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 798437703}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1195165435}
-        m_TargetAssemblyTypeName: UIManager, Assembly-CSharp
-        m_MethodName: UseGuidedMissileSkill
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &798437703
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3995,6 +3984,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 798437700}
   m_CullTransparentMesh: 1
+--- !u!114 &798437705
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 798437700}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a91842939467c45b396be3bceff1276a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipSkillButton
+  m_skillIndex: 0
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -5998,7 +6000,6 @@ MonoBehaviour:
   - {fileID: 1081482251}
   - {fileID: 112983455}
   - {fileID: 662338455}
-  m_shipSkillButton: {fileID: 798437702}
   m_killCountText: {fileID: 1056148289}
   m_speedText: {fileID: 274287388}
   m_waveText: {fileID: 161121374}
