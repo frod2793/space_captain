@@ -13,6 +13,7 @@ public interface IBattleHUDViewModel
     event Action<float> OnPlayTimeChanged;
     event Action<float> OnBattleSpeedChanged;
     event Action OnShowUpgradePanel;
+    event Action<UpgradeOptionDTO[]> OnShowUpgradePanelWithOptions;
     event Action OnHideUpgradePanel;
     event Action OnShowGameOver;
     event Action<float> OnShipHpChanged;

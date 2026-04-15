@@ -9,9 +9,11 @@ public class BattleSceneInitializer : MonoBehaviour
     private IBattleHUDViewModel m_hudViewModel;
     private IGameProgressViewModel m_progressViewModel;
     private EnemySpawner m_enemySpawner;
+    private float m_savedTimeScale = 1f;
 
     private void Awake()
     {
+        Time.timeScale = 0f;
         InitializeScene();
     }
 
@@ -19,7 +21,15 @@ public class BattleSceneInitializer : MonoBehaviour
     {
         EnemyController.OnEnemyDead -= HandleEnemyKill;
         
-        if (m_hudViewModel == null) return;
+        if (m_hudViewModel == null)
+        {
+            return;
+        }
+
+        m_hudViewModel.OnBattleSpeedChanged -= UpdateTimeScale;
+        m_hudViewModel.OnShowUpgradePanel -= PauseTime;
+        m_hudViewModel.OnHideUpgradePanel -= ResumeTime;
+        m_hudViewModel.OnShowGameOver -= PauseTime;
 
         if (m_enemySpawner != null)
         {
@@ -61,6 +71,11 @@ public class BattleSceneInitializer : MonoBehaviour
             m_hudViewModel.NotifyShipHpChanged(1.0f); 
         }
 
+        m_hudViewModel.OnBattleSpeedChanged += UpdateTimeScale;
+        m_hudViewModel.OnShowUpgradePanel += PauseTime;
+        m_hudViewModel.OnHideUpgradePanel += ResumeTime;
+        m_hudViewModel.OnShowGameOver += PauseTime;
+
         if (sceneBarrier != null)
         {
             sceneBarrier.OnBarrierChanged += m_hudViewModel.NotifyBarrierChanged;
@@ -95,7 +110,10 @@ public class BattleSceneInitializer : MonoBehaviour
                 {
                     for (int i = 0; i < slotViews.Count && i < characters.Count; i++)
                     {
-                        if (slotViews[i] == null) continue;
+                        if (slotViews[i] == null)
+                        {
+                            continue;
+                        }
 
                         ISkillSlotViewModel slotVM = new SkillSlotViewModel();
                         slotVM.Character = characters[i];
@@ -108,6 +126,18 @@ public class BattleSceneInitializer : MonoBehaviour
             }
 
             m_hudView.Initialize();
+        }
+
+        var flowPanel = FindAnyObjectByType<GameFlowPanelView>(FindObjectsInactive.Include);
+        if (flowPanel != null)
+        {
+            flowPanel.Initialize(m_hudViewModel, m_progressViewModel);
+        }
+
+        var upgradePanel = FindAnyObjectByType<UpgradePanelView>(FindObjectsInactive.Include);
+        if (upgradePanel != null)
+        {
+            upgradePanel.Initialize(m_hudViewModel);
         }
 
         if (m_progressController != null)
@@ -130,6 +160,52 @@ public class BattleSceneInitializer : MonoBehaviour
         if (m_hudViewModel != null)
         {
             m_hudViewModel.AddKill();
+        }
+    }
+
+    private void UpdateTimeScale(float speed)
+    {
+        if (Time.timeScale > 0f)
+        {
+            Time.timeScale = speed;
+        }
+        else
+        {
+            m_savedTimeScale = speed;
+        }
+    }
+
+    private void PauseTime()
+    {
+        if (m_hudViewModel != null)
+        {
+            if (m_hudViewModel.BattleData != null)
+            {
+                m_savedTimeScale = m_hudViewModel.BattleData.BattleSpeed;
+            }
+        }
+
+        Time.timeScale = 0f;
+    }
+
+    private void ResumeTime()
+    {
+        Time.timeScale = m_savedTimeScale;
+    }
+
+    public void StartGameTime()
+    {
+        ResumeTime();
+    }
+
+    private void Update()
+    {
+        if (m_hudViewModel != null)
+        {
+            if (Time.timeScale > 0f)
+            {
+                m_hudViewModel.UpdatePlayTime(Time.unscaledDeltaTime);
+            }
         }
     }
 }

@@ -1,6 +1,8 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
+using SpaceCaptain.Player;
 
 public class SkillSlotView : MonoBehaviour
 {
@@ -15,11 +17,8 @@ public class SkillSlotView : MonoBehaviour
     private Outline m_outline;
     private RectTransform m_rect;
 
-    private float m_currentCooldown;
-    private string m_currentSwapText;
-    private bool m_currentIsReady;
-    private bool m_currentIsInteractable;
-    private bool m_currentIsReserve;
+    private SkillSlotUIState m_lastState;
+    private Tweener m_outlineTween;
 
     public RectTransform Rect
     {
@@ -34,7 +33,17 @@ public class SkillSlotView : MonoBehaviour
     }
 
     public ISkillSlotViewModel ViewModel { get; set; }
-    public PlayerCharacterController BoundCharacter => ViewModel?.Character;
+    public PlayerCharacterController BoundCharacter
+    {
+        get
+        {
+            if (ViewModel != null)
+            {
+                return ViewModel.Character;
+            }
+            return null;
+        }
+    }
 
     public void Initialize()
     {
@@ -42,24 +51,26 @@ public class SkillSlotView : MonoBehaviour
         m_outline = GetComponent<Outline>();
         m_skillIcon = GetComponent<Image>();
         m_skillButton = GetComponent<Button>();
-        
+
+        if (m_skillButton != null)
+        {
+            m_skillButton.transition = Selectable.Transition.None;
+            m_skillButton.onClick.RemoveAllListeners();
+            m_skillButton.onClick.AddListener(() =>
+            {
+                if (ViewModel != null)
+                {
+                    ViewModel.ExecuteAction();
+                }
+            });
+        }
+
         if (ViewModel == null)
         {
             return;
         }
 
         UpdateCharacterInfo(ViewModel.Character);
-
-        if (m_cooldownImage != null)
-        {
-            m_cooldownImage.fillAmount = m_currentCooldown;
-        }
-        
-        if (m_skillButton != null)
-        {
-            m_skillButton.onClick.RemoveAllListeners();
-            m_skillButton.onClick.AddListener(() => ViewModel.ExecuteAction());
-        }
 
         ViewModel.OnStateUpdated += UpdateUI;
         ViewModel.RefreshState();
@@ -71,7 +82,15 @@ public class SkillSlotView : MonoBehaviour
         {
             ViewModel.Character = character;
             UpdateCharacterInfo(character);
-            ViewModel.RefreshState();
+
+            if (character == null)
+            {
+                UpdateUI(new SkillSlotUIState(0f, string.Empty, CharacterSwapState.Dead, false));
+            }
+            else
+            {
+                ViewModel.RefreshState();
+            }
         }
     }
 
@@ -79,6 +98,22 @@ public class SkillSlotView : MonoBehaviour
     {
         if (character == null)
         {
+            if (m_skillNameText != null)
+            {
+                m_skillNameText.text = string.Empty;
+            }
+            if (m_skillIcon != null)
+            {
+                m_skillIcon.sprite = null;
+            }
+            if (m_cooldownImage != null)
+            {
+                m_cooldownImage.fillAmount = 0f;
+            }
+            if (m_swapCooldownText != null)
+            {
+                m_swapCooldownText.text = string.Empty;
+            }
             return;
         }
 
@@ -87,14 +122,19 @@ public class SkillSlotView : MonoBehaviour
             m_skillNameText.text = character.CharacterName;
         }
 
-        if (m_skillIcon != null && character.UI_Icon != null)
+        if (m_skillIcon != null)
         {
-            m_skillIcon.sprite = character.UI_Icon;
+            if (character.UI_Icon != null)
+            {
+                m_skillIcon.sprite = character.UI_Icon;
+            }
         }
     }
 
     private void OnDestroy()
     {
+        HandleBlinking(false);
+
         if (ViewModel != null)
         {
             ViewModel.OnStateUpdated -= UpdateUI;
@@ -109,46 +149,105 @@ public class SkillSlotView : MonoBehaviour
         }
     }
 
-    private void UpdateUI(float cooldown, string swapText, bool isReady, bool isInteractable, bool isReserve)
+    private void UpdateUI(SkillSlotUIState state)
     {
-        if (m_cooldownImage != null && !Mathf.Approximately(m_currentCooldown, cooldown))
+        m_lastState = state;
+
+        bool isDead = (state.Status == CharacterSwapState.Dead);
+        float displayCooldown = isDead ? 0f : state.Cooldown;
+        string displaySwapText = isDead ? string.Empty : state.SwapText;
+
+        if (m_cooldownImage != null)
         {
-            m_currentCooldown = m_cooldownImage.fillAmount = cooldown;
+            m_cooldownImage.fillAmount = displayCooldown;
         }
 
-        if (m_swapCooldownText != null && m_currentSwapText != swapText)
+        if (m_swapCooldownText != null)
         {
-            m_swapCooldownText.text = m_currentSwapText = swapText;
+            m_swapCooldownText.text = displaySwapText;
         }
 
-        bool isAppearanceChanged = (m_currentIsReady != isReady || m_currentIsReserve != isReserve);
-        bool isInteractionChanged = (m_currentIsInteractable != isInteractable);
-
-        if (isAppearanceChanged)
+        if (m_skillButton != null)
         {
-            m_currentIsReady = isReady;
-            m_currentIsReserve = isReserve;
-            
-            if (m_outline != null)
+            m_skillButton.interactable = !isDead;
+            m_skillButton.transition = Selectable.Transition.None;
+        }
+
+        if (m_outline != null)
+        {
+            switch (state.Status)
             {
-                m_outline.enabled = isReady;
-                m_outline.effectColor = isReserve ? m_reserveColor : m_activeColor;
+                case CharacterSwapState.Active:
+                    m_outline.enabled = true;
+                    m_outline.effectColor = m_activeColor;
+                    if (m_skillIcon != null)
+                    {
+                        m_skillIcon.color = Color.white;
+                    }
+                    HandleBlinking(true);
+                    break;
+
+                case CharacterSwapState.Standby:
+                    m_outline.enabled = true;
+                    m_outline.effectColor = m_activeColor;
+                    if (m_skillIcon != null)
+                    {
+                        m_skillIcon.color = Color.white;
+                    }
+                    HandleBlinking(false);
+                    break;
+
+                case CharacterSwapState.Reserve:
+                    m_outline.enabled = true;
+                    m_outline.effectColor = m_reserveColor;
+                    if (m_skillIcon != null)
+                    {
+                        m_skillIcon.color = Color.white;
+                    }
+                    HandleBlinking(false);
+                    break;
+
+                case CharacterSwapState.Dead:
+                default:
+                    m_outline.enabled = true;
+                    m_outline.effectColor = Color.gray;
+                    if (m_skillIcon != null)
+                    {
+                        m_skillIcon.color = new Color(0.3f, 0.3f, 0.3f, 1.0f);
+                    }
+                    HandleBlinking(false);
+                    break;
             }
         }
+    }
 
-        if (isInteractionChanged || isAppearanceChanged)
+    private void HandleBlinking(bool shouldBlink)
+    {
+        if (shouldBlink)
         {
-            m_currentIsInteractable = isInteractable;
-            
-            if (m_skillButton != null)
+            if (m_outlineTween == null)
             {
-                m_skillButton.interactable = isInteractable;
+                if (m_outline != null)
+                {
+                    m_outlineTween = m_outline.DOFade(0.2f, 0.4f)
+                        .SetLoops(-1, LoopType.Yoyo)
+                        .SetEase(Ease.InOutQuad);
+                }
             }
-
-            if (m_skillIcon != null)
+        }
+        else
+        {
+            if (m_outlineTween != null)
             {
-                float alpha = isInteractable ? 1.0f : 0.5f;
-                m_skillIcon.color = new Color(1f, 1f, 1f, alpha);
+                m_outlineTween.Kill();
+                m_outlineTween = null;
+
+                if (m_outline != null)
+                {
+                    Color color = m_outline.effectColor;
+                    color.a = 1f;
+                    m_outline.effectColor = color;
+                }
             }
         }
     }

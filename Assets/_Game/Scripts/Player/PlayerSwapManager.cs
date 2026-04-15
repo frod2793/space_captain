@@ -55,9 +55,10 @@ public class PlayerSwapManager : MonoBehaviour
     public event Action OnCharactersInitialized;
     public event Action<PlayerCharacterController, PlayerCharacterController> OnSwapStarted;
     public event Action<PlayerCharacterController> OnSwapCompleted;
-    public event Action<PlayerCharacterController, PlayerCharacterController> OnCharacterReplaced;
+    public event Action<float> OnSwapCooldownChanged;
 
     public List<PlayerCharacterController> Characters => m_characters;
+    public float SwapDuration => m_swapDuration;
     public float CooldownRatio => m_swapCooldownDuration > 0 ? Mathf.Clamp01((m_swapCooldownEndTime - Time.time) / m_swapCooldownDuration) : 0f;
     public float CurrentSwapCooldown => Mathf.Max(0, m_swapCooldownEndTime - Time.time);
     public PlayerCharacterController ActiveCharacter => m_activeCharacter;
@@ -78,13 +79,40 @@ public class PlayerSwapManager : MonoBehaviour
         m_swapCooldownEndTime = Time.time + m_swapCooldownDuration;
     }
 
+    private float m_lastCooldownRatio = -1f;
+
     private void Update()
     {
         HandleRegenTick();
+        UpdateSkillCooldowns();
+        UpdateCooldownRatio();
 
         if (!m_isInputLocked)
         {
             HandleInput();
+        }
+    }
+
+    private void UpdateCooldownRatio()
+    {
+        float ratio = CooldownRatio;
+        if (Mathf.Abs(m_lastCooldownRatio - ratio) > 0.002f)
+        {
+            m_lastCooldownRatio = ratio;
+            OnSwapCooldownChanged?.Invoke(ratio);
+        }
+    }
+
+
+    private void UpdateSkillCooldowns()
+    {
+        for (int i = 0; i < m_characters.Count; i++)
+        {
+            var character = m_characters[i];
+            if (character != null && character.SwapState != CharacterSwapState.Dead && character.Skill != null)
+            {
+                character.Skill.UpdateCooldown(Time.deltaTime);
+            }
         }
     }
 
@@ -340,7 +368,7 @@ public class PlayerSwapManager : MonoBehaviour
     
     public async UniTask ExecuteCharacterActionAsync(PlayerCharacterController target)
     {
-        if (target == null || m_isAnimating)
+        if (target == null || m_isAnimating || Time.timeScale <= 0f)
         {
             return;
         }
@@ -424,21 +452,11 @@ public class PlayerSwapManager : MonoBehaviour
 
                 m_activeCharacter = entering;
                 entering.SwapState = CharacterSwapState.Active;
+                entering.SetSwapCooldown(0f);
                 SubscribeHUD(m_activeCharacter);
             }
 
             await strategy.PrepareAsync(context);
-            await strategy.AnimateAsync(context);
-            await strategy.FinalizeAsync(context);
-
-            int enteringIdx = m_characters.IndexOf(entering);
-            int leavingIdx = (leaving != null) ? m_characters.IndexOf(leaving) : -1;
-
-            if (enteringIdx != -1 && leavingIdx != -1)
-            {
-                m_characters[enteringIdx] = leaving;
-                m_characters[leavingIdx] = entering;
-            }
 
             if (!isDeathSwap)
             {
@@ -450,7 +468,7 @@ public class PlayerSwapManager : MonoBehaviour
 
                 m_activeCharacter = entering;
                 SubscribeHUD(m_activeCharacter);
-                
+
                 m_swapCooldownEndTime = Time.time + m_swapCooldownDuration;
                 if (strategy == m_reserveSwap && leaving != null)
                 {
@@ -459,11 +477,23 @@ public class PlayerSwapManager : MonoBehaviour
             }
             else
             {
-                m_swapCooldownEndTime = 0f;
+                m_swapCooldownEndTime = Time.time + m_swapCooldownDuration;
                 if (leaving != null)
                 {
                     leaving.SwapState = CharacterSwapState.Dead;
                 }
+            }
+
+            await strategy.AnimateAsync(context);
+            await strategy.FinalizeAsync(context);
+
+            int enteringIdx = m_characters.IndexOf(entering);
+            int leavingIdx = (leaving != null) ? m_characters.IndexOf(leaving) : -1;
+
+            if (enteringIdx != -1 && leavingIdx != -1)
+            {
+                m_characters[enteringIdx] = leaving;
+                m_characters[leavingIdx] = entering;
             }
 
             OnSwapCompleted?.Invoke(m_activeCharacter);

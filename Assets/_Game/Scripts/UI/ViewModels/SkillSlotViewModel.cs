@@ -1,53 +1,78 @@
 using System;
 using Cysharp.Threading.Tasks;
 using SpaceCaptain.Player;
+using SpaceCaptain.Models;
 using UnityEngine;
 
 public class SkillSlotViewModel : ISkillSlotViewModel
 {
-    public event Action<float, string, bool, bool, bool> OnStateUpdated;
+    public event Action<SkillSlotUIState> OnStateUpdated;
 
     public PlayerCharacterController Character { get; set; }
     public PlayerSwapManager SwapManager { get; set; }
 
-    private int m_lastSwapCooldownInt = -1;
-    private string m_cachedSwapText = "";
+    private SkillSlotUIState m_lastState;
 
     public void RefreshState()
     {
-        if (Character == null || Character.Stats == null)
+        if (Character == null)
         {
             return;
         }
 
-        var skill = Character.Skill;
-        bool isReserve = Character.SwapState == CharacterSwapState.Reserve;
-        float cooldownRatio = (skill != null) ? skill.CooldownRatio : 0f;
-        
+        CharacterSwapStatusDTO statusDto = Character.GetStatusDTO();
+
         string swapText = string.Empty;
-        float remainingCooldown = Character.RemainingSwapCooldown;
-
-        if (isReserve && remainingCooldown > 0)
+        if (statusDto.State == CharacterSwapState.Reserve)
         {
-            int currentCooldownInt = Mathf.CeilToInt(remainingCooldown);
-            if (currentCooldownInt != m_lastSwapCooldownInt)
+            if (statusDto.RemainingCooldown > 0f)
             {
-                m_lastSwapCooldownInt = currentCooldownInt;
-                m_cachedSwapText = currentCooldownInt.ToString();
+                swapText = Mathf.CeilToInt(statusDto.RemainingCooldown).ToString();
             }
-            swapText = m_cachedSwapText;
         }
-        else
+
+        bool isAnimating = (SwapManager != null && SwapManager.IsAnimating);
+        bool isSwapGlobalCooldown = (SwapManager != null && SwapManager.CurrentSwapCooldown > 0);
+        bool isInteractable = statusDto.IsAvailable && !isAnimating && !isSwapGlobalCooldown;
+
+
+        SkillSlotUIState currentState = new SkillSlotUIState(
+            statusDto.CooldownRatio,
+            swapText,
+            statusDto.State,
+            isInteractable
+        );
+
+        if (ShouldUpdate(m_lastState, currentState))
         {
-            m_lastSwapCooldownInt = -1;
-            m_cachedSwapText = string.Empty;
+            m_lastState = currentState;
+            OnStateUpdated?.Invoke(currentState);
+        }
+    }
+
+    private bool ShouldUpdate(SkillSlotUIState old, SkillSlotUIState current)
+    {
+        if (old.Status != current.Status)
+        {
+            return true;
         }
 
-        bool isReady = (skill != null) && skill.IsReady;
-        bool isAnimating = (SwapManager != null) && SwapManager.IsAnimating;
-        bool isInteractable = (Character.SwapState != CharacterSwapState.Dead) && !isAnimating;
+        if (old.IsInteractable != current.IsInteractable)
+        {
+            return true;
+        }
 
-        OnStateUpdated?.Invoke(cooldownRatio, swapText, isReady, isInteractable, isReserve);
+        if (old.SwapText != current.SwapText)
+        {
+            return true;
+        }
+
+        if (Mathf.Abs(old.Cooldown - current.Cooldown) > 0.005f)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     public void ExecuteAction()

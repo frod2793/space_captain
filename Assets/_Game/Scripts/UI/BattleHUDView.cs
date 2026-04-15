@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
-using System;
 using TMPro;
 using DG.Tweening;
 
@@ -13,10 +12,7 @@ public class BattleHUDView : MonoBehaviour
     [SerializeField] private Slider m_bossHpSlider;
     [SerializeField] private Slider m_expSlider;
 
-    [Header("패널")] [SerializeField] private GameObject m_startPanel;
-    [SerializeField] private GameObject m_gameOverPanel;
-    [SerializeField] private GameObject m_upgradePanel;
-    [SerializeField] private UpgradeButton[] m_upgradeButtons;
+    [Header("패널")]
     private List<ShipSkillButton> m_shipSkillButtons = new List<ShipSkillButton>();
 
     [Header("텍스트")] [SerializeField] private TMP_Text m_killCountText;
@@ -41,10 +37,25 @@ public class BattleHUDView : MonoBehaviour
     private float m_savedTimeScale = 1f;
     private PlayerSwapManager m_cachedSwapManager;
     private bool m_isSwapCooldownActive;
-    private Dictionary<SkillSlotView, int> m_slotToIndexMap = new Dictionary<SkillSlotView, int>();
 
     private Dictionary<PlayerCharacterController, SkillSlotView> m_characterToSlotMap =
         new Dictionary<PlayerCharacterController, SkillSlotView>();
+
+    private Dictionary<PlayerCharacterController, int> m_characterToIndexMap =
+        new Dictionary<PlayerCharacterController, int>();
+
+    private bool m_isInitialized;
+    private const float COOLDOWN_EPSILON = 0.002f;
+
+    private sealed class SlotXComparer : IComparer<SkillSlotView>
+    {
+        public static readonly SlotXComparer Instance = new SlotXComparer();
+
+        public int Compare(SkillSlotView x, SkillSlotView y)
+        {
+            return x.Rect.anchoredPosition.x.CompareTo(y.Rect.anchoredPosition.x);
+        }
+    }
 
     private struct ViewState
     {
@@ -75,22 +86,6 @@ public class BattleHUDView : MonoBehaviour
             return;
         }
 
-        if (m_startPanel != null)
-        {
-            m_startPanel.SetActive(true);
-            Time.timeScale = 0f;
-        }
-
-        if (m_gameOverPanel != null)
-        {
-            m_gameOverPanel.SetActive(false);
-        }
-
-        if (m_upgradePanel != null)
-        {
-            m_upgradePanel.SetActive(false);
-        }
-
         UpdateKillCountUI(ViewModel.BattleData.TotalKillCount);
         UpdateLevelUI(ViewModel.BattleData.CurrentLevel + 1);
         UpdateExpUI(0f);
@@ -102,6 +97,8 @@ public class BattleHUDView : MonoBehaviour
         {
             m_cachedSwapManager = ViewModel.SwapManager;
         }
+
+        m_isInitialized = true;
 
         FindShipSkillButtons();
         BindEvents();
@@ -121,9 +118,6 @@ public class BattleHUDView : MonoBehaviour
         ViewModel.OnWaveChanged += UpdateWaveText;
         ViewModel.OnPlayTimeChanged += UpdatePlayTimeUI;
         ViewModel.OnBattleSpeedChanged += UpdateBattleSpeedUI;
-        ViewModel.OnShowUpgradePanel += ShowUpgradePanel;
-        ViewModel.OnHideUpgradePanel += HideUpgradePanel;
-        ViewModel.OnShowGameOver += ShowGameOver;
         ViewModel.OnShipHpChanged += UpdateHpBar;
         ViewModel.OnBarrierChanged += UpdateBarrierBar;
         ViewModel.OnBarrierValueWeightChanged += UpdateBarrierText;
@@ -131,7 +125,6 @@ public class BattleHUDView : MonoBehaviour
         if (ProgressViewModel != null)
         {
             ProgressViewModel.OnProgressChanged += SetProgressRatio;
-            ProgressViewModel.OnGameCleared += ShowGameOver;
         }
 
         if (m_cachedSwapManager != null)
@@ -139,23 +132,10 @@ public class BattleHUDView : MonoBehaviour
             m_cachedSwapManager.OnCharactersInitialized += SyncAllSkillSlots;
             m_cachedSwapManager.OnSwapStarted += HandleSwapStarted;
             m_cachedSwapManager.OnSwapCompleted += HandleSwapCompleted;
-            m_cachedSwapManager.OnCharacterReplaced += HandleCharacterReplaced;
+            m_cachedSwapManager.OnSwapCooldownChanged += UpdateSwapCooldownUI;
         }
 
         SyncAllSkillSlots();
-
-        if (m_upgradeButtons != null)
-        {
-            for (int i = 0; i < m_upgradeButtons.Length; i++)
-            {
-                var upgradeBtn = m_upgradeButtons[i];
-                if (upgradeBtn != null)
-                {
-                    upgradeBtn.OnSelect = ViewModel.SelectUpgrade;
-                    upgradeBtn.Initialize();
-                }
-            }
-        }
 
         for (int i = 0; i < m_shipSkillButtons.Count; i++)
         {
@@ -178,9 +158,6 @@ public class BattleHUDView : MonoBehaviour
             ViewModel.OnWaveChanged -= UpdateWaveText;
             ViewModel.OnPlayTimeChanged -= UpdatePlayTimeUI;
             ViewModel.OnBattleSpeedChanged -= UpdateBattleSpeedUI;
-            ViewModel.OnShowUpgradePanel -= ShowUpgradePanel;
-            ViewModel.OnHideUpgradePanel -= HideUpgradePanel;
-            ViewModel.OnShowGameOver -= ShowGameOver;
             ViewModel.OnShipHpChanged -= UpdateHpBar;
             ViewModel.OnBarrierChanged -= UpdateBarrierBar;
             ViewModel.OnBarrierValueWeightChanged -= UpdateBarrierText;
@@ -188,7 +165,6 @@ public class BattleHUDView : MonoBehaviour
             if (ProgressViewModel != null)
             {
                 ProgressViewModel.OnProgressChanged -= SetProgressRatio;
-                ProgressViewModel.OnGameCleared -= ShowGameOver;
             }
 
             if (m_cachedSwapManager != null)
@@ -196,7 +172,7 @@ public class BattleHUDView : MonoBehaviour
                 m_cachedSwapManager.OnCharactersInitialized -= SyncAllSkillSlots;
                 m_cachedSwapManager.OnSwapStarted -= HandleSwapStarted;
                 m_cachedSwapManager.OnSwapCompleted -= HandleSwapCompleted;
-                m_cachedSwapManager.OnCharacterReplaced -= HandleCharacterReplaced;
+                m_cachedSwapManager.OnSwapCooldownChanged -= UpdateSwapCooldownUI;
             }
 
             for (int i = 0; i < m_shipSkillButtons.Count; i++)
@@ -212,13 +188,18 @@ public class BattleHUDView : MonoBehaviour
 
     private Vector2 GetPositionByIndex(int index)
     {
+        if (index < 0)
+        {
+            return Vector2.zero;
+        }
+
         if (index < m_fieldSlotPositions.Length)
         {
             return m_fieldSlotPositions[index];
         }
 
         int reserveIdx = index - m_fieldSlotPositions.Length;
-        if (reserveIdx >= 0 && reserveIdx < m_reserveSlotPositions.Length)
+        if (m_reserveSlotPositions != null && reserveIdx >= 0 && reserveIdx < m_reserveSlotPositions.Length)
         {
             return m_reserveSlotPositions[reserveIdx];
         }
@@ -228,20 +209,8 @@ public class BattleHUDView : MonoBehaviour
 
     private void OnDestroy()
     {
+        m_isInitialized = false;
         UnbindEvents();
-    }
-
-    private void Update()
-    {
-        if (ViewModel != null && Time.timeScale > 0)
-        {
-            ViewModel.UpdatePlayTime(Time.unscaledDeltaTime);
-
-            if (m_cachedSwapManager != null)
-            {
-                UpdateSwapCooldownUI();
-            }
-        }
     }
 
     public void SetProgressRatio(float ratio)
@@ -294,7 +263,7 @@ public class BattleHUDView : MonoBehaviour
         if (m_lastState.KillCount != totalKills)
         {
             m_lastState.KillCount = totalKills;
-            m_killCountText.text = $"잡은놈수: {totalKills}";
+            m_killCountText.SetText("잡은놈수: {0}", totalKills);
         }
     }
 
@@ -303,7 +272,7 @@ public class BattleHUDView : MonoBehaviour
         if (m_lastState.Level != level)
         {
             m_lastState.Level = level;
-            m_levelText.text = $"LV.{level}";
+            m_levelText.SetText("LV.{0}", level);
         }
     }
 
@@ -322,7 +291,7 @@ public class BattleHUDView : MonoBehaviour
         if (m_lastState.Wave != wave)
         {
             m_lastState.Wave = wave;
-            m_waveText.text = $"WAVE {wave}";
+            m_waveText.SetText("WAVE {0}", wave);
         }
     }
 
@@ -357,47 +326,9 @@ public class BattleHUDView : MonoBehaviour
         }
     }
 
-    private void ShowUpgradePanel()
+    private void UpdateSwapCooldownUI(float ratio)
     {
-        if (m_upgradePanel != null)
-        {
-            if (Time.timeScale > 0f)
-            {
-                m_savedTimeScale = Time.timeScale;
-            }
-            else
-            {
-                m_savedTimeScale = ViewModel?.Progress?.BattleSpeed ?? 1f;
-            }
-
-            m_upgradePanel.SetActive(true);
-            Time.timeScale = 0f;
-        }
-    }
-
-    private void HideUpgradePanel()
-    {
-        if (m_upgradePanel != null)
-        {
-            m_upgradePanel.SetActive(false);
-            Time.timeScale = m_savedTimeScale;
-        }
-    }
-
-    public void ShowGameOver()
-    {
-        if (m_gameOverPanel != null)
-        {
-            m_gameOverPanel.SetActive(true);
-            Time.timeScale = 0f;
-        }
-    }
-
-    private void UpdateSwapCooldownUI()
-    {
-        float ratio = m_cachedSwapManager.CooldownRatio;
-
-        if (m_lastState.SwapRatio != ratio)
+        if (Mathf.Abs(m_lastState.SwapRatio - ratio) > COOLDOWN_EPSILON)
         {
             m_lastState.SwapRatio = m_swapCooldownFill.fillAmount = ratio;
 
@@ -412,78 +343,38 @@ public class BattleHUDView : MonoBehaviour
 
     private void HandleSwapStarted(PlayerCharacterController entering, PlayerCharacterController leaving)
     {
-        if (m_characterToSlotMap.TryGetValue(entering, out var enteringSlot) &&
-            m_characterToSlotMap.TryGetValue(leaving, out var leavingSlot))
+        if (!m_characterToSlotMap.TryGetValue(entering, out var enteringSlot) ||
+            !m_characterToSlotMap.TryGetValue(leaving, out var leavingSlot))
         {
-            int enteringIdx = m_slotToIndexMap[enteringSlot];
-            int leavingIdx = m_slotToIndexMap[leavingSlot];
-
-            m_slotToIndexMap[enteringSlot] = leavingIdx;
-            m_slotToIndexMap[leavingSlot] = enteringIdx;
-
-            enteringSlot.Rect.DOKill();
-            leavingSlot.Rect.DOKill();
-
-            enteringSlot.Rect.DOAnchorPos(GetPositionByIndex(leavingIdx), 0.4f).SetEase(Ease.InOutCubic);
-            leavingSlot.Rect.DOAnchorPos(GetPositionByIndex(enteringIdx), 0.4f).SetEase(Ease.InOutCubic);
+            return;
         }
+
+        if (!m_characterToIndexMap.TryGetValue(entering, out int enteringIdx) ||
+            !m_characterToIndexMap.TryGetValue(leaving, out int leavingIdx))
+        {
+            return;
+        }
+
+        enteringSlot.Rect.DOKill();
+        leavingSlot.Rect.DOKill();
+
+        float duration = m_cachedSwapManager.SwapDuration;
+
+        enteringSlot.Rect.DOAnchorPos(GetPositionByIndex(leavingIdx), duration).SetEase(Ease.InOutCubic);
+        leavingSlot.Rect.DOAnchorPos(GetPositionByIndex(enteringIdx), duration).SetEase(Ease.InOutCubic);
     }
 
     private void HandleSwapCompleted(PlayerCharacterController activeCharacter)
     {
-    }
-
-    private void HandleCharacterReplaced(PlayerCharacterController entering, PlayerCharacterController leaving)
-    {
-        if (m_characterToSlotMap.TryGetValue(leaving, out var leavingSlot))
-        {
-            if (m_characterToSlotMap.TryGetValue(entering, out var enteringSlot))
-            {
-                m_characterToSlotMap[entering] = leavingSlot;
-                m_characterToSlotMap[leaving] = enteringSlot;
-
-                if (enteringSlot != null)
-                {
-                    enteringSlot.UpdateCharacter(leaving);
-                }
-
-                if (leavingSlot != null)
-                {
-                    leavingSlot.UpdateCharacter(entering);
-                }
-            }
-            else
-            {
-                m_characterToSlotMap.Remove(leaving);
-                m_characterToSlotMap[entering] = leavingSlot;
-
-                if (leavingSlot != null)
-                {
-                    leavingSlot.UpdateCharacter(entering);
-                }
-            }
-        }
-    }
-
-    public void OnStartButtonClicked()
-    {
-        if (m_startPanel != null)
-        {
-            m_startPanel.SetActive(false);
-            Time.timeScale = ViewModel?.Progress.BattleSpeed ?? 1f;
-        }
-    }
-
-    public void OnRetryButtonClicked()
-    {
-        Time.timeScale = 1f;
-        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene()
-            .name);
+        Invoke(nameof(SyncAllSkillSlots), 0f);
     }
 
     public void UI_ToggleBattleSpeed()
     {
-        ViewModel?.ToggleBattleSpeed();
+        if (ViewModel != null)
+        {
+            ViewModel.ToggleBattleSpeed();
+        }
     }
 
     private void SyncAllSkillSlots()
@@ -493,8 +384,10 @@ public class BattleHUDView : MonoBehaviour
             return;
         }
 
-        m_slotToIndexMap.Clear();
         m_characterToSlotMap.Clear();
+        m_characterToIndexMap.Clear();
+
+        m_skillSlots.Sort(SlotXComparer.Instance);
 
         var characters = m_cachedSwapManager.Characters;
         for (int i = 0; i < m_skillSlots.Count; i++)
@@ -504,8 +397,6 @@ public class BattleHUDView : MonoBehaviour
             {
                 continue;
             }
-
-            m_slotToIndexMap[slot] = i;
 
             if (i < characters.Count)
             {
@@ -520,6 +411,7 @@ public class BattleHUDView : MonoBehaviour
 
                     slot.UpdateCharacter(targetCharacter);
                     m_characterToSlotMap[targetCharacter] = slot;
+                    m_characterToIndexMap[targetCharacter] = i;
                 }
             }
 

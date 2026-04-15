@@ -3,6 +3,7 @@ using System;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using SpaceCaptain.Player;
+using SpaceCaptain.Models;
 
 public class PlayerCharacterController : MonoBehaviour
 {
@@ -83,7 +84,7 @@ public class PlayerCharacterController : MonoBehaviour
 
     private void HandleMovementUpdate()
     {
-        if (!m_stats.IsActive)
+        if (m_stats == null || !m_stats.IsActive)
         {
             return;
         }
@@ -99,7 +100,7 @@ public class PlayerCharacterController : MonoBehaviour
 
     public void MoveToX(float x, bool immediate = false)
     {
-        if (!m_stats.IsActive)
+        if (m_stats == null || !m_stats.IsActive)
         {
             return;
         }
@@ -233,5 +234,11 @@ public class PlayerCharacterController : MonoBehaviour
     public void SetSwapCooldown(float duration)
     {
         m_swapCooldownEndTime = Time.time + duration;
+    }
+
+    public CharacterSwapStatusDTO GetStatusDTO()
+    {
+        float ratio = (m_activeSkill != null) ? m_activeSkill.CooldownRatio : 0f;
+        return new CharacterSwapStatusDTO(ratio, RemainingSwapCooldown, m_swapState, !m_isDying);
     }
 }

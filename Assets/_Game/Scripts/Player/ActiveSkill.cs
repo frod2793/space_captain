@@ -27,11 +27,11 @@ public class ActiveSkill : MonoBehaviour
         m_owner = owner;
     }
 
-    private void Update()
+    public void UpdateCooldown(float deltaTime)
     {
         if (m_currentCooldown > 0f)
         {
-            m_currentCooldown -= Time.deltaTime;
+            m_currentCooldown -= deltaTime;
         }
     }
 
@@ -46,22 +46,30 @@ public class ActiveSkill : MonoBehaviour
         if (m_skillEffectPrefab != null)
         {
             float originalTimeScale = Time.timeScale;
-            Time.timeScale = 0.1f;
-
-            SkillCutInUI cutInUI = FindAnyObjectByType<SkillCutInUI>();
-            if (cutInUI != null)
+            try
             {
-                cutInUI.Show(m_owner.CharacterID, m_owner.CharacterName, m_performanceType);
+                Time.timeScale = 0.1f;
+
+                SkillCutInUI cutInUI = FindAnyObjectByType<SkillCutInUI>();
+                if (cutInUI != null)
+                {
+                    cutInUI.Show(m_owner.CharacterID, m_owner.CharacterName, m_performanceType);
+                }
+
+                await UniTask.Delay(TimeSpan.FromSeconds(m_performanceDuration), ignoreTimeScale: true);
+                await UniTask.Delay(TimeSpan.FromSeconds(1f), ignoreTimeScale: true);
+
+                var effect = Instantiate(m_skillEffectPrefab, m_owner.transform.position, m_owner.transform.rotation, m_owner.transform);
+                effect.transform.localPosition = Vector3.zero;
+                effect.Trigger(m_owner);
             }
-
-            await UniTask.Delay(TimeSpan.FromSeconds(m_performanceDuration), ignoreTimeScale: true);
-            await UniTask.Delay(TimeSpan.FromSeconds(1f), ignoreTimeScale: true);
-
-            Time.timeScale = originalTimeScale;
-
-            var effect = Instantiate(m_skillEffectPrefab, m_owner.transform.position, m_owner.transform.rotation, m_owner.transform);
-            effect.transform.localPosition = Vector3.zero;
-            effect.Trigger(m_owner);
+            finally
+            {
+                if (Time.timeScale > 0f)
+                {
+                    Time.timeScale = originalTimeScale;
+                }
+            }
         }
 
         m_currentCooldown = m_cooldownTime;

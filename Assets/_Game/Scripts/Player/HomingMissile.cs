@@ -12,7 +12,7 @@ public class HomingMissile : MonoBehaviour, IPoolable
     [SerializeField] private float m_waveFrequency = 5f;
     [SerializeField] private GameObject m_explosionEffect;
     [SerializeField] private float m_explosionLifetime = 2f;
-    [SerializeField] private float m_visualRotationOffset = 0f;
+    [SerializeField] private float m_visualRotationOffset = -90f;
 
     private IAttackTarget m_target;
     private int m_damage;
@@ -138,10 +138,33 @@ public class HomingMissile : MonoBehaviour, IPoolable
     {
         if (m_explosionEffect != null)
         {
-            GameObject effect = Instantiate(m_explosionEffect, transform.position, Quaternion.identity);
-            Destroy(effect, m_explosionLifetime);
+            if (m_poolManager != null)
+            {
+                GameObject effect = m_poolManager.GetFromPool(m_explosionEffect, transform.position, Quaternion.identity);
+                ReturnExplosionToPool(effect).Forget();
+            }
+            else
+            {
+                GameObject effect = Instantiate(m_explosionEffect, transform.position, Quaternion.identity);
+                Destroy(effect, m_explosionLifetime);
+            }
         }
         ReturnToPool();
+    }
+
+    private async UniTaskVoid ReturnExplosionToPool(GameObject effect)
+    {
+        try
+        {
+            await UniTask.Delay(System.TimeSpan.FromSeconds(m_explosionLifetime), cancellationToken: this.GetCancellationTokenOnDestroy());
+            if (effect != null && m_poolManager != null)
+            {
+                m_poolManager.ReturnToPool(effect);
+            }
+        }
+        catch (System.OperationCanceledException)
+        {
+        }
     }
 
     private void ReturnToPool()
