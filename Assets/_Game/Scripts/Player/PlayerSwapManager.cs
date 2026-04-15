@@ -21,6 +21,8 @@ public class PlayerSwapManager : MonoBehaviour
     [Header("애니메이션")]
     [SerializeField] private float m_swapDuration = 0.3f;
     [SerializeField] private AnimationCurve m_swapCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+    [SerializeField] private bool m_useCircularSwap;
+    [SerializeField] private float m_circularSwapOffset = 1.0f;
 
     [Header("쿨다운 설정")]
     [SerializeField] private float m_swapCooldownDuration = 2.0f;
@@ -41,6 +43,7 @@ public class PlayerSwapManager : MonoBehaviour
     private HashSet<PlayerCharacterController> m_deadProcessedCharacters = new HashSet<PlayerCharacterController>();
 
     private readonly ISwapStrategy m_fieldSwap = new FieldSwapStrategy();
+    private readonly ISwapStrategy m_circularSwap = new CircularSwapStrategy();
     private readonly ISwapStrategy m_reserveSwap = new ReserveSwapStrategy();
     private readonly ISwapStrategy m_deathSwap = new DeathSwapStrategy();
 
@@ -309,6 +312,11 @@ public class PlayerSwapManager : MonoBehaviour
             return;
         }
 
+        if (targetCharacter.IsDying || (m_activeCharacter != null && m_activeCharacter.IsDying))
+        {
+            return;
+        }
+
         if (CurrentSwapCooldown > 0 || targetCharacter.RemainingSwapCooldown > 0)
         {
             targetCharacter.PlayCooldownFeedback();
@@ -316,7 +324,16 @@ public class PlayerSwapManager : MonoBehaviour
         }
 
         bool isReserve = !targetCharacter.gameObject.activeSelf;
-        ISwapStrategy strategy = isReserve ? m_reserveSwap : m_fieldSwap;
+        ISwapStrategy strategy;
+        
+        if (isReserve)
+        {
+            strategy = m_reserveSwap;
+        }
+        else
+        {
+            strategy = m_useCircularSwap ? m_circularSwap : m_fieldSwap;
+        }
 
         await ExecuteSwapAsync(strategy, targetCharacter, m_activeCharacter);
     }
@@ -387,7 +404,8 @@ public class PlayerSwapManager : MonoBehaviour
                 IsDraggingActive = (leaving != null) && leaving.IsDragging,
                 CancellationToken = this.GetCancellationTokenOnDestroy(),
                 LeavingOriginPos = (leaving != null) ? leaving.transform.position : Vector3.zero,
-                EnteringOriginPos = (entering != null) ? entering.transform.position : Vector3.zero
+                EnteringOriginPos = (entering != null) ? entering.transform.position : Vector3.zero,
+                SwapOffset = m_circularSwapOffset
             };
 
             if (leaving != null)
@@ -395,6 +413,18 @@ public class PlayerSwapManager : MonoBehaviour
                 OnSwapStarted?.Invoke(entering, leaving);
                 TransferTarget(leaving, entering);
                 UnsubscribeHUD(leaving);
+            }
+
+            if (isDeathSwap)
+            {
+                if (entering == null || entering.Stats.CurrentHp <= 0)
+                {
+                    return;
+                }
+
+                m_activeCharacter = entering;
+                entering.SwapState = CharacterSwapState.Active;
+                SubscribeHUD(m_activeCharacter);
             }
 
             await strategy.PrepareAsync(context);
@@ -410,29 +440,29 @@ public class PlayerSwapManager : MonoBehaviour
                 m_characters[leavingIdx] = entering;
             }
 
-            entering.SwapState = CharacterSwapState.Active;
-            if (leaving != null && leaving.Stats.CurrentHp > 0)
+            if (!isDeathSwap)
             {
-                leaving.SwapState = (strategy == m_reserveSwap) ? CharacterSwapState.Reserve : CharacterSwapState.Standby;
+                entering.SwapState = CharacterSwapState.Active;
+                if (leaving != null && leaving.Stats.CurrentHp > 0)
+                {
+                    leaving.SwapState = (strategy == m_reserveSwap) ? CharacterSwapState.Reserve : CharacterSwapState.Standby;
+                }
+
+                m_activeCharacter = entering;
+                SubscribeHUD(m_activeCharacter);
+                
+                m_swapCooldownEndTime = Time.time + m_swapCooldownDuration;
+                if (strategy == m_reserveSwap && leaving != null)
+                {
+                    leaving.SetSwapCooldown(m_reserveSwapCooldownDuration);
+                }
             }
-
-            m_activeCharacter = entering;
-            SubscribeHUD(m_activeCharacter);
-
-            if (isDeathSwap)
+            else
             {
                 m_swapCooldownEndTime = 0f;
                 if (leaving != null)
                 {
                     leaving.SwapState = CharacterSwapState.Dead;
-                }
-            }
-            else
-            {
-                m_swapCooldownEndTime = Time.time + m_swapCooldownDuration;
-                if (strategy == m_reserveSwap && leaving != null)
-                {
-                    leaving.SetSwapCooldown(m_reserveSwapCooldownDuration);
                 }
             }
 
@@ -480,14 +510,20 @@ public class PlayerSwapManager : MonoBehaviour
             await UniTask.WaitUntil(() => !m_isAnimating);
         }
 
+        m_deadProcessedCharacters.Add(deadPlayer);
+        m_aliveCount = Mathf.Max(0, m_aliveCount - 1);
+        deadPlayer.SwapState = CharacterSwapState.Dead;
+
         if (m_aliveCount == 0)
         {
             OnAllPlayersDead?.Invoke();
             return;
         }
 
-        m_deadProcessedCharacters.Add(deadPlayer);
-        m_aliveCount = Mathf.Max(0, m_aliveCount - 1);
+        if (deadPlayer != m_activeCharacter)
+        {
+            return;
+        }
 
         PlayerCharacterController candidate = null;
         int count = m_characters.Count;
@@ -517,7 +553,16 @@ public class PlayerSwapManager : MonoBehaviour
 
         if (candidate != null)
         {
-            ISwapStrategy strategy = (candidate.SwapState == CharacterSwapState.Reserve) ? m_reserveSwap : m_fieldSwap;
+            ISwapStrategy strategy;
+            if (candidate.SwapState == CharacterSwapState.Reserve)
+            {
+                strategy = m_reserveSwap;
+            }
+            else
+            {
+                strategy = m_useCircularSwap ? m_circularSwap : m_fieldSwap;
+            }
+            
             ExecuteSwapAsync(strategy, candidate, deadPlayer, true).Forget();
         }
         else if (m_aliveCount <= 0)

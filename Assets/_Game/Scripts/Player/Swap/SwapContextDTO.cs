@@ -9,6 +9,7 @@ namespace SpaceCaptain.Player.Swap
         public PlayerCharacterController LeavingCharacter;
         public Transform ActivePosition;
         public float SwapDuration;
+        public float SwapOffset;
         public Camera MainCamera;
         public bool IsDraggingActive;
         public CancellationToken CancellationToken;

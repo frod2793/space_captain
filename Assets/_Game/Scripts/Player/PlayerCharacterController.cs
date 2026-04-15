@@ -23,6 +23,7 @@ public class PlayerCharacterController : MonoBehaviour
 
     public bool IsActive => m_stats != null && m_stats.IsActive;
     public bool IsOnField => gameObject.activeSelf;
+    public bool IsDying => m_isDying;
     public bool IsDragging { get; set; }
     public PlayerStatsDTO Stats => m_stats;
     public Collider2D Collider => m_collider;
@@ -183,6 +184,7 @@ public class PlayerCharacterController : MonoBehaviour
     private void ExecuteDeath()
     {
         m_stats.IsActive = false;
+        m_swapState = CharacterSwapState.Dead;
         m_spriteRenderer.enabled = false;
         m_collider.enabled = false;
 

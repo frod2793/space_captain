@@ -8606,6 +8606,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  m_useCircularSwap: 1
+  m_circularSwapOffset: 1
   m_swapCooldownDuration: 2
   m_reserveSwapCooldownDuration: 60
 --- !u!4 &1816508018
