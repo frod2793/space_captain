@@ -54,12 +54,13 @@ public class SkillSlotView : MonoBehaviour
 
         if (m_skillButton != null)
         {
-            m_skillButton.transition = Selectable.Transition.None;
             m_skillButton.onClick.RemoveAllListeners();
             m_skillButton.onClick.AddListener(() =>
             {
                 if (ViewModel != null)
                 {
+                    m_skillButton.transform.DOPunchScale(Vector3.one * -0.1f, 0.1f, 10, 1f)
+                        .SetUpdate(true);
                     ViewModel.ExecuteAction();
                 }
             });
@@ -170,7 +171,6 @@ public class SkillSlotView : MonoBehaviour
         if (m_skillButton != null)
         {
             m_skillButton.interactable = !isDead;
-            m_skillButton.transition = Selectable.Transition.None;
         }
 
         if (m_outline != null)

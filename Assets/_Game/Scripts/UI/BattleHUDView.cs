@@ -44,7 +44,6 @@ public class BattleHUDView : MonoBehaviour
     private Dictionary<PlayerCharacterController, int> m_characterToIndexMap =
         new Dictionary<PlayerCharacterController, int>();
 
-    private bool m_isInitialized;
     private const float COOLDOWN_EPSILON = 0.002f;
 
     private sealed class SlotXComparer : IComparer<SkillSlotView>
@@ -97,8 +96,6 @@ public class BattleHUDView : MonoBehaviour
         {
             m_cachedSwapManager = ViewModel.SwapManager;
         }
-
-        m_isInitialized = true;
 
         FindShipSkillButtons();
         BindEvents();
@@ -209,7 +206,6 @@ public class BattleHUDView : MonoBehaviour
 
     private void OnDestroy()
     {
-        m_isInitialized = false;
         UnbindEvents();
     }
 
@@ -291,7 +287,7 @@ public class BattleHUDView : MonoBehaviour
         if (m_lastState.Wave != wave)
         {
             m_lastState.Wave = wave;
-            m_waveText.SetText("WAVE {0}", wave);
+            m_waveText.SetText("{0} 웨이브", wave);
         }
     }
 

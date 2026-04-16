@@ -9,7 +9,7 @@ using UnityEngine.InputSystem;
 
 
 public class PlayerSwapManager : MonoBehaviour
-{ 
+{
     [Header("위치 설정")]
     [SerializeField] private Transform m_activePosition;
     [SerializeField] private Transform[] m_standbyPositions;
@@ -109,7 +109,7 @@ public class PlayerSwapManager : MonoBehaviour
         for (int i = 0; i < m_characters.Count; i++)
         {
             var character = m_characters[i];
-            if (character != null && character.SwapState != CharacterSwapState.Dead && character.Skill != null)
+            if (character.SwapState != CharacterSwapState.Dead && character.Skill != null)
             {
                 character.Skill.UpdateCooldown(Time.deltaTime);
             }
@@ -120,7 +120,7 @@ public class PlayerSwapManager : MonoBehaviour
     {
         m_characters.Clear();
         var foundCharacters = FindObjectsByType<PlayerCharacterController>(FindObjectsSortMode.None);
-        
+
         if (foundCharacters == null || foundCharacters.Length == 0)
         {
             return;
@@ -145,6 +145,7 @@ public class PlayerSwapManager : MonoBehaviour
         m_deadProcessedCharacters.Clear();
         m_aliveCount = 0;
 
+        bool hasBarrier = (Barrier != null);
         for (int i = 0; i < m_characters.Count; i++)
         {
             var character = m_characters[i];
@@ -161,7 +162,7 @@ public class PlayerSwapManager : MonoBehaviour
 
             character.Initialize(stats);
 
-            if (Barrier != null)
+            if (hasBarrier)
             {
                 character.SetBarrier(Barrier);
             }
@@ -192,7 +193,7 @@ public class PlayerSwapManager : MonoBehaviour
             {
                 continue;
             }
-            
+
             if (character == m_activeCharacter)
             {
                 character.SwapState = CharacterSwapState.Active;
@@ -332,7 +333,7 @@ public class PlayerSwapManager : MonoBehaviour
         float targetX = Mathf.Clamp(m_activeCharacter.transform.position.x + deltaX, camX - camHalfWidth + margin, camX + camHalfWidth - margin);
         m_activeCharacter.MoveToX(targetX, true);
     }
-    
+
     public async UniTask SwitchToCharacter(PlayerCharacterController targetCharacter)
     {
         if (targetCharacter == null || targetCharacter == m_activeCharacter || m_isAnimating)
@@ -353,7 +354,7 @@ public class PlayerSwapManager : MonoBehaviour
 
         bool isReserve = !targetCharacter.gameObject.activeSelf;
         ISwapStrategy strategy;
-        
+
         if (isReserve)
         {
             strategy = m_reserveSwap;
@@ -365,7 +366,7 @@ public class PlayerSwapManager : MonoBehaviour
 
         await ExecuteSwapAsync(strategy, targetCharacter, m_activeCharacter);
     }
-    
+
     public async UniTask ExecuteCharacterActionAsync(PlayerCharacterController target)
     {
         if (target == null || m_isAnimating || Time.timeScale <= 0f)
@@ -402,7 +403,7 @@ public class PlayerSwapManager : MonoBehaviour
 
                 await skill.ExecuteAsync();
             }
-            catch (Exception) 
+            catch (Exception)
             {
             }
             finally
@@ -514,7 +515,7 @@ public class PlayerSwapManager : MonoBehaviour
             return;
         }
 
-        if (m_attackComponentCache.TryGetValue(from, out var fromAttack) && 
+        if (m_attackComponentCache.TryGetValue(from, out var fromAttack) &&
             m_attackComponentCache.TryGetValue(to, out var toAttack))
         {
             toAttack.CurrentTarget = fromAttack.CurrentTarget;
@@ -592,7 +593,7 @@ public class PlayerSwapManager : MonoBehaviour
             {
                 strategy = m_useCircularSwap ? m_circularSwap : m_fieldSwap;
             }
-            
+
             ExecuteSwapAsync(strategy, candidate, deadPlayer, true).Forget();
         }
         else if (m_aliveCount <= 0)
@@ -617,11 +618,8 @@ public class PlayerSwapManager : MonoBehaviour
         for (int i = 3; i < count; i++)
         {
             var character = m_characters[i];
-            if (character != null && character.Stats != null)
-            {
-                int regenAmount = Mathf.CeilToInt(character.Stats.MaxHp * REGEN_PERCENT);
-                character.Heal(regenAmount);
-            }
+            int regenAmount = Mathf.CeilToInt(character.Stats.MaxHp * REGEN_PERCENT);
+            character.Heal(regenAmount);
         }
     }
 
@@ -632,7 +630,7 @@ public class PlayerSwapManager : MonoBehaviour
             character.OnHpChanged -= PlayerHUD.UpdateHP;
             character.OnHpChanged += PlayerHUD.UpdateHP;
             PlayerHUD.SetTarget(character.transform);
-            
+
             float ratio = (character.Stats.MaxHp > 0) ? (float)character.Stats.CurrentHp / character.Stats.MaxHp : 0f;
             PlayerHUD.UpdateHP(ratio);
         }
