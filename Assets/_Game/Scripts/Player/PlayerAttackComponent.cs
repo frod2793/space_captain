@@ -179,6 +179,7 @@ public class PlayerAttackComponent : MonoBehaviour
             if (bulletObj.TryGetComponent<BulletProjectile>(out var projectile))
             {
                 projectile.SetSpeed(m_bulletSpeed);
+                projectile.OwnerID = m_owner.CharacterID;
                 if (m_owner.Stats != null)
                 {
                     projectile.Damage = m_owner.Stats.AttackDamage;

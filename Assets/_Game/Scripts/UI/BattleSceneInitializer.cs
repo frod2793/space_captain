@@ -1,13 +1,16 @@
 using UnityEngine;
+using System;
 using System.Collections.Generic;
 
 public class BattleSceneInitializer : MonoBehaviour
 {
     [SerializeField] private BattleHUDView m_hudView;
     [SerializeField] private GameProgressController m_progressController;
+    [SerializeField] private GameResultPanelView m_resultPanelView;
 
     private IBattleHUDViewModel m_hudViewModel;
     private IGameProgressViewModel m_progressViewModel;
+    private IGameResultViewModel m_resultViewModel;
     private EnemySpawner m_enemySpawner;
     private float m_savedTimeScale = 1f;
 
@@ -20,16 +23,20 @@ public class BattleSceneInitializer : MonoBehaviour
     private void OnDestroy()
     {
         EnemyController.OnEnemyDead -= HandleEnemyKill;
+        EnemyController.OnDamageDealt -= HandleDamageDealt;
         
-        if (m_hudViewModel == null)
+        if (m_hudViewModel != null)
         {
-            return;
+            m_hudViewModel.OnBattleSpeedChanged -= UpdateTimeScale;
+            m_hudViewModel.OnShowUpgradePanel -= PauseTime;
+            m_hudViewModel.OnHideUpgradePanel -= ResumeTime;
+            m_hudViewModel.OnShowGameOver -= ShowResultFail;
         }
 
-        m_hudViewModel.OnBattleSpeedChanged -= UpdateTimeScale;
-        m_hudViewModel.OnShowUpgradePanel -= PauseTime;
-        m_hudViewModel.OnHideUpgradePanel -= ResumeTime;
-        m_hudViewModel.OnShowGameOver -= PauseTime;
+        if (m_progressViewModel != null)
+        {
+            m_progressViewModel.OnGameCleared -= ShowResultClear;
+        }
 
         if (m_enemySpawner != null)
         {
@@ -74,7 +81,7 @@ public class BattleSceneInitializer : MonoBehaviour
         m_hudViewModel.OnBattleSpeedChanged += UpdateTimeScale;
         m_hudViewModel.OnShowUpgradePanel += PauseTime;
         m_hudViewModel.OnHideUpgradePanel += ResumeTime;
-        m_hudViewModel.OnShowGameOver += PauseTime;
+        m_hudViewModel.OnShowGameOver += ShowResultFail;
 
         if (sceneBarrier != null)
         {
@@ -85,6 +92,7 @@ public class BattleSceneInitializer : MonoBehaviour
 
         m_progressViewModel = new GameProgressViewModel();
         m_progressViewModel.ProgressData = progressDTO;
+        m_progressViewModel.OnGameCleared += ShowResultClear;
 
         if (m_hudView == null)
         {
@@ -131,7 +139,7 @@ public class BattleSceneInitializer : MonoBehaviour
         var flowPanel = FindAnyObjectByType<GameFlowPanelView>(FindObjectsInactive.Include);
         if (flowPanel != null)
         {
-            flowPanel.Initialize(m_hudViewModel, m_progressViewModel);
+            flowPanel.Initialize();
         }
 
         var upgradePanel = FindAnyObjectByType<UpgradePanelView>(FindObjectsInactive.Include);
@@ -153,13 +161,22 @@ public class BattleSceneInitializer : MonoBehaviour
         }
 
         EnemyController.OnEnemyDead += HandleEnemyKill;
+        EnemyController.OnDamageDealt += HandleDamageDealt;
     }
 
-    private void HandleEnemyKill()
+    private void HandleEnemyKill(string damagerID)
     {
         if (m_hudViewModel != null)
         {
             m_hudViewModel.AddKill();
+        }
+    }
+
+    private void HandleDamageDealt(string damagerID, int amount)
+    {
+        if (m_hudViewModel != null)
+        {
+            m_hudViewModel.AddDamage(damagerID, amount);
         }
     }
 
@@ -191,6 +208,91 @@ public class BattleSceneInitializer : MonoBehaviour
     private void ResumeTime()
     {
         Time.timeScale = m_savedTimeScale;
+    }
+
+    private void ShowResultClear() => ShowResult(true);
+    private void ShowResultFail() => ShowResult(false);
+
+    private void ShowResult(bool isClear)
+    {
+        PauseTime();
+
+        if (m_resultPanelView == null)
+        {
+            m_resultPanelView = FindAnyObjectByType<GameResultPanelView>(FindObjectsInactive.Include);
+        }
+
+        if (m_resultPanelView != null)
+        {
+            var resultDTO = new GameResultDTO
+            {
+                IsClear = isClear,
+                CharacterDamages = new Dictionary<string, int>()
+            };
+
+            if (m_hudViewModel is BattleHUDViewModel hudVM)
+            {
+                PlayerSwapManager swapManager = hudVM.SwapManager;
+                if (swapManager != null && swapManager.Characters != null)
+                {
+                    for (int i = 0; i < swapManager.Characters.Count; i++)
+                    {
+                        string charID = swapManager.Characters[i].CharacterID;
+                        if (!string.IsNullOrEmpty(charID))
+                        {
+                            resultDTO.CharacterDamages[charID] = 0;
+                        }
+                    }
+                }
+
+                var keys = new List<string>(hudVM.CharacterDamages.Keys);
+                string mvpID = string.Empty;
+                int maxDamage = -1;
+
+                for (int i = 0; i < keys.Count; i++)
+                {
+                    string key = keys[i];
+                    int damage = hudVM.CharacterDamages[key];
+                    
+                    if (!key.Equals("SHIP", StringComparison.OrdinalIgnoreCase))
+                    {
+                        resultDTO.CharacterDamages[key] = damage;
+
+                        if (damage > maxDamage)
+                        {
+                            maxDamage = damage;
+                            mvpID = key;
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(mvpID) && swapManager != null && swapManager.Characters != null)
+                {
+                    for (int j = 0; j < swapManager.Characters.Count; j++)
+                    {
+                        if (swapManager.Characters[j].CharacterID.Equals(mvpID, StringComparison.OrdinalIgnoreCase))
+                        {
+                            resultDTO.MvpSprite = swapManager.Characters[j].UI_Icon;
+                            resultDTO.MvpCharacterName = swapManager.Characters[j].CharacterName;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            m_resultViewModel = new GameResultViewModel(resultDTO);
+            m_resultViewModel.OnClaimDoubleReward += () => 
+            {
+            };
+            m_resultViewModel.OnBackToMain += () => 
+            {
+                Time.timeScale = 1f;
+                UnityEngine.SceneManagement.SceneManager.LoadScene("Main");
+            };
+
+            m_resultPanelView.gameObject.SetActive(true);
+            m_resultPanelView.Initialize(m_resultViewModel);
+        }
     }
 
     public void StartGameTime()

@@ -4,6 +4,7 @@ using System;
 public class BattleProgressDTO
 {
     public int TotalKillCount = 0;
+    public int TotalDamage = 0;
     public int CurrentLevelKillCount = 0;
     public int CurrentLevel = 0;
     public float PlayTime = 0f;

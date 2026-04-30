@@ -37,15 +37,16 @@ public class SkillLaser : MonoBehaviour
         });
 
         RaycastHit2D[] hits = Physics2D.BoxCastAll(startPos, new Vector2(m_laserWidth, 0.1f), 0f, direction, m_laserRange);
-        foreach (var hit in hits)
+        for (int i = 0; i < hits.Length; i++)
         {
+            RaycastHit2D hit = hits[i];
             if (hit.collider.TryGetComponent<EnemyController>(out var enemy))
             {
-                enemy.TakeDamage(m_damage);
+                enemy.TakeDamage(m_damage, owner.CharacterID);
             }
             else if (hit.collider.TryGetComponent<BossController>(out var boss))
             {
-                boss.TakeDamage(m_damage);
+                boss.TakeDamage(m_damage, owner.CharacterID);
             }
         }
     }

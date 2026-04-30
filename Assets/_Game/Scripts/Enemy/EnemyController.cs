@@ -39,7 +39,19 @@ public class EnemyLogic
 
 public class EnemyController : MonoBehaviour, IPoolable, IAttackTarget
 {
-    public static event Action OnEnemyDead;
+    public static event Action<string> OnEnemyDead;
+    public static event Action<string, int> OnDamageDealt;
+    private string m_lastDamagerID;
+
+    public static void NotifyEnemyDead(string damagerID)
+    {
+        OnEnemyDead?.Invoke(damagerID);
+    }
+
+    public static void NotifyDamageDealt(string damagerID, int amount)
+    {
+        OnDamageDealt?.Invoke(damagerID, amount);
+    }
 
     public Transform TargetTransform
     {
@@ -117,7 +129,7 @@ public class EnemyController : MonoBehaviour, IPoolable, IAttackTarget
         {
             if (m_enemyData.IsDead) return;
 
-            TakeDamage(bullet.Damage);
+            TakeDamage(bullet.Damage, bullet.OwnerID);
             Destroy(bullet.gameObject);
         }
     }
@@ -164,9 +176,13 @@ public class EnemyController : MonoBehaviour, IPoolable, IAttackTarget
         m_onRelease = releaseAction;
     }
 
-    public void TakeDamage(int amount)
+    public void TakeDamage(int amount, string damagerID = null)
     {
         if (m_logic == null || m_enemyData.IsDead) return;
+
+        m_lastDamagerID = damagerID;
+
+        NotifyDamageDealt(damagerID, amount);
 
         if (m_spriteRenderer != null)
         {
@@ -180,7 +196,7 @@ public class EnemyController : MonoBehaviour, IPoolable, IAttackTarget
 
         if (m_enemyData.IsDead)
         {
-            OnEnemyDead?.Invoke();
+            NotifyEnemyDead(m_lastDamagerID);
             ExecuteDeathEffectAndRelease();
         }
     }

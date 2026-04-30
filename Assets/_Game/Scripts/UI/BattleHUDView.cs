@@ -58,7 +58,7 @@ public class BattleHUDView : MonoBehaviour
 
     private struct ViewState
     {
-        public int KillCount;
+        public int TotalDamage;
         public int Level;
         public float ExpRatio;
         public int Wave;
@@ -74,7 +74,7 @@ public class BattleHUDView : MonoBehaviour
 
     private ViewState m_lastState = new ViewState
     {
-        KillCount = -1, Level = -1, ExpRatio = -1f, Wave = -1, PlayTimeMinutes = -1, PlayTimeSeconds = -1,
+        TotalDamage = -1, Level = -1, ExpRatio = -1f, Wave = -1, PlayTimeMinutes = -1, PlayTimeSeconds = -1,
         BattleSpeed = -1f, HpRatio = -1f, BarrierRatio = -1f, BarrierCurrent = -1, ProgressRatio = -1f, SwapRatio = -1f
     };
 
@@ -85,7 +85,7 @@ public class BattleHUDView : MonoBehaviour
             return;
         }
 
-        UpdateKillCountUI(ViewModel.BattleData.TotalKillCount);
+        UpdateTotalDamageUI(ViewModel.BattleData.TotalDamage);
         UpdateLevelUI(ViewModel.BattleData.CurrentLevel + 1);
         UpdateExpUI(0f);
         UpdateWaveText(ViewModel.BattleData.CurrentWave);
@@ -109,7 +109,7 @@ public class BattleHUDView : MonoBehaviour
 
     private void BindEvents()
     {
-        ViewModel.OnTotalKillCountChanged += UpdateKillCountUI;
+        ViewModel.OnTotalDamageChanged += UpdateTotalDamageUI;
         ViewModel.OnLevelChanged += UpdateLevelUI;
         ViewModel.OnExpRatioChanged += UpdateExpUI;
         ViewModel.OnWaveChanged += UpdateWaveText;
@@ -149,7 +149,7 @@ public class BattleHUDView : MonoBehaviour
     {
         if (ViewModel != null)
         {
-            ViewModel.OnTotalKillCountChanged -= UpdateKillCountUI;
+            ViewModel.OnTotalDamageChanged -= UpdateTotalDamageUI;
             ViewModel.OnLevelChanged -= UpdateLevelUI;
             ViewModel.OnExpRatioChanged -= UpdateExpUI;
             ViewModel.OnWaveChanged -= UpdateWaveText;
@@ -254,12 +254,12 @@ public class BattleHUDView : MonoBehaviour
         }
     }
 
-    private void UpdateKillCountUI(int totalKills)
+    private void UpdateTotalDamageUI(int totalDamage)
     {
-        if (m_lastState.KillCount != totalKills)
+        if (m_lastState.TotalDamage != totalDamage)
         {
-            m_lastState.KillCount = totalKills;
-            m_killCountText.SetText("잡은놈수: {0}", totalKills);
+            m_lastState.TotalDamage = totalDamage;
+            m_killCountText.SetText("종합 데미지: {0}", totalDamage);
         }
     }
 

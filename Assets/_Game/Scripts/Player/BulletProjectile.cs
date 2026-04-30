@@ -11,6 +11,7 @@ public class BulletProjectile : MonoBehaviour
     private Vector3 m_startPosition;
 
     public int Damage { get; set; }
+    public string OwnerID { get; set; }
 
     private void OnEnable()
     {

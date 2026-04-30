@@ -6,7 +6,7 @@ public interface IBattleHUDViewModel
     PlayerSwapManager SwapManager { get; set; }
     BattleProgressDTO BattleData { get; set; }
 
-    event Action<int> OnTotalKillCountChanged;
+    event Action<int> OnTotalDamageChanged;
     event Action<int> OnLevelChanged;
     event Action<float> OnExpRatioChanged;
     event Action<int> OnWaveChanged;
@@ -22,6 +22,7 @@ public interface IBattleHUDViewModel
     event Action<int> OnShipSkillExecuted;
 
     void AddKill();
+    void AddDamage(string damagerID, int amount);
     void UpdatePlayTime(float deltaTime);
     void SetWave(int wave);
     void ToggleBattleSpeed();

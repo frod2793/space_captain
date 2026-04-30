@@ -175,7 +175,12 @@ public class MasterShip : MonoBehaviour
                 HomingMissile missile = missileObj.GetComponent<HomingMissile>();
                 if (missile != null)
                 {
-                    missile.InitializeMissile(new MissileParams { Target = GetTarget(activeTargets, i), Damage = m_missileDamage });
+                    missile.InitializeMissile(new MissileParams 
+                    { 
+                        Target = GetTarget(activeTargets, i), 
+                        Damage = m_missileDamage,
+                        OwnerID = "SHIP"
+                    });
                 }
             }
 
@@ -196,5 +201,6 @@ public class MasterShip : MonoBehaviour
     {
         public IAttackTarget Target;
         public int Damage;
+        public string OwnerID;
     }
 }

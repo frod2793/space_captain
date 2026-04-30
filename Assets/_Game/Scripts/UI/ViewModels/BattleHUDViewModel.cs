@@ -6,8 +6,10 @@ public class BattleHUDViewModel : IBattleHUDViewModel
     private BattleProgressDTO m_progressData;
     private PlayerSwapManager m_swapManager;
     private bool m_isProcessingUpgrade = false;
+    private readonly System.Collections.Generic.Dictionary<string, int> m_characterDamages = new();
 
     public BattleProgressDTO Progress => m_progressData;
+    public System.Collections.Generic.IReadOnlyDictionary<string, int> CharacterDamages => m_characterDamages;
 
     public PlayerSwapManager SwapManager
     {
@@ -33,7 +35,7 @@ public class BattleHUDViewModel : IBattleHUDViewModel
         }
     }
 
-    public event Action<int> OnTotalKillCountChanged;
+    public event Action<int> OnTotalDamageChanged;
     public event Action<int> OnLevelChanged;
     public event Action<float> OnExpRatioChanged;
     public event Action<int> OnWaveChanged;
@@ -59,11 +61,6 @@ public class BattleHUDViewModel : IBattleHUDViewModel
         m_progressData.TotalKillCount++;
         m_progressData.CurrentLevelKillCount++;
 
-        if (OnTotalKillCountChanged != null)
-        {
-            OnTotalKillCountChanged.Invoke(m_progressData.TotalKillCount);
-        }
-
         int killsNeeded = (m_progressData.CurrentLevel + 1) * 5;
         float ratio = (float)m_progressData.CurrentLevelKillCount / killsNeeded;
         
@@ -75,6 +72,29 @@ public class BattleHUDViewModel : IBattleHUDViewModel
         if (m_progressData.CurrentLevelKillCount >= killsNeeded)
         {
             LevelUp();
+        }
+    }
+
+    public void AddDamage(string damagerID, int amount)
+    {
+        if (string.IsNullOrEmpty(damagerID) || m_progressData == null)
+        {
+            return;
+        }
+
+        if (m_characterDamages.ContainsKey(damagerID))
+        {
+            m_characterDamages[damagerID] += amount;
+        }
+        else
+        {
+            m_characterDamages[damagerID] = amount;
+        }
+
+        m_progressData.TotalDamage += amount;
+        if (OnTotalDamageChanged != null)
+        {
+            OnTotalDamageChanged.Invoke(m_progressData.TotalDamage);
         }
     }
 

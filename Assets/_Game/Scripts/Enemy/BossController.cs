@@ -79,6 +79,8 @@ public class BossController : MonoBehaviour, IAttackTarget
     [Header("보스 데이터")]
     [SerializeField] private BossDTO m_bossData;
 
+    private string m_lastDamagerID;
+
     [Header("시각 효과")]
     [SerializeField] private SpriteRenderer m_spriteRenderer;
     [SerializeField] private GameObject m_explosionPrefab;
@@ -250,7 +252,7 @@ public class BossController : MonoBehaviour, IAttackTarget
         }
         else if (other.TryGetComponent<BulletProjectile>(out var bullet))
         {
-            TakeDamage(bullet.Damage);
+            TakeDamage(bullet.Damage, bullet.OwnerID);
             if (bullet.gameObject != null)
             {
                 Destroy(bullet.gameObject);
@@ -280,9 +282,13 @@ public class BossController : MonoBehaviour, IAttackTarget
     /// [설명]: 데미지를 입고 피격 연출을 활성화
     /// </summary>
     /// <param name="amount">입는 데미지 수치</param>
-    public void TakeDamage(int amount)
+    public void TakeDamage(int amount, string damagerID = null)
     {
         if (m_bossData.IsDead) return;
+
+        m_lastDamagerID = damagerID;
+
+        EnemyController.NotifyDamageDealt(damagerID, amount);
 
         // 피격 시각 효과 (Flash)
         if (m_spriteRenderer != null)
@@ -300,7 +306,11 @@ public class BossController : MonoBehaviour, IAttackTarget
 
         if (m_bossData.IsDead)
         {
-            if (m_bossHUD != null) m_bossHUD.gameObject.SetActive(false);
+            if (m_bossHUD != null)
+            {
+                m_bossHUD.gameObject.SetActive(false);
+            }
+            EnemyController.NotifyEnemyDead(m_lastDamagerID);
             DestroyBoss();
         }
     }

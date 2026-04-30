@@ -16,6 +16,7 @@ public class HomingMissile : MonoBehaviour, IPoolable
 
     private IAttackTarget m_target;
     private int m_damage;
+    private string m_ownerID;
     private Vector2 m_scatterDirection;
     private Vector2 m_currentDirection;
     private bool m_isInitialized = false;
@@ -52,6 +53,7 @@ public class HomingMissile : MonoBehaviour, IPoolable
     {
         m_target = missileParams.Target;
         m_damage = missileParams.Damage;
+        m_ownerID = missileParams.OwnerID;
         m_currentDirection = Vector2.up;
         
         if (m_target == null)
@@ -128,7 +130,7 @@ public class HomingMissile : MonoBehaviour, IPoolable
             IAttackTarget target = collision.GetComponent<IAttackTarget>();
             if (target != null)
             {
-                target.TakeDamage(m_damage);
+                target.TakeDamage(m_damage, m_ownerID);
                 Explode();
             }
         }
