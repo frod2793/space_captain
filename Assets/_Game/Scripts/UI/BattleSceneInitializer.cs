@@ -7,6 +7,7 @@ public class BattleSceneInitializer : MonoBehaviour
     [SerializeField] private BattleHUDView m_hudView;
     [SerializeField] private GameProgressController m_progressController;
     [SerializeField] private GameResultPanelView m_resultPanelView;
+    [SerializeField] private EasyTransition.TransitionSettings m_transitionSettings;
 
     private IBattleHUDViewModel m_hudViewModel;
     private IGameProgressViewModel m_progressViewModel;
@@ -287,7 +288,15 @@ public class BattleSceneInitializer : MonoBehaviour
             m_resultViewModel.OnBackToMain += () => 
             {
                 Time.timeScale = 1f;
-                UnityEngine.SceneManagement.SceneManager.LoadScene("Main");
+                if (m_transitionSettings != null)
+                {
+                    ISceneLoader loader = new EasyTransitionLoader(m_transitionSettings);
+                    loader.LoadScene("Main");
+                }
+                else
+                {
+                    UnityEngine.SceneManagement.SceneManager.LoadScene("Main");
+                }
             };
 
             m_resultPanelView.gameObject.SetActive(true);

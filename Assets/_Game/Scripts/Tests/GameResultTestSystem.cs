@@ -6,17 +6,33 @@ public class GameResultTestSystem : MonoBehaviour
     [SerializeField] private GameResultPanelView m_targetView;
     [SerializeField] private List<Sprite> m_testMvpSprites;
     [SerializeField] private List<Sprite> m_testItemIcons;
+    [SerializeField] private EasyTransition.TransitionSettings m_transitionSettings;
 
     [ContextMenu("Test Victory")]
-    public void TestVictory()
+    public void func_TestVictory()
     {
         RunTest(true);
     }
 
     [ContextMenu("Test Defeat")]
-    public void TestDefeat()
+    public void func_TestDefeat()
     {
         RunTest(false);
+    }
+
+    [ContextMenu("Test Random")]
+    public void func_TestRandom()
+    {
+        RunTest(Random.value > 0.5f);
+    }
+
+    public void func_CloseTestUI()
+    {
+        if (m_targetView != null)
+        {
+            m_targetView.gameObject.SetActive(false);
+            Time.timeScale = 1f;
+        }
     }
 
     private void RunTest(bool isClear)
@@ -30,8 +46,22 @@ public class GameResultTestSystem : MonoBehaviour
         {
             Time.timeScale = 0f;
             GameResultDTO mockData = GenerateMockData(isClear);
-            IGameResultViewModel viewModel = new GameResultViewModel(mockData);
+            GameResultViewModel viewModel = new GameResultViewModel(mockData);
             
+            viewModel.OnBackToMain += () => 
+            {
+                Time.timeScale = 1f;
+                if (m_transitionSettings != null)
+                {
+                    ISceneLoader loader = new EasyTransitionLoader(m_transitionSettings);
+                    loader.LoadScene("Main");
+                }
+                else
+                {
+                    UnityEngine.SceneManagement.SceneManager.LoadScene("Main");
+                }
+            };
+
             m_targetView.gameObject.SetActive(true);
             m_targetView.Initialize(viewModel);
         }
@@ -47,7 +77,6 @@ public class GameResultTestSystem : MonoBehaviour
         for (int i = 0; i < characterNames.Length; i++)
         {
             string name = characterNames[i];
-            // 70% 확률로 데미지 할당, 나머지는 0 (예비 캐릭터 시뮬레이션)
             if (Random.value > 0.3f)
             {
                 dto.CharacterDamages[name] = Random.Range(50000, 1000000);

@@ -41,6 +41,8 @@ public class GameResultPanelView : MonoBehaviour
 
     private IGameResultViewModel m_viewModel;
     private CanvasGroup m_canvasGroup;
+    private readonly List<DamageLogEntry> m_cachedLogEntries = new List<DamageLogEntry>();
+    private int m_totalDamage = 0;
 
     private void Awake()
     {
@@ -49,6 +51,8 @@ public class GameResultPanelView : MonoBehaviour
         {
             m_canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
+
+        gameObject.SetActive(false);
     }
 
     public void Initialize(IGameResultViewModel viewModel)
@@ -73,6 +77,7 @@ public class GameResultPanelView : MonoBehaviour
     {
         if (m_doubleRewardButton != null)
         {
+            m_doubleRewardButton.onClick.RemoveAllListeners();
             m_doubleRewardButton.onClick.AddListener(() =>
             {
                 m_doubleRewardButton.interactable = false;
@@ -82,6 +87,7 @@ public class GameResultPanelView : MonoBehaviour
         
         if (m_mainScreenButton != null)
         {
+            m_mainScreenButton.onClick.RemoveAllListeners();
             m_mainScreenButton.onClick.AddListener(() =>
             {
                 m_viewModel.BackToMain();
@@ -90,6 +96,7 @@ public class GameResultPanelView : MonoBehaviour
 
         if (m_damageLogToggleButton != null)
         {
+            m_damageLogToggleButton.onClick.RemoveAllListeners();
             m_damageLogToggleButton.onClick.AddListener(() =>
             {
                 m_viewModel.ToggleDamageLog();
@@ -124,26 +131,36 @@ public class GameResultPanelView : MonoBehaviour
         if (m_viewModel.CharacterDamages != null && m_damageLogPrefab != null && m_damageLogContainer != null)
         {
             int maxDamage = 0;
-            var values = new List<int>(m_viewModel.CharacterDamages.Values);
-            for (int i = 0; i < values.Count; i++)
+            m_totalDamage = 0;
+            m_cachedLogEntries.Clear();
+
+            var damageKeys = new List<string>(m_viewModel.CharacterDamages.Keys);
+            for (int i = 0; i < damageKeys.Count; i++)
             {
-                if (values[i] > maxDamage)
+                int damageValue = m_viewModel.CharacterDamages[damageKeys[i]];
+                if (damageValue > maxDamage)
                 {
-                    maxDamage = values[i];
+                    maxDamage = damageValue;
                 }
+                m_totalDamage += damageValue;
             }
 
-            var keys = new List<string>(m_viewModel.CharacterDamages.Keys);
-            for (int i = 0; i < keys.Count; i++)
+            for (int i = 0; i < damageKeys.Count; i++)
             {
-                string key = keys[i];
+                string key = damageKeys[i];
                 int damage = m_viewModel.CharacterDamages[key];
-
                 GameObject go = Instantiate(m_damageLogPrefab, m_damageLogContainer);
+                go.name = key;
+                
                 DamageLogEntry entry = go.GetComponent<DamageLogEntry>();
                 if (entry != null)
                 {
                     entry.SetData(key, damage, maxDamage);
+                    
+                    float percent = m_totalDamage > 0 ? (float)damage / m_totalDamage * 100f : 0f;
+                    entry.SetPercentage(percent);
+                    
+                    m_cachedLogEntries.Add(entry);
                 }
             }
         }
@@ -172,6 +189,11 @@ public class GameResultPanelView : MonoBehaviour
 
         Vector2 targetSize = isExpanded ? m_damageLogExpandedSize : m_damageLogCollapsedSize;
         m_damageLogPanel.DOSizeDelta(targetSize, m_expandDuration).SetEase(Ease.OutQuad).SetUpdate(true);
+
+        for (int i = 0; i < m_cachedLogEntries.Count; i++)
+        {
+            m_cachedLogEntries[i].AnimateExpansion(isExpanded, m_expandDuration);
+        }
     }
 
     private void AnimateEntry()

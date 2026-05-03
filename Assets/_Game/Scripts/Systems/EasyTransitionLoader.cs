@@ -15,11 +15,41 @@ public class EasyTransitionLoader : ISceneLoader
 
     public void LoadScene(string _sceneName)
     {
-        TransitionManager.Instance().Transition(_sceneName, transition, startDelay);
+        try
+        {
+            EasyTransition.TransitionManager manager = EasyTransition.TransitionManager.Instance();
+            if (manager != null)
+            {
+                manager.Transition(_sceneName, transition, startDelay);
+            }
+            else
+            {
+                SceneManager.LoadScene(_sceneName);
+            }
+        }
+        catch (System.Exception)
+        {
+            SceneManager.LoadScene(_sceneName);
+        }
     }
 
     public void LoadScene(int _sceneIndex)
     {
-        TransitionManager.Instance().Transition(_sceneIndex, transition, startDelay);
+        try
+        {
+            EasyTransition.TransitionManager manager = EasyTransition.TransitionManager.Instance();
+            if (manager != null)
+            {
+                manager.Transition(_sceneIndex, transition, startDelay);
+            }
+            else
+            {
+                SceneManager.LoadScene(_sceneIndex);
+            }
+        }
+        catch (System.Exception)
+        {
+            SceneManager.LoadScene(_sceneIndex);
+        }
     }
 }
