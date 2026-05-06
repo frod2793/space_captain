@@ -11,6 +11,7 @@ public class GameResultViewModel : IGameResultViewModel
     public Sprite MvpSprite => m_resultData.MvpSprite;
     public string MvpCharacterName => m_resultData.MvpCharacterName;
     public IReadOnlyDictionary<string, int> CharacterDamages => m_resultData.CharacterDamages;
+    public IReadOnlyDictionary<string, Sprite> CharacterIcons => m_resultData.CharacterIcons;
     public IReadOnlyList<RewardItemDTO> StageRewards => m_resultData.StageRewards;
     public bool IsDamageLogExpanded => m_isDamageLogExpanded;
 

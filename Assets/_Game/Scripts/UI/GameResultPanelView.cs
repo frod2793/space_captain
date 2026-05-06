@@ -7,42 +7,34 @@ using System.Collections.Generic;
 
 public class GameResultPanelView : MonoBehaviour
 {
-    [Header("결과 상태")]
-    [SerializeField] private TextMeshProUGUI m_resultTitleText;
-    
-    [Header("MVP")]
-    [FormerlySerializedAs("m_mvpIconImage")]
+    [Header("결과 상태")] [SerializeField] private TextMeshProUGUI m_resultTitleText;
+
+    [Header("MVP")] 
     [SerializeField] private Image m_mvpIllustrationImage;
     [SerializeField] private TextMeshProUGUI m_mvpNameText;
-    
-    [Header("데미지 로그")]
+
+    [Header("데미지 로그")] 
     [SerializeField] private RectTransform m_damageLogPanel;
     [SerializeField] private Button m_damageLogToggleButton;
-    [FormerlySerializedAs("m_characterStatsContainer")]
+
     [SerializeField] private Transform m_damageLogContainer;
-    [FormerlySerializedAs("m_characterStatPrefab")]
+
     [SerializeField] private GameObject m_damageLogPrefab;
-    
-    [Header("보상 목록")]
-    [SerializeField] private Transform m_rewardContainer;
+
+    [Header("보상 목록")] [SerializeField] private Transform m_rewardContainer;
     [SerializeField] private GameObject m_rewardItemPrefab;
-    
-    [Header("조작 버튼")]
-    [FormerlySerializedAs("m_retryButton")]
-    [SerializeField] private Button m_doubleRewardButton;
-    [FormerlySerializedAs("m_lobbyButton")]
+
+    [Header("조작 버튼")] [SerializeField] private Button m_doubleRewardButton;
+
     [SerializeField] private Button m_mainScreenButton;
-    
-    [Header("연출 설정")]
-    [SerializeField] private float m_fadeDuration = 0.5f;
-    [SerializeField] private float m_expandDuration = 0.3f;
+
+    [Header("연출 설정")] [SerializeField] private float m_expandDuration = 0.3f;
     [SerializeField] private Vector2 m_damageLogCollapsedSize = new Vector2(0, 300);
     [SerializeField] private Vector2 m_damageLogExpandedSize = new Vector2(0, 800);
 
     private IGameResultViewModel m_viewModel;
     private CanvasGroup m_canvasGroup;
     private readonly List<DamageLogEntry> m_cachedLogEntries = new List<DamageLogEntry>();
-    private int m_totalDamage = 0;
 
     private void Awake()
     {
@@ -59,7 +51,7 @@ public class GameResultPanelView : MonoBehaviour
     {
         m_viewModel = viewModel;
         m_viewModel.OnDamageLogToggled += HandleDamageLogToggle;
-        
+
         BindButtons();
         SetupView();
         AnimateEntry();
@@ -84,23 +76,17 @@ public class GameResultPanelView : MonoBehaviour
                 m_viewModel.ClaimDoubleReward();
             });
         }
-        
+
         if (m_mainScreenButton != null)
         {
             m_mainScreenButton.onClick.RemoveAllListeners();
-            m_mainScreenButton.onClick.AddListener(() =>
-            {
-                m_viewModel.BackToMain();
-            });
+            m_mainScreenButton.onClick.AddListener(() => { m_viewModel.BackToMain(); });
         }
 
         if (m_damageLogToggleButton != null)
         {
             m_damageLogToggleButton.onClick.RemoveAllListeners();
-            m_damageLogToggleButton.onClick.AddListener(() =>
-            {
-                m_viewModel.ToggleDamageLog();
-            });
+            m_damageLogToggleButton.onClick.AddListener(() => { m_viewModel.ToggleDamageLog(); });
         }
     }
 
@@ -113,53 +99,66 @@ public class GameResultPanelView : MonoBehaviour
 
         if (m_resultTitleText != null)
         {
-            m_resultTitleText.text = m_viewModel.IsClear ? "VICTORY" : "DEFEAT";
+            m_resultTitleText.text = m_viewModel.IsClear ? "MISSION CLEAR" : "MISSION FAILED";
             m_resultTitleText.color = m_viewModel.IsClear ? Color.yellow : Color.red;
+            m_resultTitleText.alpha = 0f;
         }
 
         if (m_mvpIllustrationImage != null)
         {
             m_mvpIllustrationImage.sprite = m_viewModel.MvpSprite;
             m_mvpIllustrationImage.gameObject.SetActive(m_viewModel.MvpSprite != null);
+            
+            Color color = m_mvpIllustrationImage.color;
+            color.a = 0f;
+            m_mvpIllustrationImage.color = color;
         }
 
         if (m_mvpNameText != null)
         {
             m_mvpNameText.text = m_viewModel.MvpCharacterName;
+            m_mvpNameText.alpha = 0f;
         }
 
         if (m_viewModel.CharacterDamages != null && m_damageLogPrefab != null && m_damageLogContainer != null)
         {
-            int maxDamage = 0;
-            m_totalDamage = 0;
             m_cachedLogEntries.Clear();
 
-            var damageKeys = new List<string>(m_viewModel.CharacterDamages.Keys);
-            for (int i = 0; i < damageKeys.Count; i++)
+            var damageList = new List<KeyValuePair<string, int>>(m_viewModel.CharacterDamages);
+            damageList.Sort((a, b) => b.Value.CompareTo(a.Value));
+
+            int maxDamage = 0;
+            for (int i = 0; i < damageList.Count; i++)
             {
-                int damageValue = m_viewModel.CharacterDamages[damageKeys[i]];
-                if (damageValue > maxDamage)
+                if (damageList[i].Value > maxDamage)
                 {
-                    maxDamage = damageValue;
+                    maxDamage = damageList[i].Value;
                 }
-                m_totalDamage += damageValue;
             }
 
-            for (int i = 0; i < damageKeys.Count; i++)
+            int displayCount = Mathf.Min(5, damageList.Count);
+            for (int i = 0; i < displayCount; i++)
             {
-                string key = damageKeys[i];
-                int damage = m_viewModel.CharacterDamages[key];
+                string key = damageList[i].Key;
+                int damage = damageList[i].Value;
+
                 GameObject go = Instantiate(m_damageLogPrefab, m_damageLogContainer);
-                go.name = key;
-                
                 DamageLogEntry entry = go.GetComponent<DamageLogEntry>();
                 if (entry != null)
                 {
                     entry.SetData(key, damage, maxDamage);
-                    
-                    float percent = m_totalDamage > 0 ? (float)damage / m_totalDamage * 100f : 0f;
-                    entry.SetPercentage(percent);
-                    
+
+                    if (m_viewModel.CharacterIcons.ContainsKey(key))
+                    {
+                        entry.SetPortrait(m_viewModel.CharacterIcons[key]);
+                    }
+
+                    if (i == 0 && !key.Equals("SHIP", System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        entry.SetMvpActive(true);
+                    }
+
+                    go.transform.localScale = Vector3.zero;
                     m_cachedLogEntries.Add(entry);
                 }
             }
@@ -176,6 +175,8 @@ public class GameResultPanelView : MonoBehaviour
                 {
                     itemView.SetData(reward.ItemIcon, reward.Amount);
                 }
+
+                go.transform.localScale = Vector3.zero;
             }
         }
     }
@@ -201,32 +202,63 @@ public class GameResultPanelView : MonoBehaviour
         if (m_canvasGroup != null)
         {
             m_canvasGroup.alpha = 0;
+            m_canvasGroup.DOFade(1f, 0.2f).SetUpdate(true);
         }
-        
-        transform.localScale = Vector3.one * 0.8f;
 
         Sequence seq = DOTween.Sequence().SetUpdate(true);
-        if (m_canvasGroup != null)
+
+        if (m_resultTitleText != null)
         {
-            seq.Append(m_canvasGroup.DOFade(1f, m_fadeDuration));
+            m_resultTitleText.transform.localScale = Vector3.one * 0.5f;
+            seq.Append(m_resultTitleText.DOFade(1f, 0.5f));
+            seq.Join(m_resultTitleText.transform.DOScale(1f, 0.5f).SetEase(Ease.OutBack));
         }
-        
-        seq.Join(transform.DOScale(1f, m_fadeDuration).SetEase(Ease.OutBack));
 
         if (m_mvpIllustrationImage != null && m_mvpIllustrationImage.gameObject.activeSelf)
         {
-            m_mvpIllustrationImage.transform.localScale = Vector3.zero;
-            seq.Append(m_mvpIllustrationImage.transform.DOScale(1f, 0.4f).SetEase(Ease.OutBack));
+            Vector2 originalPos = m_mvpIllustrationImage.rectTransform.anchoredPosition;
+            m_mvpIllustrationImage.rectTransform.anchoredPosition = originalPos + new Vector2(0f, 50f);
+
+            seq.Append(m_mvpIllustrationImage.DOFade(1f, 0.8f));
+            seq.Join(m_mvpIllustrationImage.rectTransform.DOAnchorPos(originalPos, 0.8f).SetEase(Ease.OutCubic));
+
+            if (m_mvpNameText != null)
+            {
+                seq.Join(m_mvpNameText.DOFade(1f, 0.5f));
+            }
+        }
+
+        if (m_cachedLogEntries.Count > 0)
+        {
+            seq.AppendInterval(0.2f);
+            for (int i = 0; i < m_cachedLogEntries.Count; i++)
+            {
+                seq.Append(m_cachedLogEntries[i].transform.DOScale(1f, 0.3f).SetEase(Ease.OutBack));
+            }
         }
 
         if (m_rewardContainer != null && m_rewardContainer.childCount > 0)
         {
+            seq.AppendInterval(0.3f);
             for (int i = 0; i < m_rewardContainer.childCount; i++)
             {
                 Transform child = m_rewardContainer.GetChild(i);
-                child.localScale = Vector3.zero;
-                seq.Append(child.DOScale(1f, 0.1f).SetEase(Ease.OutBounce));
+                seq.Append(child.DOScale(1f, 0.2f).SetEase(Ease.OutBounce));
+                if (i > 0 && i % 8 == 0)
+                {
+                    seq.AppendInterval(0.05f);
+                }
             }
+        }
+
+        if (m_doubleRewardButton != null)
+        {
+            seq.Append(m_doubleRewardButton.transform.DOScale(1f, 0.3f).SetEase(Ease.OutBack).From(0f));
+        }
+
+        if (m_mainScreenButton != null)
+        {
+            seq.Join(m_mainScreenButton.transform.DOScale(1f, 0.3f).SetEase(Ease.OutBack).From(0f));
         }
     }
 }

@@ -8,6 +8,7 @@ public interface IGameResultViewModel
     Sprite MvpSprite { get; }
     string MvpCharacterName { get; }
     IReadOnlyDictionary<string, int> CharacterDamages { get; }
+    IReadOnlyDictionary<string, Sprite> CharacterIcons { get; }
     IReadOnlyList<RewardItemDTO> StageRewards { get; }
     bool IsDamageLogExpanded { get; }
 

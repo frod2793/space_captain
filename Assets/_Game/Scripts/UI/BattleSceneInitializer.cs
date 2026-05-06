@@ -228,7 +228,8 @@ public class BattleSceneInitializer : MonoBehaviour
             var resultDTO = new GameResultDTO
             {
                 IsClear = isClear,
-                CharacterDamages = new Dictionary<string, int>()
+                CharacterDamages = new Dictionary<string, int>(),
+                CharacterIcons = new Dictionary<string, Sprite>()
             };
 
             if (m_hudViewModel is BattleHUDViewModel hudVM)
@@ -238,10 +239,12 @@ public class BattleSceneInitializer : MonoBehaviour
                 {
                     for (int i = 0; i < swapManager.Characters.Count; i++)
                     {
-                        string charID = swapManager.Characters[i].CharacterID;
+                        var character = swapManager.Characters[i];
+                        string charID = character.CharacterID;
                         if (!string.IsNullOrEmpty(charID))
                         {
                             resultDTO.CharacterDamages[charID] = 0;
+                            resultDTO.CharacterIcons[charID] = character.UI_Icon;
                         }
                     }
                 }

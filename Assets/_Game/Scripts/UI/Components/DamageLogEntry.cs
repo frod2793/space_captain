@@ -15,7 +15,11 @@ public class DamageLogEntry : MonoBehaviour
     [Tooltip("데미지 비중 슬라이더")]
     [SerializeField] private Slider m_damageSlider;
 
+    [SerializeField] private Image m_MvpImage;
+
     [Header("확장 UI")]
+    [Tooltip("MVP 크라운 마크")]
+    [SerializeField] private GameObject m_mvpCrownMark;
     [Tooltip("상세 정보 그룹 (CanvasGroup)")]
     [SerializeField] private CanvasGroup m_detailGroup;
     [Tooltip("데미지 비중(%) 텍스트")]
@@ -29,7 +33,7 @@ public class DamageLogEntry : MonoBehaviour
     [Tooltip("확장 시 높이")]
     [SerializeField] private float m_expandedHeight = 150f;
     [Tooltip("확장 시 내부 요소 배율")]
-    [SerializeField] private float m_expandScaleMultiplier = 1.15f; // 내부 요소 스케일업 배율
+    [SerializeField] private float m_expandScaleMultiplier = 1.15f;
 
     private void Awake()
     {
@@ -61,6 +65,27 @@ public class DamageLogEntry : MonoBehaviour
         if (m_detailGroup != null)
         {
             m_detailGroup.alpha = 0f;
+        }
+
+        if (m_MvpImage != null)
+        {
+            m_MvpImage.gameObject.SetActive(false);
+        }
+    }
+
+    public void SetPortrait(Sprite portrait)
+    {
+        if (m_characterIcon != null)
+        {
+            m_characterIcon.sprite = portrait;
+        }
+    }
+
+    public void SetMvpActive(bool isActive)
+    {
+        if (m_MvpImage != null)
+        {
+            m_MvpImage.gameObject.SetActive(isActive);
         }
     }
 
