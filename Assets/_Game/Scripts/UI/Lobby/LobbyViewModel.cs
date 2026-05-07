@@ -6,6 +6,7 @@ public class LobbyViewModel : ILobbyViewModel
     private LobbyDataDTO m_lobbyData;
     private StageProgressDTO m_stageProgress;
     private ISceneLoader m_sceneLoader;
+    private StageDifficulty m_selectedDifficulty = StageDifficulty.Normal;
 
     public string Nickname => m_lobbyData.Nickname;
     public int Level => m_lobbyData.Level;
@@ -16,8 +17,19 @@ public class LobbyViewModel : ILobbyViewModel
 
     public string CurrentMapName => m_stageProgress.CurrentMapName;
     public int MaxWaveReached => m_stageProgress.MaxWaveReached;
+    public StageDifficulty SelectedDifficulty => m_selectedDifficulty;
+
+    public string DisplayStageName 
+    {
+        get
+        {
+            string difficultyStr = m_selectedDifficulty == StageDifficulty.Normal ? "일반" : "정예";
+            return $"{CurrentMapName} ({difficultyStr})";
+        }
+    }
 
     public event Action OnDataChanged;
+    public event Action OnProfileOpenRequested;
 
     public void SetData(LobbyDataDTO lobbyData, StageProgressDTO stageProgress)
     {
@@ -51,5 +63,19 @@ public class LobbyViewModel : ILobbyViewModel
 
     public void OpenSettings()
     {
+    }
+
+    public void OpenProfile()
+    {
+        OnProfileOpenRequested?.Invoke();
+    }
+
+    public void SelectDifficulty(StageDifficulty difficulty)
+    {
+        if (m_selectedDifficulty != difficulty)
+        {
+            m_selectedDifficulty = difficulty;
+            OnDataChanged?.Invoke();
+        }
     }
 }

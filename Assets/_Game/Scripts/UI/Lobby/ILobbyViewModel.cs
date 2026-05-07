@@ -11,9 +11,14 @@ public interface ILobbyViewModel
 
     string CurrentMapName { get; }
     int MaxWaveReached { get; }
+    StageDifficulty SelectedDifficulty { get; }
+    string DisplayStageName { get; }
 
     event Action OnDataChanged;
+    event Action OnProfileOpenRequested;
 
     void StartBattle();
     void OpenSettings();
+    void OpenProfile();
+    void SelectDifficulty(StageDifficulty difficulty);
 }

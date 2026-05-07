@@ -14,13 +14,16 @@ public class LobbyView : MonoBehaviour
     [Header("스테이지 정보 패널")]
     [SerializeField] private TMP_Text m_mapNameText;
     [SerializeField] private TMP_Text m_maxWaveText;
+    [SerializeField] private Button m_normalDifficultyButton;
+    [SerializeField] private Button m_eliteDifficultyButton;
 
     [Header("버튼")]
     [SerializeField] private Button m_battleStartButton;
     [SerializeField] private Button m_settingsButton;
+    [SerializeField] private Button m_profileButton;
 
     [Header("일러스트")]
-    [SerializeField] private GameObject m_illustrationPlaceholder;
+    [SerializeField] private Image m_characterIllustration;
 
     private ILobbyViewModel m_viewModel;
 
@@ -33,6 +36,22 @@ public class LobbyView : MonoBehaviour
             m_viewModel.OnDataChanged += UpdateUI;
             m_battleStartButton.onClick.AddListener(m_viewModel.StartBattle);
             m_settingsButton.onClick.AddListener(m_viewModel.OpenSettings);
+            
+            if (m_profileButton != null)
+            {
+                m_profileButton.onClick.AddListener(m_viewModel.OpenProfile);
+            }
+
+            if (m_normalDifficultyButton != null)
+            {
+                m_normalDifficultyButton.onClick.AddListener(func_OnNormalDifficultyClicked);
+            }
+
+            if (m_eliteDifficultyButton != null)
+            {
+                m_eliteDifficultyButton.onClick.AddListener(func_OnEliteDifficultyClicked);
+            }
+            
             UpdateUI();
         }
     }
@@ -69,6 +88,21 @@ public class LobbyView : MonoBehaviour
         {
             m_settingsButton.onClick.RemoveAllListeners();
         }
+
+        if (m_profileButton != null)
+        {
+            m_profileButton.onClick.RemoveAllListeners();
+        }
+
+        if (m_normalDifficultyButton != null)
+        {
+            m_normalDifficultyButton.onClick.RemoveAllListeners();
+        }
+
+        if (m_eliteDifficultyButton != null)
+        {
+            m_eliteDifficultyButton.onClick.RemoveAllListeners();
+        }
     }
 
     private void UpdateUI()
@@ -79,7 +113,23 @@ public class LobbyView : MonoBehaviour
         m_diamondText.text = m_viewModel.Diamond.ToString("N0");
         m_staminaText.text = $"{m_viewModel.CurrentStamina} / {m_viewModel.MaxStamina}";
 
-        m_mapNameText.text = m_viewModel.CurrentMapName;
+        m_mapNameText.text = m_viewModel.DisplayStageName;
         m_maxWaveText.text = $"최고 기록: {m_viewModel.MaxWaveReached} 웨이브";
+    }
+
+    public void func_OnNormalDifficultyClicked()
+    {
+        if (m_viewModel != null)
+        {
+            m_viewModel.SelectDifficulty(StageDifficulty.Normal);
+        }
+    }
+
+    public void func_OnEliteDifficultyClicked()
+    {
+        if (m_viewModel != null)
+        {
+            m_viewModel.SelectDifficulty(StageDifficulty.Elite);
+        }
     }
 }
