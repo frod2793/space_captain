@@ -1,6 +1,10 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
+using SpaceCaptain.Systems.Localization;
+using SpaceCaptain.UI.Components;
+using Cysharp.Threading.Tasks;
+using System.Threading;
 
 public class BattleSceneInitializer : MonoBehaviour
 {
@@ -13,12 +17,13 @@ public class BattleSceneInitializer : MonoBehaviour
     private IGameProgressViewModel m_progressViewModel;
     private IGameResultViewModel m_resultViewModel;
     private EnemySpawner m_enemySpawner;
+    private LocalizationManager m_localizationManager;
     private float m_savedTimeScale = 1f;
 
     private void Awake()
     {
         Time.timeScale = 0f;
-        InitializeScene();
+        InitializeSceneAsync().Forget();
     }
 
     private void OnDestroy()
@@ -51,8 +56,19 @@ public class BattleSceneInitializer : MonoBehaviour
         }
     }
 
-    private void InitializeScene()
+    private async UniTaskVoid InitializeSceneAsync()
     {
+        // 로컬라이징 초기화
+        m_localizationManager = new LocalizationManager();
+        await m_localizationManager.LoadTranslationsAsync("Localization/TranslationData");
+
+        // 씬 내의 모든 로컬라이징 텍스트 뷰에 매니저 주입
+        var localizedTexts = FindObjectsByType<LocalizedTextView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var text in localizedTexts)
+        {
+            text.Setup(m_localizationManager);
+        }
+
         var battleDTO = new BattleProgressDTO();
         var progressDTO = new ProgressDTO();
         var swapManager = FindAnyObjectByType<PlayerSwapManager>();

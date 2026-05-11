@@ -8,8 +8,9 @@ public class BuildPipelineManager
 {
     private const string ANDROID_SUB_PATH = "Android";
     private const string WINDOWS_SUB_PATH = "Windows";
+    private const string MAC_SUB_PATH = "Mac";
 
-    public static void BuildAllPlatforms(string baseDirPath, bool runAndroid, bool runWindows, bool cleanBuild)
+    public static void BuildAllPlatforms(string baseDirPath, bool runAndroid, bool runWindows, bool runMac, bool cleanBuild)
     {
         if (string.IsNullOrEmpty(baseDirPath))
         {
@@ -27,6 +28,7 @@ public class BuildPipelineManager
 
         string androidDirPath = Path.Combine(versionDirPath, ANDROID_SUB_PATH);
         string windowsDirPath = Path.Combine(versionDirPath, WINDOWS_SUB_PATH);
+        string macDirPath = Path.Combine(versionDirPath, MAC_SUB_PATH);
 
         if (Directory.Exists(androidDirPath) == false)
         {
@@ -38,12 +40,18 @@ public class BuildPipelineManager
             Directory.CreateDirectory(windowsDirPath);
         }
 
+        if (Directory.Exists(macDirPath) == false)
+        {
+            Directory.CreateDirectory(macDirPath);
+        }
+
         BuildOptions baseOptions = BuildOptions.None;
         if (cleanBuild)
         {
             baseOptions |= BuildOptions.CleanBuildCache;
         }
 
+        // Android Build
         if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
         {
             EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
@@ -58,6 +66,7 @@ public class BuildPipelineManager
         }
         BuildPlayer(scenes, androidOutputPath, BuildTarget.Android, BuildTargetGroup.Android, androidOptions);
 
+        // Windows Build
         if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.StandaloneWindows64)
         {
             EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows64);
@@ -72,6 +81,22 @@ public class BuildPipelineManager
         }
         BuildPlayer(scenes, windowsOutputPath, BuildTarget.StandaloneWindows64, BuildTargetGroup.Standalone, windowsOptions);
 
+        // Mac Build
+        if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.StandaloneOSX)
+        {
+            EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Standalone, BuildTarget.StandaloneOSX);
+        }
+
+        string macFileName = $"PTver_{version}.app";
+        string macOutputPath = Path.Combine(macDirPath, macFileName);
+        BuildOptions macOptions = baseOptions;
+        if (runMac)
+        {
+            macOptions |= BuildOptions.AutoRunPlayer;
+        }
+        BuildPlayer(scenes, macOutputPath, BuildTarget.StandaloneOSX, BuildTargetGroup.Standalone, macOptions);
+
+        // Restore to Android
         if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
         {
             EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
@@ -126,6 +151,7 @@ public class BuildSettingsWindow : EditorWindow
     private int m_versionCode;
     private bool m_runAndroid;
     private bool m_runWindows;
+    private bool m_runMac;
     private bool m_cleanBuild;
 
     [MenuItem("Tools/Build Settings")]
@@ -141,6 +167,7 @@ public class BuildSettingsWindow : EditorWindow
         m_versionCode = PlayerSettings.Android.bundleVersionCode;
         m_runAndroid = EditorPrefs.GetBool("SpaceCaptain_RunAndroid", true);
         m_runWindows = EditorPrefs.GetBool("SpaceCaptain_RunWindows", false);
+        m_runMac = EditorPrefs.GetBool("SpaceCaptain_RunMac", false);
         m_cleanBuild = EditorPrefs.GetBool("SpaceCaptain_CleanBuild", false);
     }
 
@@ -171,6 +198,7 @@ public class BuildSettingsWindow : EditorWindow
         GUILayout.Label("빌드 & 런 옵션", EditorStyles.boldLabel);
         m_runAndroid = EditorGUILayout.Toggle("안드로이드 실행", m_runAndroid);
         m_runWindows = EditorGUILayout.Toggle("윈도우 실행", m_runWindows);
+        m_runMac = EditorGUILayout.Toggle("맥 실행", m_runMac);
         m_cleanBuild = EditorGUILayout.Toggle("클린 빌드", m_cleanBuild);
 
         EditorGUILayout.Space();
@@ -184,7 +212,7 @@ public class BuildSettingsWindow : EditorWindow
             }
 
             ApplySettings();
-            BuildPipelineManager.BuildAllPlatforms(m_buildPath, m_runAndroid, m_runWindows, m_cleanBuild);
+            BuildPipelineManager.BuildAllPlatforms(m_buildPath, m_runAndroid, m_runWindows, m_runMac, m_cleanBuild);
         }
     }
 
@@ -195,6 +223,7 @@ public class BuildSettingsWindow : EditorWindow
         EditorPrefs.SetString("SpaceCaptain_BuildPath", m_buildPath);
         EditorPrefs.SetBool("SpaceCaptain_RunAndroid", m_runAndroid);
         EditorPrefs.SetBool("SpaceCaptain_RunWindows", m_runWindows);
+        EditorPrefs.SetBool("SpaceCaptain_RunMac", m_runMac);
         EditorPrefs.SetBool("SpaceCaptain_CleanBuild", m_cleanBuild);
     }
 }
