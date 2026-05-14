@@ -166,10 +166,18 @@ public class GameResultPanelView : MonoBehaviour
 
         if (m_viewModel.StageRewards != null && m_rewardItemPrefab != null && m_rewardContainer != null)
         {
+            // 기존 아이템 제거 (초기화)
+            foreach (Transform child in m_rewardContainer)
+            {
+                Destroy(child.gameObject);
+            }
+
             for (int i = 0; i < m_viewModel.StageRewards.Count; i++)
             {
                 var reward = m_viewModel.StageRewards[i];
                 GameObject go = Instantiate(m_rewardItemPrefab, m_rewardContainer);
+                go.SetActive(true); // 명시적 활성화
+
                 RewardItemView itemView = go.GetComponent<RewardItemView>();
                 if (itemView != null)
                 {

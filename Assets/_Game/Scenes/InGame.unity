@@ -10429,6 +10429,7 @@ MonoBehaviour:
   m_hudView: {fileID: 1195165435}
   m_progressController: {fileID: 1779697493}
   m_resultPanelView: {fileID: 960133192}
+  m_itemDatabase: {fileID: 0}
   m_transitionSettings: {fileID: 11400000, guid: c9f7b34f761c5c342ada8a4b2ab7a716, type: 2}
 --- !u!1 &1541185989
 GameObject:
@@ -13605,8 +13606,7 @@ MonoBehaviour:
   m_targetView: {fileID: 960133192}
   m_testMvpSprites:
   - {fileID: -2311659948842064771, guid: 6520dda4a70dfbf40a55b7af39ecda4e, type: 3}
-  m_testItemIcons:
-  - {fileID: 5938012242645255967, guid: 6520dda4a70dfbf40a55b7af39ecda4e, type: 3}
+  m_itemDatabase: {fileID: 11400000, guid: 7fe14381753bc4f5899855796ed59ddc, type: 2}
   m_transitionSettings: {fileID: 11400000, guid: c9f7b34f761c5c342ada8a4b2ab7a716, type: 2}
 --- !u!1 &1982266510
 GameObject:

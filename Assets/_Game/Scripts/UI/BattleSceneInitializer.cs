@@ -11,6 +11,7 @@ public class BattleSceneInitializer : MonoBehaviour
     [SerializeField] private BattleHUDView m_hudView;
     [SerializeField] private GameProgressController m_progressController;
     [SerializeField] private GameResultPanelView m_resultPanelView;
+    [SerializeField] private ItemDatabaseSO m_itemDatabase;
     [SerializeField] private EasyTransition.TransitionSettings m_transitionSettings;
 
     private IBattleHUDViewModel m_hudViewModel;
@@ -295,6 +296,26 @@ public class BattleSceneInitializer : MonoBehaviour
                             resultDTO.MvpSprite = swapManager.Characters[j].UI_Icon;
                             resultDTO.MvpCharacterName = swapManager.Characters[j].CharacterName;
                             break;
+                        }
+                    }
+                }
+
+                // 스테이지 보상 추가 (클리어 시에만)
+                if (isClear && m_itemDatabase != null)
+                {
+                    var allItems = m_itemDatabase.GetAllItems();
+                    if (allItems != null && allItems.Count > 0)
+                    {
+                        int rewardCount = UnityEngine.Random.Range(3, 6);
+                        for (int k = 0; k < rewardCount; k++)
+                        {
+                            var itemData = allItems[UnityEngine.Random.Range(0, allItems.Count)];
+                            resultDTO.StageRewards.Add(new RewardItemDTO
+                            {
+                                ItemId = itemData.ItemId,
+                                Amount = UnityEngine.Random.Range(10, 200),
+                                ItemIcon = itemData.ItemIcon
+                            });
                         }
                     }
                 }

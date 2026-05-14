@@ -14,6 +14,7 @@ public class LobbyViewModel : ILobbyViewModel
     public int Diamond => m_lobbyData.Diamond;
     public int CurrentStamina => m_lobbyData.CurrentStamina;
     public int MaxStamina => m_lobbyData.MaxStamina;
+    public int RequiredStamina => 1; // 기본 소모량
 
     public string CurrentMapName => m_stageProgress.CurrentMapName;
     public int MaxWaveReached => m_stageProgress.MaxWaveReached;
@@ -45,9 +46,9 @@ public class LobbyViewModel : ILobbyViewModel
 
     public void StartBattle()
     {
-        if (m_lobbyData.CurrentStamina > 0)
+        if (m_lobbyData.CurrentStamina >= RequiredStamina)
         {
-            m_lobbyData.CurrentStamina--;
+            m_lobbyData.CurrentStamina -= RequiredStamina;
             OnDataChanged?.Invoke();
 
             if (m_sceneLoader != null)

@@ -5,7 +5,7 @@ public class GameResultTestSystem : MonoBehaviour
 {
     [SerializeField] private GameResultPanelView m_targetView;
     [SerializeField] private List<Sprite> m_testMvpSprites;
-    [SerializeField] private List<Sprite> m_testItemIcons;
+    [SerializeField] private ItemDatabaseSO m_itemDatabase;
     [SerializeField] private EasyTransition.TransitionSettings m_transitionSettings;
 
     [ContextMenu("Test Victory")]
@@ -108,19 +108,24 @@ public class GameResultTestSystem : MonoBehaviour
             dto.MvpCharacterName = mvpID;
         }
 
-        if (m_testItemIcons != null && m_testItemIcons.Count > 0)
+        if (m_itemDatabase != null)
         {
-            int rewardCount = Random.Range(3, 7);
-            for (int i = 0; i < rewardCount; i++)
+            var allItems = m_itemDatabase.GetAllItems();
+
+            if (allItems != null && allItems.Count > 0)
             {
-                int iconIndex = Random.Range(0, m_testItemIcons.Count);
-                RewardItemDTO reward = new RewardItemDTO
+                int rewardCount = Random.Range(3, 7);
+                for (int i = 0; i < rewardCount; i++)
                 {
-                    ItemId = $"ITEM_{iconIndex}",
-                    Amount = Random.Range(1, 100),
-                    ItemIcon = m_testItemIcons[iconIndex]
-                };
-                dto.StageRewards.Add(reward);
+                    var itemData = allItems[Random.Range(0, allItems.Count)];
+                    RewardItemDTO reward = new RewardItemDTO
+                    {
+                        ItemId = itemData.ItemId,
+                        Amount = Random.Range(1, 100),
+                        ItemIcon = itemData.ItemIcon
+                    };
+                    dto.StageRewards.Add(reward);
+                }
             }
         }
 

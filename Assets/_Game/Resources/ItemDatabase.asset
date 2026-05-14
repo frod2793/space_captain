@@ -1,0 +1,120 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c94a0172887074a52b5fc750ee475b84, type: 3}
+  m_Name: ItemDatabase
+  m_EditorClassIdentifier: Assembly-CSharp::ItemDatabaseSO
+  m_items:
+  - ItemId: item_00
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 0"
+    ItemIcon: {fileID: 57233299, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_0 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_01
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 1"
+    ItemIcon: {fileID: 1103218575, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_1 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_02
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 2"
+    ItemIcon: {fileID: -914598743, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_2 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_03
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 3"
+    ItemIcon: {fileID: -1624731279, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_3 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_04
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 4"
+    ItemIcon: {fileID: -2042399832, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_4 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_05
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 5"
+    ItemIcon: {fileID: -2054294034, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_5 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_06
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 6"
+    ItemIcon: {fileID: -232088512, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_6 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_07
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 7"
+    ItemIcon: {fileID: -444288246, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_7 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_08
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 8"
+    ItemIcon: {fileID: -1239322710, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_8 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_09
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 9"
+    ItemIcon: {fileID: -273209116, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_9 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_10
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 10"
+    ItemIcon: {fileID: -1331094269, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_10 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_11
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 11"
+    ItemIcon: {fileID: 1979857846, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_11 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_12
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 12"
+    ItemIcon: {fileID: -1710872223, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_12 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_13
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 13"
+    ItemIcon: {fileID: -1261095272, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_13 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_14
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 14"
+    ItemIcon: {fileID: -41411753, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_14 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_15
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 15"
+    ItemIcon: {fileID: -1290603643, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_15 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_16
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 16"
+    ItemIcon: {fileID: -1454923664, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_16 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_17
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 17"
+    ItemIcon: {fileID: 342873117, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_17 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_18
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 18"
+    ItemIcon: {fileID: 1308751998, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_18 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_19
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 19"
+    ItemIcon: {fileID: 1860244253, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_19 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."
+  - ItemId: item_20
+    ItemName: "\uC0D8\uD50C \uC544\uC774\uD15C 20"
+    ItemIcon: {fileID: -1834907816, guid: 5df4618ab18fc4b85a89588d6296c778, type: 3}
+    Description: "\uC774\uAC83\uC740 item_Sheet_20 \uC2A4\uD504\uB77C\uC774\uD2B8\uB97C
+      \uC0AC\uC6A9\uD558\uB294 \uC0D8\uD50C \uC544\uC774\uD15C\uC785\uB2C8\uB2E4."

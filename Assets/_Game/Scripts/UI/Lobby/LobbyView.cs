@@ -19,6 +19,7 @@ public class LobbyView : MonoBehaviour
 
     [Header("버튼")]
     [SerializeField] private Button m_battleStartButton;
+    [SerializeField] private TMP_Text m_staminaCostText;
     [SerializeField] private Button m_settingsButton;
     [SerializeField] private Button m_profileButton;
 
@@ -112,6 +113,11 @@ public class LobbyView : MonoBehaviour
         m_goldText.text = m_viewModel.Gold.ToString("N0");
         m_diamondText.text = m_viewModel.Diamond.ToString("N0");
         m_staminaText.text = $"{m_viewModel.CurrentStamina} / {m_viewModel.MaxStamina}";
+
+        if (m_staminaCostText != null)
+        {
+            m_staminaCostText.text = $"-{m_viewModel.RequiredStamina}";
+        }
 
         m_mapNameText.text = m_viewModel.DisplayStageName;
         m_maxWaveText.text = $"최고 기록: {m_viewModel.MaxWaveReached} 웨이브";

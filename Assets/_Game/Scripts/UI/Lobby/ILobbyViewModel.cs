@@ -8,6 +8,7 @@ public interface ILobbyViewModel
     int Diamond { get; }
     int CurrentStamina { get; }
     int MaxStamina { get; }
+    int RequiredStamina { get; }
 
     string CurrentMapName { get; }
     int MaxWaveReached { get; }
