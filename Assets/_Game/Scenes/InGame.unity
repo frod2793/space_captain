@@ -180,6 +180,10 @@ PrefabInstance:
       value: Player
       objectReference: {fileID: 0}
     - target: {fileID: 6254238286547050432, guid: 4eb6e2683eb0646b38b24335c4f701f2, type: 3}
+      propertyPath: m_uiIcon
+      value: 
+      objectReference: {fileID: 1258231802, guid: 5f2c4d468ad18d64c8566864e40306be, type: 3}
+    - target: {fileID: 6254238286547050432, guid: 4eb6e2683eb0646b38b24335c4f701f2, type: 3}
       propertyPath: m_activeSkill
       value: 
       objectReference: {fileID: 9191244}
@@ -2758,6 +2762,10 @@ PrefabInstance:
       propertyPath: m_TagString
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 6254238286547050432, guid: 4eb6e2683eb0646b38b24335c4f701f2, type: 3}
+      propertyPath: m_uiIcon
+      value: 
+      objectReference: {fileID: -663790813, guid: 9de24de8eaefa2547a78fa19acb9c1ba, type: 3}
     - target: {fileID: 6254238286547050432, guid: 4eb6e2683eb0646b38b24335c4f701f2, type: 3}
       propertyPath: m_activeSkill
       value: 
@@ -5946,7 +5954,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1350946189}
   m_Direction: 0
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.99999994
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -7208,7 +7216,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameResultPanelView
   m_resultTitleText: {fileID: 124902764}
-  m_mvpIllustrationImage: {fileID: 544705169}
+  m_mvpButtonImage: {fileID: 544705169}
   m_mvpNameText: {fileID: 1541185991}
   m_damageLogPanel: {fileID: 522285694}
   m_damageLogToggleButton: {fileID: 522285697}
@@ -10302,7 +10310,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2065428623}
   m_HandleRect: {fileID: 2065428622}
   m_Direction: 2
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -13804,7 +13812,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 801819577}
   m_HandleRect: {fileID: 801819576}
   m_Direction: 2
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -14549,6 +14557,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 1006107323}
     m_Modifications:
     - target: {fileID: 201584861908156850, guid: 873a4de72efca487e8d5ad9f09d20091, type: 3}
+      propertyPath: m_uiIcon
+      value: 
+      objectReference: {fileID: -1426459383, guid: 6e663d1a2a9e08b4db4d0106ca7a5215, type: 3}
+    - target: {fileID: 201584861908156850, guid: 873a4de72efca487e8d5ad9f09d20091, type: 3}
       propertyPath: m_swapState
       value: 0
       objectReference: {fileID: 0}
@@ -14875,6 +14887,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7002374812378733989, guid: 151111b57a3d64d06b13a1ba99f00ef9, type: 3}
+      propertyPath: m_uiIcon
+      value: 
+      objectReference: {fileID: -609105593, guid: 9a7d4cf78d555f84b94b7e366c221326, type: 3}
     - target: {fileID: 7002374812378733989, guid: 151111b57a3d64d06b13a1ba99f00ef9, type: 3}
       propertyPath: m_swapState
       value: 1
@@ -15395,6 +15411,10 @@ PrefabInstance:
       propertyPath: m_TagString
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 6254238286547050432, guid: 4eb6e2683eb0646b38b24335c4f701f2, type: 3}
+      propertyPath: m_uiIcon
+      value: 
+      objectReference: {fileID: 766401250, guid: 0c04039c8c6afbb42b2d39b43f560475, type: 3}
     - target: {fileID: 6254238286547050432, guid: 4eb6e2683eb0646b38b24335c4f701f2, type: 3}
       propertyPath: m_swapState
       value: 1

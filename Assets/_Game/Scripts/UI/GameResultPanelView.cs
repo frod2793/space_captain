@@ -10,7 +10,8 @@ public class GameResultPanelView : MonoBehaviour
     [Header("결과 상태")] [SerializeField] private TextMeshProUGUI m_resultTitleText;
 
     [Header("MVP")] 
-    [SerializeField] private Image m_mvpIllustrationImage;
+    [FormerlySerializedAs("m_mvpIllustrationImage")]
+    [SerializeField] private Image m_mvpButtonImage;
     [SerializeField] private TextMeshProUGUI m_mvpNameText;
 
     [Header("데미지 로그")] 
@@ -104,14 +105,19 @@ public class GameResultPanelView : MonoBehaviour
             m_resultTitleText.alpha = 0f;
         }
 
-        if (m_mvpIllustrationImage != null)
+        if (m_mvpButtonImage != null)
         {
-            m_mvpIllustrationImage.sprite = m_viewModel.MvpSprite;
-            m_mvpIllustrationImage.gameObject.SetActive(m_viewModel.MvpSprite != null);
+            m_mvpButtonImage.sprite = m_viewModel.MvpSprite;
+            m_mvpButtonImage.gameObject.SetActive(m_viewModel.MvpSprite != null);
             
-            Color color = m_mvpIllustrationImage.color;
+            if (m_mvpButtonImage.sprite != null)
+            {
+                m_mvpButtonImage.SetNativeSize();
+            }
+
+            Color color = m_mvpButtonImage.color;
             color.a = 0f;
-            m_mvpIllustrationImage.color = color;
+            m_mvpButtonImage.color = color;
         }
 
         if (m_mvpNameText != null)
@@ -222,13 +228,13 @@ public class GameResultPanelView : MonoBehaviour
             seq.Join(m_resultTitleText.transform.DOScale(1f, 0.5f).SetEase(Ease.OutBack));
         }
 
-        if (m_mvpIllustrationImage != null && m_mvpIllustrationImage.gameObject.activeSelf)
+        if (m_mvpButtonImage != null && m_mvpButtonImage.gameObject.activeSelf)
         {
-            Vector2 originalPos = m_mvpIllustrationImage.rectTransform.anchoredPosition;
-            m_mvpIllustrationImage.rectTransform.anchoredPosition = originalPos + new Vector2(0f, 50f);
+            Vector2 originalPos = m_mvpButtonImage.rectTransform.anchoredPosition;
+            m_mvpButtonImage.rectTransform.anchoredPosition = originalPos + new Vector2(0f, 50f);
 
-            seq.Append(m_mvpIllustrationImage.DOFade(1f, 0.8f));
-            seq.Join(m_mvpIllustrationImage.rectTransform.DOAnchorPos(originalPos, 0.8f).SetEase(Ease.OutCubic));
+            seq.Append(m_mvpButtonImage.DOFade(1f, 0.8f));
+            seq.Join(m_mvpButtonImage.rectTransform.DOAnchorPos(originalPos, 0.8f).SetEase(Ease.OutCubic));
 
             if (m_mvpNameText != null)
             {
