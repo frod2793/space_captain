@@ -12,6 +12,8 @@ public class BattleSceneInitializer : MonoBehaviour
     [SerializeField] private GameProgressController m_progressController;
     [SerializeField] private GameResultPanelView m_resultPanelView;
     [SerializeField] private ItemDatabaseSO m_itemDatabase;
+    [SerializeField] private CharacterDatabaseSO m_characterDatabase;
+    [SerializeField] private UserDataSO m_userData;
     [SerializeField] private EasyTransition.TransitionSettings m_transitionSettings;
 
     private IBattleHUDViewModel m_hudViewModel;
@@ -80,6 +82,53 @@ public class BattleSceneInitializer : MonoBehaviour
             var playerHpBar = FindAnyObjectByType<PlayerHpBar>();
             swapManager.Barrier = barrier;
             swapManager.PlayerHUD = playerHpBar;
+
+            // 동적 캐릭터 생성 및 주입
+            if (m_characterDatabase != null && m_userData != null)
+            {
+                var deck = m_userData.LobbyData.DeckCharacters;
+                
+                if (deck == null || deck.Count == 0)
+                {
+                    deck = new List<string> { "Player_1", "Player_2", "Player" };
+                }
+
+                List<PlayerCharacterController> spawnedCharacters = new List<PlayerCharacterController>();
+                for (int i = 0; i < deck.Count; i++)
+                {
+                    var charData = m_characterDatabase.GetCharacter(deck[i]);
+                    if (charData != null && charData.Prefab != null)
+                    {
+                        GameObject go = Instantiate(charData.Prefab);
+                        var controller = go.GetComponent<PlayerCharacterController>();
+                        if (controller != null)
+                        {
+                            // 초기 스탯 주입
+                            if (charData.BaseStats != null)
+                            {
+                                var stats = new PlayerStatsDTO
+                                {
+                                    ID = charData.CharacterID,
+                                    MaxHp = charData.BaseStats.MaxHp,
+                                    CurrentHp = charData.BaseStats.MaxHp,
+                                    AttackDamage = charData.BaseStats.AttackDamage,
+                                    MoveSpeed = charData.BaseStats.MoveSpeed,
+                                    Level = charData.BaseStats.Level,
+                                    IsActive = (i == 0)
+                                };
+                                controller.Initialize(stats);
+                            }
+                            
+                            spawnedCharacters.Add(controller);
+                        }
+                    }
+                }
+
+                if (spawnedCharacters.Count > 0)
+                {
+                    swapManager.SetCharacters(spawnedCharacters);
+                }
+            }
         }
 
         m_hudViewModel = new BattleHUDViewModel();
@@ -245,8 +294,8 @@ public class BattleSceneInitializer : MonoBehaviour
             var resultDTO = new GameResultDTO
             {
                 IsClear = isClear,
-                CharacterDamages = new Dictionary<string, int>(),
-                CharacterIcons = new Dictionary<string, Sprite>()
+                CharacterDamages = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
+                CharacterIcons = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase)
             };
 
             if (m_hudViewModel is BattleHUDViewModel hudVM)

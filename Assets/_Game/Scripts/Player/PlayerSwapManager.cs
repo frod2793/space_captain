@@ -72,67 +72,12 @@ public class PlayerSwapManager : MonoBehaviour
         m_mainCamera = Camera.main;
     }
 
-    private void Start()
-    {
-        InitializeCharacters();
-        AlignCharactersToPositions();
-        m_swapCooldownEndTime = Time.time + m_swapCooldownDuration;
-    }
-
-    private float m_lastCooldownRatio = -1f;
-
-    private void Update()
-    {
-        HandleRegenTick();
-        UpdateSkillCooldowns();
-        UpdateCooldownRatio();
-
-        if (!m_isInputLocked)
-        {
-            HandleInput();
-        }
-    }
-
-    private void UpdateCooldownRatio()
-    {
-        float ratio = CooldownRatio;
-        if (Mathf.Abs(m_lastCooldownRatio - ratio) > 0.002f)
-        {
-            m_lastCooldownRatio = ratio;
-            OnSwapCooldownChanged?.Invoke(ratio);
-        }
-    }
-
-
-    private void UpdateSkillCooldowns()
-    {
-        for (int i = 0; i < m_characters.Count; i++)
-        {
-            var character = m_characters[i];
-            if (character.SwapState != CharacterSwapState.Dead && character.Skill != null)
-            {
-                character.Skill.UpdateCooldown(Time.deltaTime);
-            }
-        }
-    }
-
-    private void InitializeCharacters()
+    public void SetCharacters(List<PlayerCharacterController> characters)
     {
         m_characters.Clear();
-        var foundCharacters = FindObjectsByType<PlayerCharacterController>(FindObjectsSortMode.None);
-
-        if (foundCharacters == null || foundCharacters.Length == 0)
+        if (characters != null)
         {
-            return;
-        }
-
-        for (int i = 0; i < foundCharacters.Length; i++)
-        {
-            var character = foundCharacters[i];
-            if (character != null)
-            {
-                m_characters.Add(character);
-            }
+            m_characters.AddRange(characters);
         }
 
         if (m_characters.Count == 0)
@@ -149,18 +94,24 @@ public class PlayerSwapManager : MonoBehaviour
         for (int i = 0; i < m_characters.Count; i++)
         {
             var character = m_characters[i];
+            if (character == null) continue;
+
             m_aliveCount++;
 
             bool isActiveZero = (i == 0);
-            var stats = new PlayerStatsDTO
+            
+            if (character.Stats == null)
             {
-                ID = $"Player_{i}",
-                IsActive = isActiveZero,
-                MoveSpeed = 20f,
-                CurrentX = character.transform.position.x
-            };
+                var stats = new PlayerStatsDTO
+                {
+                    ID = character.CharacterID,
+                    IsActive = isActiveZero,
+                    MoveSpeed = 20f,
+                    CurrentX = character.transform.position.x
+                };
 
-            character.Initialize(stats);
+                character.Initialize(stats);
+            }
 
             if (hasBarrier)
             {
@@ -182,6 +133,8 @@ public class PlayerSwapManager : MonoBehaviour
         }
 
         OnCharactersInitialized?.Invoke();
+        AlignCharactersToPositions();
+        m_swapCooldownEndTime = Time.time + m_swapCooldownDuration;
     }
 
     private void AlignCharactersToPositions()
@@ -222,8 +175,24 @@ public class PlayerSwapManager : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        HandleInput();
+        HandleRegenTick();
+    }
+
     private void HandleInput()
     {
+        if (m_isInputLocked || m_isAnimating)
+        {
+            m_isDraggingActive = false;
+            if (m_activeCharacter != null)
+            {
+                m_activeCharacter.IsDragging = false;
+            }
+            return;
+        }
+
         var pointer = Pointer.current;
         if (pointer == null)
         {
@@ -234,27 +203,32 @@ public class PlayerSwapManager : MonoBehaviour
 
         if (pointer.press.wasPressedThisFrame)
         {
-            if (!m_isAnimating)
+            m_lastScreenPos = screenPos;
+            bool swapTriggered = TrySwapCharacter(screenPos);
+            m_isDraggingActive = !swapTriggered;
+            
+            if (m_activeCharacter != null)
             {
-                m_lastScreenPos = screenPos;
-                bool swapTriggered = TrySwapCharacter(screenPos);
-                m_isDraggingActive = !swapTriggered;
+                m_activeCharacter.IsDragging = m_isDraggingActive;
             }
         }
-        else if (pointer.press.isPressed && !m_isDraggingActive)
+        else if (pointer.press.isPressed)
         {
-            m_isDraggingActive = true;
-            m_lastScreenPos = screenPos;
-        }
-
-        if (m_activeCharacter != null)
-        {
-            m_activeCharacter.IsDragging = m_isDraggingActive;
-        }
-
-        if (m_isDraggingActive && pointer.press.isPressed)
-        {
-            MoveActiveCharacter(screenPos);
+            if (!m_isDraggingActive)
+            {
+                m_isDraggingActive = true;
+                m_lastScreenPos = screenPos; 
+                
+                if (m_activeCharacter != null)
+                {
+                    m_activeCharacter.IsDragging = true;
+                }
+            }
+            
+            if (m_isDraggingActive)
+            {
+                MoveActiveCharacter(screenPos);
+            }
         }
 
         if (pointer.press.wasReleasedThisFrame)

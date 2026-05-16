@@ -198,13 +198,6 @@ public class EnemySpawner : MonoBehaviour
                 SpawnEnemy();
                 m_currentTimer = m_currentSpawnInterval;
                 m_remainingEnemiesInWave--;
-
-                if (m_remainingEnemiesInWave <= 0)
-                {
-#if UNITY_EDITOR
-                    Debug.Log($"[Wave {m_currentWaveIndex + 1}] 모든 일반 적 생성 완료. 남은 적 처치 대기 중...");
-#endif
-                }
             }
         }
     }
@@ -230,12 +223,13 @@ public class EnemySpawner : MonoBehaviour
     {
         try
         {
-            await UniTask.Delay(TimeSpan.FromSeconds(m_waveConfig.RestDuration), cancellationToken: this.GetCancellationTokenOnDestroy());
+            await UniTask.Delay(TimeSpan.FromSeconds(m_waveConfig.RestDuration),
+                cancellationToken: this.GetCancellationTokenOnDestroy());
             StartNextWave();
         }
-        catch (OperationCanceledException)
+        catch
         {
-            // 객체 파괴 등으로 인한 취소 시 대응
+            
         }
     }
 

@@ -29,7 +29,7 @@ public class PlayerCharacterController : MonoBehaviour
     public PlayerStatsDTO Stats => m_stats;
     public Collider2D Collider => m_collider;
     public Sprite UI_Icon => m_uiIcon;
-    public string CharacterID => m_characterID;
+    public string CharacterID => (m_stats != null && !string.IsNullOrEmpty(m_stats.ID)) ? m_stats.ID : m_characterID;
     public string CharacterName => (m_activeSkill != null) ? m_activeSkill.CharacterName : m_characterID;
     public ActiveSkill Skill => m_activeSkill;
 

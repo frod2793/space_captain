@@ -13,12 +13,21 @@ MonoBehaviour:
   m_Name: UserData
   m_EditorClassIdentifier: Assembly-CSharp::UserDataSO
   m_lobbyData:
+    UID: USER_777
+    ProfileIconID: DefaultIcon
     Nickname: Captain
     Level: 1
     Gold: 0
     Diamond: 0
     CurrentStamina: 20
     MaxStamina: 20
+    OwnedCharacters: []
+    DeckCharacters:
+    - a
+    - b
+    - c
+    - d
+    - e
   m_stageProgress:
     CurrentMapName: Asteroid Belt
     CurrentMapID: 101

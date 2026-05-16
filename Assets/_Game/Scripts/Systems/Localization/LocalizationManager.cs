@@ -32,7 +32,6 @@ namespace SpaceCaptain.Systems.Localization
             }
 
             ParseCsv(csvAsset.text);
-            Debug.Log($"[LocalizationManager] 번역 파일 로드 성공: {resourcePath}");
         }
 
         public void ChangeLanguage(LanguageType newLanguage)
@@ -77,7 +76,7 @@ namespace SpaceCaptain.Systems.Localization
                     return;
                 }
 
-                // Header mapping: Key, Korean, English, ...
+            
                 string[] headers = headerLine.Split(',');
                 Dictionary<int, LanguageType> columnMap = new Dictionary<int, LanguageType>();
 

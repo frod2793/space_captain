@@ -77,7 +77,20 @@ public class DamageLogEntry : MonoBehaviour
     {
         if (m_characterIcon != null)
         {
-            m_characterIcon.sprite = portrait;
+            if (portrait != null)
+            {
+                m_characterIcon.sprite = portrait;
+                m_characterIcon.gameObject.SetActive(true);
+                
+                // 프리팹의 알파값이 0일 경우를 대비해 1로 복구
+                Color c = m_characterIcon.color;
+                c.a = 1f;
+                m_characterIcon.color = c;
+            }
+            else
+            {
+                m_characterIcon.gameObject.SetActive(false);
+            }
         }
     }
 

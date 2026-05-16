@@ -22,8 +22,8 @@ public class GameResultDTO
 
     public GameResultDTO()
     {
-        CharacterDamages = new Dictionary<string, int>();
-        CharacterIcons = new Dictionary<string, Sprite>();
+        CharacterDamages = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        CharacterIcons = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
         StageRewards = new List<RewardItemDTO>();
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 [Serializable]
 public class LobbyDataDTO
@@ -11,4 +12,7 @@ public class LobbyDataDTO
     public int Diamond = 0;
     public int CurrentStamina = 20;
     public int MaxStamina = 20;
+
+    public List<string> OwnedCharacters = new List<string>();
+    public List<string> DeckCharacters = new List<string>();
 }

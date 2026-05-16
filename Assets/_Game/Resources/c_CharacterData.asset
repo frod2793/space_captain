@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6fe39259502864dc59db6699d6a690ee, type: 3}
+  m_Name: c_CharacterData
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterDataSO
+  m_characterID: c
+  m_characterName: "\uAE30\uC5B4\uC11C\uB4DC"
+  m_prefab: {fileID: 3968663484842372456, guid: 4eb6e2683eb0646b38b24335c4f701f2, type: 3}
+  m_uiIcon: {fileID: 766401250, guid: 0c04039c8c6afbb42b2d39b43f560475, type: 3}
+  m_baseStats:
+    ID: c
+    MoveSpeed: 10
+    AttackDamage: 20
+    MaxHp: 100
+    CurrentHp: 100
+    IsActive: 1
+    CurrentX: 0
+    BulletCountBonus: 0
+    SpreadAngleBonus: 0
+    Level: 1

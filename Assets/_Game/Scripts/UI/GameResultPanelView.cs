@@ -154,9 +154,9 @@ public class GameResultPanelView : MonoBehaviour
                 {
                     entry.SetData(key, damage, maxDamage);
 
-                    if (m_viewModel.CharacterIcons.ContainsKey(key))
+                    if (m_viewModel.CharacterIcons.TryGetValue(key, out Sprite iconSprite))
                     {
-                        entry.SetPortrait(m_viewModel.CharacterIcons[key]);
+                        entry.SetPortrait(iconSprite);
                     }
 
                     if (i == 0 && !key.Equals("SHIP", System.StringComparison.OrdinalIgnoreCase))

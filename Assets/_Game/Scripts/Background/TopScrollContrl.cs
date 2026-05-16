@@ -102,9 +102,6 @@ public class TopScrollContrl : MonoBehaviour
         {
             // 실제 렌더링되는 스프라이트의 월드 크기(Height)를 가져옴
             m_scrollSettings.BackgroundHeight = spriteRenderer.bounds.size.y;
-#if UNITY_EDITOR
-            Debug.Log($"[TopScrollContrl] 배경 높이 자동 탐지 성공: {m_scrollSettings.BackgroundHeight}");
-#endif
         }
         else
         {
