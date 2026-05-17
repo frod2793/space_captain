@@ -232,7 +232,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 38493068}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 960133192}
+        m_TargetAssemblyTypeName: GameResultPanelView, Assembly-CSharp
+        m_MethodName: func_OnDoubleRewardClicked
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &38493068
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2118,7 +2130,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 315595869}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 960133192}
+        m_TargetAssemblyTypeName: GameResultPanelView, Assembly-CSharp
+        m_MethodName: func_OnBackToLobbyClicked
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &315595869
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3997,7 +4021,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 522285695}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 960133192}
+        m_TargetAssemblyTypeName: GameResultPanelView, Assembly-CSharp
+        m_MethodName: func_OnDamageLogToggleClicked
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1001 &527040504
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5399,7 +5435,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1350946189}
   m_Direction: 0
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.99999994
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -9502,7 +9538,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2065428623}
   m_HandleRect: {fileID: 2065428622}
   m_Direction: 2
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -12646,6 +12682,7 @@ MonoBehaviour:
   m_targetView: {fileID: 960133192}
   m_testMvpSprites:
   - {fileID: -2311659948842064771, guid: 6520dda4a70dfbf40a55b7af39ecda4e, type: 3}
+  m_characterDatabase: {fileID: 0}
   m_itemDatabase: {fileID: 11400000, guid: 7fe14381753bc4f5899855796ed59ddc, type: 2}
   m_transitionSettings: {fileID: 11400000, guid: c9f7b34f761c5c342ada8a4b2ab7a716, type: 2}
 --- !u!1 &1982266510
@@ -12844,7 +12881,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 801819577}
   m_HandleRect: {fileID: 801819576}
   m_Direction: 2
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:

@@ -7,27 +7,28 @@ using System.Collections.Generic;
 
 public class GameResultPanelView : MonoBehaviour
 {
-    [Header("결과 상태")] [SerializeField] private TextMeshProUGUI m_resultTitleText;
+    [Header("결과 상태")]
+    [SerializeField] private TextMeshProUGUI m_resultTitleText;
 
-    [Header("MVP")] 
+    [Header("MVP")]
     [FormerlySerializedAs("m_mvpIllustrationImage")]
     [SerializeField] private Image m_mvpButtonImage;
     [SerializeField] private TextMeshProUGUI m_mvpNameText;
 
     [Header("데미지 로그")] 
     [SerializeField] private RectTransform m_damageLogPanel;
-    [SerializeField] private Button m_damageLogToggleButton;
+    private Button m_damageLogToggleButton;
 
     [SerializeField] private Transform m_damageLogContainer;
-
     [SerializeField] private GameObject m_damageLogPrefab;
 
-    [Header("보상 목록")] [SerializeField] private Transform m_rewardContainer;
+    [Header("보상 목록")]
+    [SerializeField] private Transform m_rewardContainer;
     [SerializeField] private GameObject m_rewardItemPrefab;
 
-    [Header("조작 버튼")] [SerializeField] private Button m_doubleRewardButton;
-
-    [SerializeField] private Button m_mainScreenButton;
+    [Header("조작 버튼")] 
+    private Button m_doubleRewardButton;
+    private Button m_mainScreenButton;
 
     [Header("연출 설정")] [SerializeField] private float m_expandDuration = 0.3f;
     [SerializeField] private Vector2 m_damageLogCollapsedSize = new Vector2(0, 300);
@@ -45,6 +46,25 @@ public class GameResultPanelView : MonoBehaviour
             m_canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
 
+        // 버튼 컴포넌트 자동 할당 (자식 오브젝트 이름 기준)
+        Transform doubleRewardTransform = transform.Find("DoubleRewardButton");
+        if (doubleRewardTransform != null)
+        {
+            m_doubleRewardButton = doubleRewardTransform.GetComponent<Button>();
+        }
+
+        Transform mainScreenTransform = transform.Find("MainScreenButton");
+        if (mainScreenTransform != null)
+        {
+            m_mainScreenButton = mainScreenTransform.GetComponent<Button>();
+        }
+
+        Transform damageLogToggleTransform = transform.Find("DamageLogToggleButton");
+        if (damageLogToggleTransform != null)
+        {
+            m_damageLogToggleButton = damageLogToggleTransform.GetComponent<Button>();
+        }
+
         gameObject.SetActive(false);
     }
 
@@ -53,7 +73,6 @@ public class GameResultPanelView : MonoBehaviour
         m_viewModel = viewModel;
         m_viewModel.OnDamageLogToggled += HandleDamageLogToggle;
 
-        BindButtons();
         SetupView();
         AnimateEntry();
     }
@@ -66,29 +85,24 @@ public class GameResultPanelView : MonoBehaviour
         }
     }
 
-    private void BindButtons()
+    public void func_OnDoubleRewardClicked()
     {
         if (m_doubleRewardButton != null)
         {
-            m_doubleRewardButton.onClick.RemoveAllListeners();
-            m_doubleRewardButton.onClick.AddListener(() =>
-            {
-                m_doubleRewardButton.interactable = false;
-                m_viewModel.ClaimDoubleReward();
-            });
+            m_doubleRewardButton.interactable = false;
         }
 
-        if (m_mainScreenButton != null)
-        {
-            m_mainScreenButton.onClick.RemoveAllListeners();
-            m_mainScreenButton.onClick.AddListener(() => { m_viewModel.BackToMain(); });
-        }
+        m_viewModel.ClaimDoubleReward();
+    }
 
-        if (m_damageLogToggleButton != null)
-        {
-            m_damageLogToggleButton.onClick.RemoveAllListeners();
-            m_damageLogToggleButton.onClick.AddListener(() => { m_viewModel.ToggleDamageLog(); });
-        }
+    public void func_OnBackToLobbyClicked()
+    {
+        m_viewModel.BackToMain();
+    }
+
+    public void func_OnDamageLogToggleClicked()
+    {
+        m_viewModel.ToggleDamageLog();
     }
 
     private void SetupView()
@@ -109,7 +123,7 @@ public class GameResultPanelView : MonoBehaviour
         {
             m_mvpButtonImage.sprite = m_viewModel.MvpSprite;
             m_mvpButtonImage.gameObject.SetActive(m_viewModel.MvpSprite != null);
-            
+
             if (m_mvpButtonImage.sprite != null)
             {
                 m_mvpButtonImage.SetNativeSize();
