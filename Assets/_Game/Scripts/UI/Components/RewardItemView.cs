@@ -13,6 +13,11 @@ public class RewardItemView : MonoBehaviour
         {
             m_itemIconImage.sprite = icon;
             m_itemIconImage.gameObject.SetActive(icon != null);
+            
+            if (icon != null)
+            {
+                m_itemIconImage.SetNativeSize();
+            }
         }
 
         if (m_amountText != null)

@@ -114,7 +114,10 @@ public class SkillCutInUI : MonoBehaviour
                 {
                     m_canvasGroup.DOFade(0f, 0.3f).SetUpdate(true).OnComplete(() =>
                     {
-                        if (m_canvasGroup != null) m_canvasGroup.gameObject.SetActive(false);
+                        if (m_canvasGroup != null)
+                        {
+                            m_canvasGroup.gameObject.SetActive(false);
+                        }
                     });
                 }
             }).SetUpdate(true);

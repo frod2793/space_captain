@@ -158,7 +158,10 @@ public class EnemySpawner : MonoBehaviour
     /// </summary>
     private void SpawnBoss()
     {
-        if (m_bossPrefab == null) return;
+        if (m_bossPrefab == null)
+        {
+            return;
+        }
 
         Vector3 spawnPos = m_bossSpawnPoint != null ? m_bossSpawnPoint.position : transform.position;
         GameObject bossObj = Instantiate(m_bossPrefab, spawnPos, Quaternion.identity);
@@ -187,8 +190,15 @@ public class EnemySpawner : MonoBehaviour
     /// </summary>
     private void HandleWaveLogic()
     {
-        if (m_spawnAreaCollider == null) return;
-        if (m_isBossSpawned) return;
+        if (m_spawnAreaCollider == null)
+        {
+            return;
+        }
+
+        if (m_isBossSpawned)
+        {
+            return;
+        }
 
         if (m_remainingEnemiesInWave > 0)
         {
@@ -238,7 +248,10 @@ public class EnemySpawner : MonoBehaviour
     /// </summary>
     private void SpawnEnemy()
     {
-        if (m_spawnAreaCollider == null || m_waveConfig.EnemyPrefab == null) return;
+        if (m_spawnAreaCollider == null || m_waveConfig.EnemyPrefab == null)
+        {
+            return;
+        }
 
         var pool = UnityEngine.Object.FindAnyObjectByType<ObjectPoolManager>();
         
@@ -258,7 +271,10 @@ public class EnemySpawner : MonoBehaviour
             }
         }
 
-        if (!foundPos) spawnPos = m_spawnLogic.CalculateRandomSpawnPositionInBounds(m_spawnAreaCollider.bounds);
+        if (!foundPos)
+        {
+            spawnPos = m_spawnLogic.CalculateRandomSpawnPositionInBounds(m_spawnAreaCollider.bounds);
+        }
 
         GameObject enemyObj = null;
         if (pool != null)
@@ -270,7 +286,10 @@ public class EnemySpawner : MonoBehaviour
             enemyObj = Instantiate(m_waveConfig.EnemyPrefab, spawnPos, Quaternion.identity);
         }
 
-        if (enemyObj == null) return;
+        if (enemyObj == null)
+        {
+            return;
+        }
 
         if (enemyObj.TryGetComponent<EnemyController>(out var controller))
         {

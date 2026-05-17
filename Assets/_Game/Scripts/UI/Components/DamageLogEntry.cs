@@ -86,6 +86,8 @@ public class DamageLogEntry : MonoBehaviour
                 Color c = m_characterIcon.color;
                 c.a = 1f;
                 m_characterIcon.color = c;
+
+                m_characterIcon.SetNativeSize();
             }
             else
             {

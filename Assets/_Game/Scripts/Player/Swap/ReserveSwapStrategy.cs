@@ -10,7 +10,10 @@ namespace SpaceCaptain.Player.Swap
 
         public async UniTask PrepareAsync(SwapContextDTO context)
         {
-            if (context == null || !context.IsValid) return;
+            if (context == null || !context.IsValid)
+            {
+                return;
+            }
 
             context.LeavingCharacter.IsDragging = false;
             context.LeavingCharacter.SetActive(false);

@@ -149,7 +149,7 @@ public class GameResultPanelView : MonoBehaviour
                 int damage = damageList[i].Value;
 
                 GameObject go = Instantiate(m_damageLogPrefab, m_damageLogContainer);
-                DamageLogEntry entry = go.GetComponent<DamageLogEntry>();
+                DamageLogEntry entry = go.GetComponentInChildren<DamageLogEntry>();
                 if (entry != null)
                 {
                     entry.SetData(key, damage, maxDamage);
@@ -157,6 +157,10 @@ public class GameResultPanelView : MonoBehaviour
                     if (m_viewModel.CharacterIcons.TryGetValue(key, out Sprite iconSprite))
                     {
                         entry.SetPortrait(iconSprite);
+                    }
+                    else
+                    {
+                        entry.SetPortrait(null);
                     }
 
                     if (i == 0 && !key.Equals("SHIP", System.StringComparison.OrdinalIgnoreCase))
@@ -173,9 +177,11 @@ public class GameResultPanelView : MonoBehaviour
         if (m_viewModel.StageRewards != null && m_rewardItemPrefab != null && m_rewardContainer != null)
         {
             // 기존 아이템 제거 (초기화)
-            foreach (Transform child in m_rewardContainer)
+            for (int i = m_rewardContainer.childCount - 1; i >= 0; i--)
             {
-                Destroy(child.gameObject);
+                GameObject childGo = m_rewardContainer.GetChild(i).gameObject;
+                childGo.SetActive(false);
+                Destroy(childGo);
             }
 
             for (int i = 0; i < m_viewModel.StageRewards.Count; i++)
@@ -184,7 +190,7 @@ public class GameResultPanelView : MonoBehaviour
                 GameObject go = Instantiate(m_rewardItemPrefab, m_rewardContainer);
                 go.SetActive(true); // 명시적 활성화
 
-                RewardItemView itemView = go.GetComponent<RewardItemView>();
+                RewardItemView itemView = go.GetComponentInChildren<RewardItemView>();
                 if (itemView != null)
                 {
                     itemView.SetData(reward.ItemIcon, reward.Amount);
@@ -257,6 +263,11 @@ public class GameResultPanelView : MonoBehaviour
             for (int i = 0; i < m_rewardContainer.childCount; i++)
             {
                 Transform child = m_rewardContainer.GetChild(i);
+                if (child.gameObject.activeSelf == false)
+                {
+                    continue;
+                }
+
                 seq.Append(child.DOScale(1f, 0.2f).SetEase(Ease.OutBounce));
                 if (i > 0 && i % 8 == 0)
                 {

@@ -29,11 +29,21 @@ public class BossHpBar : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (m_target == null) return;
+        if (m_target == null)
+        {
+            return;
+        }
 
         // 매 프레임 메인 카메라 유효성 확인
-        if (m_mainCamera == null) m_mainCamera = Camera.main;
-        if (m_mainCamera == null) return;
+        if (m_mainCamera == null)
+        {
+            m_mainCamera = Camera.main;
+        }
+
+        if (m_mainCamera == null)
+        {
+            return;
+        }
 
         UpdatePosition();
     }
@@ -67,8 +77,15 @@ public class BossHpBar : MonoBehaviour
         else
         {
             // 호출 시점에 카메라가 아직 로드되지 않은 경우 대응
-            if (m_mainCamera == null) m_mainCamera = Camera.main;
-            if (m_mainCamera == null) return; 
+            if (m_mainCamera == null)
+            {
+                m_mainCamera = Camera.main;
+            }
+
+            if (m_mainCamera == null)
+            {
+                return; 
+            }
 
             finalPos = m_mainCamera.WorldToScreenPoint(targetPos);
         }

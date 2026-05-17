@@ -27,7 +27,10 @@ public class ItemDatabaseSO : ScriptableObject
     {
         InitializeCache();
 
-        if (string.IsNullOrEmpty(itemId)) return null;
+        if (string.IsNullOrEmpty(itemId))
+        {
+            return null;
+        }
 
         if (m_itemCache.TryGetValue(itemId, out var data))
         {

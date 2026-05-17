@@ -33,7 +33,10 @@ public class UserProfilePopupView : MonoBehaviour
 
     private void UpdateUI()
     {
-        if (m_viewModel == null) return;
+        if (m_viewModel == null)
+        {
+            return;
+        }
 
         if (m_uidText != null)
         {

@@ -23,7 +23,10 @@ public class EnemyLogic
 
     public Vector3 CalculateNextPosition(Vector3 currentPos, Vector3 targetPos, float deltaTime)
     {
-        if (m_data == null || m_data.IsDead) return currentPos;
+        if (m_data == null || m_data.IsDead)
+        {
+            return currentPos;
+        }
 
         Vector3 direction = (targetPos - currentPos).normalized;
         return currentPos + (direction * m_data.MoveSpeed * deltaTime);
@@ -31,9 +34,16 @@ public class EnemyLogic
 
     public void OnDamaged(int damage)
     {
-        if (m_data == null || m_data.IsDead) return;
+        if (m_data == null || m_data.IsDead)
+        {
+            return;
+        }
+
         m_data.CurrentHp = Math.Max(0, m_data.CurrentHp - damage);
-        if (m_data.CurrentHp <= 0) m_data.IsDead = true;
+        if (m_data.CurrentHp <= 0)
+        {
+            m_data.IsDead = true;
+        }
     }
 }
 
@@ -113,21 +123,30 @@ public class EnemyController : MonoBehaviour, IPoolable, IAttackTarget
 
         if (other.TryGetComponent<MasterShip>(out var masterShip))
         {
-            if (m_enemyData.IsDead) return;
+            if (m_enemyData.IsDead)
+            {
+                return;
+            }
             
             masterShip.TakeDamage(m_enemyData.AttackDamage);
             DestroyEnemy();
         }
         else if (other.TryGetComponent<PlayerCharacterController>(out var player))
         {
-            if (m_enemyData.IsDead) return;
+            if (m_enemyData.IsDead)
+            {
+                return;
+            }
 
             player.TakeDamage(m_enemyData.AttackDamage);
             DestroyEnemy();
         }
         else if (other.TryGetComponent<BulletProjectile>(out var bullet))
         {
-            if (m_enemyData.IsDead) return;
+            if (m_enemyData.IsDead)
+            {
+                return;
+            }
 
             TakeDamage(bullet.Damage, bullet.OwnerID);
             Destroy(bullet.gameObject);
@@ -178,7 +197,10 @@ public class EnemyController : MonoBehaviour, IPoolable, IAttackTarget
 
     public void TakeDamage(int amount, string damagerID = null)
     {
-        if (m_logic == null || m_enemyData.IsDead) return;
+        if (m_logic == null || m_enemyData.IsDead)
+        {
+            return;
+        }
 
         m_lastDamagerID = damagerID;
 
@@ -188,7 +210,10 @@ public class EnemyController : MonoBehaviour, IPoolable, IAttackTarget
         {
             m_spriteRenderer.DOKill();
             m_spriteRenderer.DOColor(Color.red, 0.05f).SetLoops(2, LoopType.Yoyo).OnComplete(() => {
-                if (m_spriteRenderer != null) m_spriteRenderer.color = Color.white;
+                if (m_spriteRenderer != null)
+                {
+                    m_spriteRenderer.color = Color.white;
+                }
             });
         }
 
@@ -203,7 +228,10 @@ public class EnemyController : MonoBehaviour, IPoolable, IAttackTarget
 
     private void OnEnable()
     {
-        if (m_enemyData != null) m_enemyData.IsDead = false;
+        if (m_enemyData != null)
+        {
+            m_enemyData.IsDead = false;
+        }
     }
 
     private void UpdateMovement()
@@ -230,18 +258,30 @@ public class EnemyController : MonoBehaviour, IPoolable, IAttackTarget
 
     private void ExecuteDeathEffectAndRelease()
     {
-        if (m_explosionPrefab != null) Instantiate(m_explosionPrefab, transform.position, Quaternion.identity);
+        if (m_explosionPrefab != null)
+        {
+            Instantiate(m_explosionPrefab, transform.position, Quaternion.identity);
+        }
 
         m_onRelease?.Invoke(gameObject);
 
         var pool =FindAnyObjectByType<ObjectPoolManager>();
-        if (pool != null) pool.ReturnToPool(gameObject);
-        else Destroy(gameObject);
+        if (pool != null)
+        {
+            pool.ReturnToPool(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void DestroyEnemy()
     {
-        if (m_enemyData == null || m_enemyData.IsDead) return;
+        if (m_enemyData == null || m_enemyData.IsDead)
+        {
+            return;
+        }
         m_enemyData.IsDead = true;
         
         ExecuteDeathEffectAndRelease();

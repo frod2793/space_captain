@@ -94,7 +94,10 @@ public class PlayerSwapManager : MonoBehaviour
         for (int i = 0; i < m_characters.Count; i++)
         {
             var character = m_characters[i];
-            if (character == null) continue;
+            if (character == null)
+            {
+                continue;
+            }
 
             m_aliveCount++;
 
@@ -179,6 +182,11 @@ public class PlayerSwapManager : MonoBehaviour
     {
         HandleInput();
         HandleRegenTick();
+        
+        if (OnSwapCooldownChanged != null)
+        {
+            OnSwapCooldownChanged.Invoke(CooldownRatio);
+        }
     }
 
     private void HandleInput()

@@ -67,9 +67,9 @@ public class BattleSceneInitializer : MonoBehaviour
 
         // 씬 내의 모든 로컬라이징 텍스트 뷰에 매니저 주입
         var localizedTexts = FindObjectsByType<LocalizedTextView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        foreach (var text in localizedTexts)
+        for (int i = 0; i < localizedTexts.Length; i++)
         {
-            text.Setup(m_localizationManager);
+            localizedTexts[i].Setup(m_localizationManager);
         }
 
         var battleDTO = new BattleProgressDTO();

@@ -34,7 +34,10 @@ public class BossLogic
     /// </summary>
     public Vector3 CalculateNextPosition(Vector3 currentPos, Vector3 targetPos, float deltaTime)
     {
-        if (m_data == null || m_data.IsDead) return currentPos;
+        if (m_data == null || m_data.IsDead)
+        {
+            return currentPos;
+        }
 
         Vector3 direction = (targetPos - currentPos).normalized;
         return currentPos + (direction * m_data.MoveSpeed * deltaTime);
@@ -45,10 +48,16 @@ public class BossLogic
     /// </summary>
     public float OnDamaged(int damage)
     {
-        if (m_data == null || m_data.IsDead) return 0f;
+        if (m_data == null || m_data.IsDead)
+        {
+            return 0f;
+        }
         
         m_data.CurrentHp = Math.Max(0, m_data.CurrentHp - damage);
-        if (m_data.CurrentHp <= 0) m_data.IsDead = true;
+        if (m_data.CurrentHp <= 0)
+        {
+            m_data.IsDead = true;
+        }
 
         return (float)m_data.CurrentHp / m_data.MaxHp;
     }
@@ -115,7 +124,10 @@ public class BossController : MonoBehaviour, IAttackTarget
 
     private void Update()
     {
-        if (m_bossData.IsDead) return;
+        if (m_bossData.IsDead)
+        {
+            return;
+        }
 
         UpdateTargeting();
         UpdateMovement();
@@ -124,12 +136,18 @@ public class BossController : MonoBehaviour, IAttackTarget
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision != null) HandleCollision(collision.gameObject);
+        if (collision != null)
+        {
+            HandleCollision(collision.gameObject);
+        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision != null) HandleCollision(collision.gameObject);
+        if (collision != null)
+        {
+            HandleCollision(collision.gameObject);
+        }
     }
 
     /// <summary>
@@ -137,10 +155,17 @@ public class BossController : MonoBehaviour, IAttackTarget
     /// </summary>
     private void Init()
     {
-        if (m_bossData == null) m_bossData = new BossDTO();
+        if (m_bossData == null)
+        {
+            m_bossData = new BossDTO();
+        }
+
         m_logic = new BossLogic(m_bossData);
 
-        if (m_spriteRenderer == null) m_spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        if (m_spriteRenderer == null)
+        {
+            m_spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        }
         m_masterShip = UnityEngine.Object.FindAnyObjectByType<MasterShip>();
         m_swapManager = UnityEngine.Object.FindAnyObjectByType<PlayerSwapManager>();
         m_hudView = UnityEngine.Object.FindAnyObjectByType<BattleHUDView>();
@@ -188,7 +213,10 @@ public class BossController : MonoBehaviour, IAttackTarget
     /// </summary>
     private void UpdateMovement()
     {
-        if (m_currentTarget == null || m_logic == null) return;
+        if (m_currentTarget == null || m_logic == null)
+        {
+            return;
+        }
 
         Vector3 nextPos = m_logic.CalculateNextPosition(
             transform.position,
@@ -207,7 +235,10 @@ public class BossController : MonoBehaviour, IAttackTarget
     /// </summary>
     private void UpdateShooting()
     {
-        if (m_currentTarget == null || m_bulletPrefab == null) return;
+        if (m_currentTarget == null || m_bulletPrefab == null)
+        {
+            return;
+        }
 
         m_fireTimer += Time.deltaTime;
         if (m_fireTimer >= m_fireRate)
@@ -222,15 +253,27 @@ public class BossController : MonoBehaviour, IAttackTarget
     /// </summary>
     private void Shoot()
     {
-        if (m_firePoint == null || m_bulletPrefab == null) return;
+        if (m_firePoint == null || m_bulletPrefab == null)
+        {
+            return;
+        }
 
         var pool = UnityEngine.Object.FindAnyObjectByType<ObjectPoolManager>();
         GameObject bulletObj;
 
-        if (pool != null) bulletObj = pool.GetFromPool(m_bulletPrefab, m_firePoint.position, m_firePoint.rotation);
-        else bulletObj = Instantiate(m_bulletPrefab, m_firePoint.position, m_firePoint.rotation);
+        if (pool != null)
+        {
+            bulletObj = pool.GetFromPool(m_bulletPrefab, m_firePoint.position, m_firePoint.rotation);
+        }
+        else
+        {
+            bulletObj = Instantiate(m_bulletPrefab, m_firePoint.position, m_firePoint.rotation);
+        }
 
-        if (bulletObj != null && bulletObj.TryGetComponent<EnemyBullet>(out var enemyBullet)) enemyBullet.Initialize(m_bossData.AttackDamage);
+        if (bulletObj != null && bulletObj.TryGetComponent<EnemyBullet>(out var enemyBullet))
+        {
+            enemyBullet.Initialize(m_bossData.AttackDamage);
+        }
     }
 
     private void HandleCollision(GameObject other)
@@ -272,7 +315,10 @@ public class BossController : MonoBehaviour, IAttackTarget
             Instantiate(m_explosionPrefab, transform.position, Quaternion.identity);
         }
 
-        if (m_hudView != null) m_hudView.UpdateBossHpBar(0f);
+        if (m_hudView != null)
+        {
+            m_hudView.UpdateBossHpBar(0f);
+        }
         
         OnDefeated?.Invoke();
         Destroy(gameObject);
@@ -284,7 +330,10 @@ public class BossController : MonoBehaviour, IAttackTarget
     /// <param name="amount">입는 데미지 수치</param>
     public void TakeDamage(int amount, string damagerID = null)
     {
-        if (m_bossData.IsDead) return;
+        if (m_bossData.IsDead)
+        {
+            return;
+        }
 
         m_lastDamagerID = damagerID;
 
@@ -295,14 +344,24 @@ public class BossController : MonoBehaviour, IAttackTarget
         {
             m_spriteRenderer.DOKill();
             m_spriteRenderer.DOColor(Color.red, 0.1f).SetLoops(2, LoopType.Yoyo).OnComplete(() => {
-                if (m_spriteRenderer != null) m_spriteRenderer.color = Color.white;
+                if (m_spriteRenderer != null)
+                {
+                    m_spriteRenderer.color = Color.white;
+                }
             });
         }
 
         float hpRatio = m_logic.OnDamaged(amount);
 
-        if (m_bossHUD != null) m_bossHUD.UpdateHP(hpRatio);
-        if (m_hudView != null) m_hudView.UpdateBossHpBar(hpRatio);
+        if (m_bossHUD != null)
+        {
+            m_bossHUD.UpdateHP(hpRatio);
+        }
+
+        if (m_hudView != null)
+        {
+            m_hudView.UpdateBossHpBar(hpRatio);
+        }
 
         if (m_bossData.IsDead)
         {

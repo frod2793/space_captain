@@ -56,12 +56,18 @@ public class LobbyInitializer : MonoBehaviour
         // 이벤트 바인딩
         lobbyViewModel.OnProfileOpenRequested += () => 
         {
-            if (m_profilePopupView != null) m_profilePopupView.Show();
+            if (m_profilePopupView != null)
+            {
+                m_profilePopupView.Show();
+            }
         };
 
         m_userProfileViewModel.OnCloseRequested += () => 
         {
-            if (m_profilePopupView != null) m_profilePopupView.Hide();
+            if (m_profilePopupView != null)
+            {
+                m_profilePopupView.Hide();
+            }
         };
 
         if (m_transitionSettings != null)

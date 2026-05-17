@@ -86,9 +86,20 @@ public class TopScrollContrl : MonoBehaviour
         float height = m_scrollSettings.BackgroundHeight;
 
         // 2. 초기 위치 보정 (세 배경이 위아래로 나란히 배치되도록 설정)
-        if (m_background1 != null) m_background1.localPosition = new Vector3(0, 0, 0);
-        if (m_background2 != null) m_background2.localPosition = new Vector3(0, height, 0);
-        if (m_background3 != null) m_background3.localPosition = new Vector3(0, height * 2.0f, 0);
+        if (m_background1 != null)
+        {
+            m_background1.localPosition = new Vector3(0, 0, 0);
+        }
+
+        if (m_background2 != null)
+        {
+            m_background2.localPosition = new Vector3(0, height, 0);
+        }
+
+        if (m_background3 != null)
+        {
+            m_background3.localPosition = new Vector3(0, height * 2.0f, 0);
+        }
     }
 
     /// <summary>
@@ -96,7 +107,10 @@ public class TopScrollContrl : MonoBehaviour
     /// </summary>
     private void DetectBackgroundHeight()
     {
-        if (m_background1 == null) return;
+        if (m_background1 == null)
+        {
+            return;
+        }
         
         if (m_background1.TryGetComponent<SpriteRenderer>(out var spriteRenderer))
         {
@@ -116,7 +130,10 @@ public class TopScrollContrl : MonoBehaviour
     /// </summary>
     private void UpdateScrolling()
     {
-        if (m_background1 == null || m_background2 == null || m_background3 == null) return;
+        if (m_background1 == null || m_background2 == null || m_background3 == null)
+        {
+            return;
+        }
 
         float dt = Time.deltaTime;
         float speed = m_scrollSettings.ScrollSpeed;
