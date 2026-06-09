@@ -6607,13 +6607,10 @@ MonoBehaviour:
   m_mvpButtonImage: {fileID: 544705169}
   m_mvpNameText: {fileID: 1541185991}
   m_damageLogPanel: {fileID: 522285694}
-  m_damageLogToggleButton: {fileID: 522285697}
   m_damageLogContainer: {fileID: 183411642}
   m_damageLogPrefab: {fileID: 551081803518256478, guid: b33580d4c93ee214fb0d13fa17759f64, type: 3}
   m_rewardContainer: {fileID: 648655155}
   m_rewardItemPrefab: {fileID: 8990281700664215112, guid: 5553c6d9a671301448ba552880076344, type: 3}
-  m_doubleRewardButton: {fileID: 38493067}
-  m_mainScreenButton: {fileID: 315595868}
   m_expandDuration: 0.3
   m_damageLogCollapsedSize: {x: 870, y: 312.06}
   m_damageLogExpandedSize: {x: 870, y: 860.82}
@@ -8541,7 +8538,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 883297270}
         m_TargetAssemblyTypeName: GameFlowPanelView, Assembly-CSharp
-        m_MethodName: OnStartButtonClicked
+        m_MethodName: func_OnStartButtonClicked
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -12682,7 +12679,7 @@ MonoBehaviour:
   m_targetView: {fileID: 960133192}
   m_testMvpSprites:
   - {fileID: -2311659948842064771, guid: 6520dda4a70dfbf40a55b7af39ecda4e, type: 3}
-  m_characterDatabase: {fileID: 0}
+  m_characterDatabase: {fileID: 11400000, guid: 2d4c5b15031394294a83bebbf78855a2, type: 2}
   m_itemDatabase: {fileID: 11400000, guid: 7fe14381753bc4f5899855796ed59ddc, type: 2}
   m_transitionSettings: {fileID: 11400000, guid: c9f7b34f761c5c342ada8a4b2ab7a716, type: 2}
 --- !u!1 &1982266510

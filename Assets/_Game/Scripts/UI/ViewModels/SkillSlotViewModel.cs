@@ -2,14 +2,15 @@ using System;
 using Cysharp.Threading.Tasks;
 using SpaceCaptain.Player;
 using SpaceCaptain.Models;
+using SpaceCaptain.Player.Swap;
 using UnityEngine;
 
 public class SkillSlotViewModel : ISkillSlotViewModel
 {
     public event Action<SkillSlotUIState> OnStateUpdated;
 
-    public PlayerCharacterController Character { get; set; }
-    public PlayerSwapManager SwapManager { get; set; }
+    public ICharacterStatus Character { get; set; }
+    public ISwapCommand SwapManager { get; set; }
 
     private SkillSlotUIState m_lastState;
 

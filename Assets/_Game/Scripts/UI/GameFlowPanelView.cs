@@ -21,7 +21,7 @@ public class GameFlowPanelView : MonoBehaviour
         }
     }
 
-    public void OnStartButtonClicked()
+    public void func_OnStartButtonClicked()
     {
         if (m_startUI != null)
         {

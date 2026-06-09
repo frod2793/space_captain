@@ -74,8 +74,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278190080
-  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -289,12 +289,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9cb7b206ef0de49809a8fc97f94275fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SkillSlotUI
-  m_skillIcon: {fileID: 1964466305951617461}
   m_cooldownImage: {fileID: 6154922958430620818}
-  m_skillButton: {fileID: 3442950510132919140}
   m_skillNameText: {fileID: 4586551207214458965}
   m_swapCooldownText: {fileID: 2228552069616241713}
-  m_outline: {fileID: 7707301443069071645}
+  m_activeColor: {r: 1, g: 0, b: 0, a: 1}
+  m_reserveColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!1 &6531981116259964830
 GameObject:
   m_ObjectHideFlags: 0
@@ -354,7 +353,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0.5019608}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.9019608}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -458,8 +457,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
-  m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:

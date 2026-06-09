@@ -5,6 +5,8 @@ using SpaceCaptain.Systems.Localization;
 using SpaceCaptain.UI.Components;
 using Cysharp.Threading.Tasks;
 using System.Threading;
+using UnityEngine.SceneManagement;
+using SpaceCaptain.Player.Swap;
 
 public class BattleSceneInitializer : MonoBehaviour
 {
@@ -133,7 +135,7 @@ public class BattleSceneInitializer : MonoBehaviour
 
         m_hudViewModel = new BattleHUDViewModel();
         m_hudViewModel.BattleData = battleDTO;
-        m_hudViewModel.SwapManager = swapManager;
+        m_hudViewModel.SwapContext = swapManager;
 
         var masterShip = FindAnyObjectByType<MasterShip>();
         var sceneBarrier = FindAnyObjectByType<Barrier>();
@@ -175,6 +177,11 @@ public class BattleSceneInitializer : MonoBehaviour
         {
             m_hudView.ViewModel = m_hudViewModel;
             m_hudView.ProgressViewModel = m_progressViewModel;
+            
+            if (swapManager != null)
+            {
+                m_hudView.SetSwapManager(swapManager, swapManager);
+            }
 
             if (swapManager != null)
             {
@@ -298,9 +305,15 @@ public class BattleSceneInitializer : MonoBehaviour
                 CharacterIcons = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase)
             };
 
-            if (m_hudViewModel is BattleHUDViewModel hudVM)
+            if (m_hudViewModel != null)
             {
-                PlayerSwapManager swapManager = hudVM.SwapManager;
+                IPlayerSwapContext swapContext = m_hudViewModel.SwapContext;
+                PlayerSwapManager swapManager = swapContext as PlayerSwapManager;
+                if (swapManager == null)
+                {
+                    swapManager = FindAnyObjectByType<PlayerSwapManager>();
+                }
+                
                 if (swapManager != null && swapManager.Characters != null)
                 {
                     for (int i = 0; i < swapManager.Characters.Count; i++)
@@ -315,14 +328,14 @@ public class BattleSceneInitializer : MonoBehaviour
                     }
                 }
 
-                var keys = new List<string>(hudVM.CharacterDamages.Keys);
+                var keys = new List<string>(m_hudViewModel.CharacterDamages.Keys);
                 string mvpID = string.Empty;
                 int maxDamage = -1;
 
                 for (int i = 0; i < keys.Count; i++)
                 {
                     string key = keys[i];
-                    int damage = hudVM.CharacterDamages[key];
+                    int damage = m_hudViewModel.CharacterDamages[key];
                     
                     if (!key.Equals("SHIP", StringComparison.OrdinalIgnoreCase))
                     {
@@ -384,7 +397,7 @@ public class BattleSceneInitializer : MonoBehaviour
                 }
                 else
                 {
-                    UnityEngine.SceneManagement.SceneManager.LoadScene("Main");
+                    SceneManager.LoadScene("Main");
                 }
             };
 

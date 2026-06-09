@@ -1,14 +1,17 @@
 using System;
+using SpaceCaptain.Player.Swap;
 
 public interface IBattleHUDViewModel
 {
     BattleProgressDTO Progress { get; }
-    PlayerSwapManager SwapManager { get; set; }
+    IPlayerSwapContext SwapContext { get; set; }
     BattleProgressDTO BattleData { get; set; }
+    System.Collections.Generic.IReadOnlyDictionary<string, int> CharacterDamages { get; }
 
     event Action<int> OnTotalDamageChanged;
     event Action<int> OnLevelChanged;
     event Action<float> OnExpRatioChanged;
+    event Action<string> OnCharacterLevelUpEffectRequested;
     event Action<int> OnWaveChanged;
     event Action<float> OnPlayTimeChanged;
     event Action<float> OnBattleSpeedChanged;

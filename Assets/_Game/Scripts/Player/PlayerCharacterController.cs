@@ -4,8 +4,9 @@ using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using SpaceCaptain.Player;
 using SpaceCaptain.Models;
+using SpaceCaptain.Player.Swap;
 
-public class PlayerCharacterController : MonoBehaviour
+public class PlayerCharacterController : MonoBehaviour, ICharacterStatus
 {
     [SerializeField] private string m_characterID;
     [SerializeField] private SpriteRenderer m_spriteRenderer;
@@ -133,11 +134,17 @@ public class PlayerCharacterController : MonoBehaviour
             return;
         }
 
-        m_spriteRenderer.DOKill();
-        m_spriteRenderer.DOColor(Color.red, 0.1f).SetLoops(2, LoopType.Yoyo).OnComplete(() =>
+        if (m_spriteRenderer != null)
         {
-            m_spriteRenderer.color = Color.white;
-        });
+            m_spriteRenderer.DOKill();
+            m_spriteRenderer.DOColor(Color.red, 0.1f).SetLoops(2, LoopType.Yoyo).OnComplete(() =>
+            {
+                if (m_spriteRenderer != null)
+                {
+                    m_spriteRenderer.color = Color.white;
+                }
+            });
+        }
 
         m_stats.CurrentHp = Mathf.Max(0, m_stats.CurrentHp - damage);
         float ratio = (float)m_stats.CurrentHp / m_stats.MaxHp;
@@ -163,7 +170,8 @@ public class PlayerCharacterController : MonoBehaviour
         {
             m_spriteRenderer.DOKill();
             
-            await transform.DOShakePosition(0.5f, 0.2f, 20, 90, false, true).GetAwaiter();
+            await transform.DOShakePosition(0.5f, 0.2f, 20, 90, false, true)
+                .ToUniTask(cancellationToken: this.GetCancellationTokenOnDestroy());
         }
 
         ExecuteDeath();

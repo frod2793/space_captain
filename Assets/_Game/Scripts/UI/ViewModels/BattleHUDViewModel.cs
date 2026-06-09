@@ -1,25 +1,26 @@
 using System;
 using UnityEngine;
+using SpaceCaptain.Player.Swap;
 
 public class BattleHUDViewModel : IBattleHUDViewModel
 {
     private BattleProgressDTO m_progressData;
-    private PlayerSwapManager m_swapManager;
+    private IPlayerSwapContext m_swapContext;
     private bool m_isProcessingUpgrade = false;
     private readonly System.Collections.Generic.Dictionary<string, int> m_characterDamages = new();
 
     public BattleProgressDTO Progress => m_progressData;
     public System.Collections.Generic.IReadOnlyDictionary<string, int> CharacterDamages => m_characterDamages;
 
-    public PlayerSwapManager SwapManager
+    public IPlayerSwapContext SwapContext
     {
         get
         {
-            return m_swapManager;
+            return m_swapContext;
         }
         set
         {
-            m_swapManager = value;
+            m_swapContext = value;
         }
     }
 
@@ -38,6 +39,7 @@ public class BattleHUDViewModel : IBattleHUDViewModel
     public event Action<int> OnTotalDamageChanged;
     public event Action<int> OnLevelChanged;
     public event Action<float> OnExpRatioChanged;
+    public event Action<string> OnCharacterLevelUpEffectRequested;
     public event Action<int> OnWaveChanged;
     public event Action<float> OnPlayTimeChanged;
     public event Action<float> OnBattleSpeedChanged;
@@ -160,7 +162,7 @@ public class BattleHUDViewModel : IBattleHUDViewModel
 
     public void SelectUpgrade(int index)
     {
-        if (m_isProcessingUpgrade || !m_isUpgradePanelActive || m_swapManager == null)
+        if (m_isProcessingUpgrade || !m_isUpgradePanelActive || m_swapContext == null)
         {
             return;
         }
@@ -168,35 +170,21 @@ public class BattleHUDViewModel : IBattleHUDViewModel
 
         string targetId = (index == 0) ? "a" : (index == 1 ? "b" : "c");
         
-        PlayerCharacterController targetCharacter = null;
-        if (m_swapManager != null && m_swapManager.Characters != null)
-        {
-            for (int i = 0; i < m_swapManager.Characters.Count; i++)
-            {
-                if (m_swapManager.Characters[i].CharacterID.Equals(targetId, StringComparison.OrdinalIgnoreCase))
-                {
-                    targetCharacter = m_swapManager.Characters[i];
-                    break;
-                }
-            }
-        }
+        PlayerStatsDTO targetStats = m_swapContext.GetCharacterStats(targetId);
 
-        if (targetCharacter != null)
+        if (targetStats != null)
         {
-            if (targetCharacter.Stats != null)
+            switch (index)
             {
-                switch (index)
-                {
-                    case 0:
-                        targetCharacter.Stats.BulletCountBonus++;
-                        break;
-                    case 1:
-                        targetCharacter.Stats.SpreadAngleBonus += 10f;
-                        break;
-                    case 2:
-                        targetCharacter.Stats.SpreadAngleBonus -= 10f;
-                        break;
-                }
+                case 0:
+                    targetStats.BulletCountBonus++;
+                    break;
+                case 1:
+                    targetStats.SpreadAngleBonus += 10f;
+                    break;
+                case 2:
+                    targetStats.SpreadAngleBonus -= 10f;
+                    break;
             }
         }
 
@@ -262,7 +250,7 @@ public class BattleHUDViewModel : IBattleHUDViewModel
             OnExpRatioChanged.Invoke(0f);
         }
 
-        if (m_swapManager != null)
+        if (m_swapContext != null)
         {
             UpgradeOptionDTO[] options = new UpgradeOptionDTO[3];
 
@@ -270,20 +258,8 @@ public class BattleHUDViewModel : IBattleHUDViewModel
             {
                 string targetId = (i == 0) ? "a" : (i == 1 ? "b" : "c");
                 
-                PlayerCharacterController character = null;
-                if (m_swapManager.Characters != null)
-                {
-                    for (int j = 0; j < m_swapManager.Characters.Count; j++)
-                    {
-                        if (m_swapManager.Characters[j].CharacterID.Equals(targetId, StringComparison.OrdinalIgnoreCase))
-                        {
-                            character = m_swapManager.Characters[j];
-                            break;
-                        }
-                    }
-                }
-                
-                string title = (character != null) ? character.CharacterName : $"Character {targetId}";
+                string charName = m_swapContext.GetCharacterName(targetId);
+                string title = !string.IsNullOrEmpty(charName) ? charName : $"Character {targetId}";
                 string description = string.Empty;
 
                 switch (i)
@@ -299,9 +275,9 @@ public class BattleHUDViewModel : IBattleHUDViewModel
                         break;
                 }
 
-                if (character != null)
+                if (OnCharacterLevelUpEffectRequested != null)
                 {
-                    character.PlayLevelUpEffect();
+                    OnCharacterLevelUpEffectRequested.Invoke(targetId);
                 }
 
                 options[i] = new UpgradeOptionDTO

@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
 using SpaceCaptain.Player;
+using SpaceCaptain.Player.Swap;
 
 public class SkillSlotView : MonoBehaviour
 {
@@ -33,7 +34,7 @@ public class SkillSlotView : MonoBehaviour
     }
 
     public ISkillSlotViewModel ViewModel { get; set; }
-    public PlayerCharacterController BoundCharacter
+    public ICharacterStatus BoundCharacter
     {
         get
         {
@@ -77,7 +78,7 @@ public class SkillSlotView : MonoBehaviour
         ViewModel.RefreshState();
     }
 
-    public void UpdateCharacter(PlayerCharacterController character)
+    public void UpdateCharacter(ICharacterStatus character)
     {
         if (ViewModel != null)
         {
@@ -95,7 +96,7 @@ public class SkillSlotView : MonoBehaviour
         }
     }
 
-    private void UpdateCharacterInfo(PlayerCharacterController character)
+    private void UpdateCharacterInfo(ICharacterStatus character)
     {
         if (character == null)
         {

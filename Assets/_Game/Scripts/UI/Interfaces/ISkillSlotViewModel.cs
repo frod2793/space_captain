@@ -1,5 +1,6 @@
 using System;
 using SpaceCaptain.Player;
+using SpaceCaptain.Player.Swap;
 
 public readonly struct SkillSlotUIState
 {
@@ -20,8 +21,8 @@ public readonly struct SkillSlotUIState
 public interface ISkillSlotViewModel
 {
     event Action<SkillSlotUIState> OnStateUpdated;
-    PlayerCharacterController Character { get; set; }
-    PlayerSwapManager SwapManager { get; set; }
+    ICharacterStatus Character { get; set; }
+    ISwapCommand SwapManager { get; set; }
     void RefreshState();
     void ExecuteAction();
 }

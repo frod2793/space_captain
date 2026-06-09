@@ -16,6 +16,7 @@ public class CharacterSystemTests
     [UnitySetUp]
     public IEnumerator SetUp()
     {
+        Time.timeScale = 1f;
         m_characters.Clear();
         m_testStage = new GameObject("TestStage");
         
@@ -71,7 +72,14 @@ public class CharacterSystemTests
             m_characters.Add(character);
         }
 
-        managerType.GetMethod("Start", BindingFlags.NonPublic | BindingFlags.Instance)?.Invoke(m_swapManager, null);
+        var listType = typeof(List<>).MakeGenericType(charType);
+        var listInstance = Activator.CreateInstance(listType);
+        var addMethod = listType.GetMethod("Add");
+        for (int i = 0; i < m_characters.Count; i++)
+        {
+            addMethod.Invoke(listInstance, new[] { m_characters[i] });
+        }
+        managerType.GetMethod("SetCharacters")?.Invoke(m_swapManager, new[] { listInstance });
 
         yield return new WaitForSeconds(0.1f); 
     }
@@ -278,7 +286,11 @@ public class CharacterSystemTests
         Type charType = TestReflectionHelper.GetGameType("PlayerCharacterController");
         Type managerType = TestReflectionHelper.GetGameType("PlayerSwapManager");
         var activeChar = managerType.GetProperty("ActiveCharacter")?.GetValue(m_swapManager);
-
+        if (activeChar == null)
+        {
+            activeChar = m_characters[0];
+        }
+        
         charType.GetMethod("TakeDamage", BindingFlags.Public | BindingFlags.Instance)?.Invoke(activeChar, new object[] { 9999 });
         
         yield return new WaitForSeconds(0.1f); 

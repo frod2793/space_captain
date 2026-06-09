@@ -71,7 +71,14 @@ public class SkillSystemTests
             m_characters.Add(character);
         }
 
-        managerType.GetMethod("Start", BindingFlags.NonPublic | BindingFlags.Instance)?.Invoke(m_swapManager, null);
+        var listType = typeof(List<>).MakeGenericType(charType);
+        var listInstance = Activator.CreateInstance(listType);
+        var addMethod = listType.GetMethod("Add");
+        for (int i = 0; i < m_characters.Count; i++)
+        {
+            addMethod.Invoke(listInstance, new[] { m_characters[i] });
+        }
+        managerType.GetMethod("SetCharacters")?.Invoke(m_swapManager, new[] { listInstance });
 
         yield return new WaitForSeconds(0.1f); 
     }

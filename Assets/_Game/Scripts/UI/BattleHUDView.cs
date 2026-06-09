@@ -1,8 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
-using TMPro;
+using TMP_Text = TMPro.TMP_Text;
 using DG.Tweening;
+using SpaceCaptain.Player.Swap;
 
 public class BattleHUDView : MonoBehaviour
 {
@@ -35,14 +36,15 @@ public class BattleHUDView : MonoBehaviour
     public IBattleHUDViewModel ViewModel { get; set; }
     public IGameProgressViewModel ProgressViewModel { get; set; }
     private float m_savedTimeScale = 1f;
-    private PlayerSwapManager m_cachedSwapManager;
+    private ISwapCommand m_swapCommand;
+    private ISwapEvents m_swapEvents;
     private bool m_isSwapCooldownActive;
 
-    private Dictionary<PlayerCharacterController, SkillSlotView> m_characterToSlotMap =
-        new Dictionary<PlayerCharacterController, SkillSlotView>();
+    private Dictionary<ICharacterStatus, SkillSlotView> m_characterToSlotMap =
+        new Dictionary<ICharacterStatus, SkillSlotView>();
 
-    private Dictionary<PlayerCharacterController, int> m_characterToIndexMap =
-        new Dictionary<PlayerCharacterController, int>();
+    private Dictionary<ICharacterStatus, int> m_characterToIndexMap =
+        new Dictionary<ICharacterStatus, int>();
 
     private const float COOLDOWN_EPSILON = 0.002f;
 
@@ -92,13 +94,14 @@ public class BattleHUDView : MonoBehaviour
         UpdatePlayTimeUI(ViewModel.BattleData.PlayTime);
         UpdateBattleSpeedUI(ViewModel.BattleData.BattleSpeed);
 
-        if (ViewModel.SwapManager != null)
-        {
-            m_cachedSwapManager = ViewModel.SwapManager;
-        }
-
         FindShipSkillButtons();
         BindEvents();
+    }
+
+    public void SetSwapManager(ISwapCommand swapCommand, ISwapEvents swapEvents)
+    {
+        m_swapCommand = swapCommand;
+        m_swapEvents = swapEvents;
     }
 
     private void FindShipSkillButtons()
@@ -118,18 +121,19 @@ public class BattleHUDView : MonoBehaviour
         ViewModel.OnShipHpChanged += UpdateHpBar;
         ViewModel.OnBarrierChanged += UpdateBarrierBar;
         ViewModel.OnBarrierValueWeightChanged += UpdateBarrierText;
+        ViewModel.OnCharacterLevelUpEffectRequested += HandleCharacterLevelUpEffectRequested;
 
         if (ProgressViewModel != null)
         {
             ProgressViewModel.OnProgressChanged += SetProgressRatio;
         }
 
-        if (m_cachedSwapManager != null)
+        if (m_swapEvents != null)
         {
-            m_cachedSwapManager.OnCharactersInitialized += SyncAllSkillSlots;
-            m_cachedSwapManager.OnSwapStarted += HandleSwapStarted;
-            m_cachedSwapManager.OnSwapCompleted += HandleSwapCompleted;
-            m_cachedSwapManager.OnSwapCooldownChanged += UpdateSwapCooldownUI;
+            m_swapEvents.OnCharactersInitialized += SyncAllSkillSlots;
+            m_swapEvents.OnSwapStarted += HandleSwapStarted;
+            m_swapEvents.OnSwapCompleted += HandleSwapCompleted;
+            m_swapEvents.OnSwapCooldownChanged += UpdateSwapCooldownUI;
         }
 
         SyncAllSkillSlots();
@@ -140,7 +144,7 @@ public class BattleHUDView : MonoBehaviour
             if (skillButton != null && skillButton.Button != null)
             {
                 int skillIndex = skillButton.SkillIndex;
-                skillButton.Button.onClick.AddListener(() => ViewModel.ExecuteShipSkill(skillIndex));
+                skillButton.Button.onClick.AddListener(() => func_OnShipSkillClicked(skillIndex));
             }
         }
     }
@@ -158,18 +162,19 @@ public class BattleHUDView : MonoBehaviour
             ViewModel.OnShipHpChanged -= UpdateHpBar;
             ViewModel.OnBarrierChanged -= UpdateBarrierBar;
             ViewModel.OnBarrierValueWeightChanged -= UpdateBarrierText;
+            ViewModel.OnCharacterLevelUpEffectRequested -= HandleCharacterLevelUpEffectRequested;
 
             if (ProgressViewModel != null)
             {
                 ProgressViewModel.OnProgressChanged -= SetProgressRatio;
             }
 
-            if (m_cachedSwapManager != null)
+            if (m_swapEvents != null)
             {
-                m_cachedSwapManager.OnCharactersInitialized -= SyncAllSkillSlots;
-                m_cachedSwapManager.OnSwapStarted -= HandleSwapStarted;
-                m_cachedSwapManager.OnSwapCompleted -= HandleSwapCompleted;
-                m_cachedSwapManager.OnSwapCooldownChanged -= UpdateSwapCooldownUI;
+                m_swapEvents.OnCharactersInitialized -= SyncAllSkillSlots;
+                m_swapEvents.OnSwapStarted -= HandleSwapStarted;
+                m_swapEvents.OnSwapCompleted -= HandleSwapCompleted;
+                m_swapEvents.OnSwapCooldownChanged -= UpdateSwapCooldownUI;
             }
 
             for (int i = 0; i < m_shipSkillButtons.Count; i++)
@@ -337,7 +342,7 @@ public class BattleHUDView : MonoBehaviour
         }
     }
 
-    private void HandleSwapStarted(PlayerCharacterController entering, PlayerCharacterController leaving)
+    private void HandleSwapStarted(ICharacterStatus entering, ICharacterStatus leaving)
     {
         if (!m_characterToSlotMap.TryGetValue(entering, out var enteringSlot) ||
             !m_characterToSlotMap.TryGetValue(leaving, out var leavingSlot))
@@ -354,18 +359,30 @@ public class BattleHUDView : MonoBehaviour
         enteringSlot.Rect.DOKill();
         leavingSlot.Rect.DOKill();
 
-        float duration = m_cachedSwapManager.SwapDuration;
+        float duration = m_swapCommand != null ? m_swapCommand.SwapDuration : 0.3f;
 
         enteringSlot.Rect.DOAnchorPos(GetPositionByIndex(leavingIdx), duration).SetEase(Ease.InOutCubic);
         leavingSlot.Rect.DOAnchorPos(GetPositionByIndex(enteringIdx), duration).SetEase(Ease.InOutCubic);
     }
 
-    private void HandleSwapCompleted(PlayerCharacterController activeCharacter)
+    private void HandleSwapCompleted(ICharacterStatus activeCharacter)
     {
         Invoke(nameof(SyncAllSkillSlots), 0f);
     }
 
-    public void UI_ToggleBattleSpeed()
+    private void HandleCharacterLevelUpEffectRequested(string characterId)
+    {
+        foreach (var character in m_characterToSlotMap.Keys)
+        {
+            if (character != null && character.CharacterID.Equals(characterId, System.StringComparison.OrdinalIgnoreCase))
+            {
+                character.PlayLevelUpEffect();
+                break;
+            }
+        }
+    }
+
+    public void func_OnToggleBattleSpeedClicked()
     {
         if (ViewModel != null)
         {
@@ -373,9 +390,17 @@ public class BattleHUDView : MonoBehaviour
         }
     }
 
+    private void func_OnShipSkillClicked(int skillIndex)
+    {
+        if (ViewModel != null)
+        {
+            ViewModel.ExecuteShipSkill(skillIndex);
+        }
+    }
+
     private void SyncAllSkillSlots()
     {
-        if (m_cachedSwapManager == null || m_cachedSwapManager.Characters == null)
+        if (m_swapCommand == null || m_swapCommand.Characters == null)
         {
             return;
         }
@@ -385,7 +410,7 @@ public class BattleHUDView : MonoBehaviour
 
         m_skillSlots.Sort(SlotXComparer.Instance);
 
-        var characters = m_cachedSwapManager.Characters;
+        var characters = m_swapCommand.Characters;
         for (int i = 0; i < m_skillSlots.Count; i++)
         {
             var slot = m_skillSlots[i];
@@ -399,15 +424,12 @@ public class BattleHUDView : MonoBehaviour
                 var targetCharacter = characters[i];
                 if (targetCharacter != null)
                 {
-                    if (slot.ViewModel == null)
+                    if (slot.ViewModel != null)
                     {
-                        slot.ViewModel = new SkillSlotViewModel { SwapManager = m_cachedSwapManager };
-                        slot.Initialize();
+                        slot.UpdateCharacter(targetCharacter);
+                        m_characterToSlotMap[targetCharacter] = slot;
+                        m_characterToIndexMap[targetCharacter] = i;
                     }
-
-                    slot.UpdateCharacter(targetCharacter);
-                    m_characterToSlotMap[targetCharacter] = slot;
-                    m_characterToIndexMap[targetCharacter] = i;
                 }
             }
 

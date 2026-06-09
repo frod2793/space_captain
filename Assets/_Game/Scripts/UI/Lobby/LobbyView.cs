@@ -35,12 +35,12 @@ public class LobbyView : MonoBehaviour
         if (ValidateComponents())
         {
             m_viewModel.OnDataChanged += UpdateUI;
-            m_battleStartButton.onClick.AddListener(m_viewModel.StartBattle);
-            m_settingsButton.onClick.AddListener(m_viewModel.OpenSettings);
+            m_battleStartButton.onClick.AddListener(func_OnBattleStartClicked);
+            m_settingsButton.onClick.AddListener(func_OnSettingsClicked);
             
             if (m_profileButton != null)
             {
-                m_profileButton.onClick.AddListener(m_viewModel.OpenProfile);
+                m_profileButton.onClick.AddListener(func_OnProfileClicked);
             }
 
             if (m_normalDifficultyButton != null)
@@ -136,6 +136,30 @@ public class LobbyView : MonoBehaviour
         if (m_viewModel != null)
         {
             m_viewModel.SelectDifficulty(StageDifficulty.Elite);
+        }
+    }
+
+    private void func_OnBattleStartClicked()
+    {
+        if (m_viewModel != null)
+        {
+            m_viewModel.StartBattle();
+        }
+    }
+
+    private void func_OnSettingsClicked()
+    {
+        if (m_viewModel != null)
+        {
+            m_viewModel.OpenSettings();
+        }
+    }
+
+    private void func_OnProfileClicked()
+    {
+        if (m_viewModel != null)
+        {
+            m_viewModel.OpenProfile();
         }
     }
 }

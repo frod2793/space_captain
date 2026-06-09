@@ -17,7 +17,7 @@ public class UpgradeButton : MonoBehaviour
         if (m_button != null)
         {
             m_button.onClick.RemoveAllListeners();
-            m_button.onClick.AddListener(HandleClick);
+            m_button.onClick.AddListener(func_OnUpgradeClicked);
         }
     }
 
@@ -41,7 +41,7 @@ public class UpgradeButton : MonoBehaviour
         }
     }
 
-    private void HandleClick()
+    private void func_OnUpgradeClicked()
     {
         OnSelect?.Invoke(m_characterIndex);
     }
