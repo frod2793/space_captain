@@ -141,16 +141,6 @@ public class EnemyController : MonoBehaviour, IPoolable, IAttackTarget
             player.TakeDamage(m_enemyData.AttackDamage);
             DestroyEnemy();
         }
-        else if (other.TryGetComponent<BulletProjectile>(out var bullet))
-        {
-            if (m_enemyData.IsDead)
-            {
-                return;
-            }
-
-            TakeDamage(bullet.Damage, bullet.OwnerID);
-            Destroy(bullet.gameObject);
-        }
     }
 
     private void Initialize()

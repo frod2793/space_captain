@@ -293,14 +293,6 @@ public class BossController : MonoBehaviour, IAttackTarget
         {
             player.TakeDamage(m_bossData.AttackDamage);
         }
-        else if (other.TryGetComponent<BulletProjectile>(out var bullet))
-        {
-            TakeDamage(bullet.Damage, bullet.OwnerID);
-            if (bullet.gameObject != null)
-            {
-                Destroy(bullet.gameObject);
-            }
-        }
     }
 
     /// <summary>

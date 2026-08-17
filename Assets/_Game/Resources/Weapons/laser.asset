@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20657911acac4061a3b960eb1bfd25f0, type: 3}
+  m_Name: laser
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponDataSO
+  WeaponID: laser
+  DisplayName: "\uB808\uC774\uC800"
+  Behaviour: 1
+  ProjectilePrefab: {fileID: 0}
+  FireRate: 0.8
+  BulletCount: 1
+  SpreadAngle: 0
+  ProjectileSpeed: 15
+  Range: 10
+  DamageMultiplier: 0.2
+  MaxTargets: 1
+  PierceDamageRate: 1
+  WarmupTime: 0
+  MaxFireRate: 0
+  ProjectileScale: 1
+  BeamWidth: 1.5
+  BeamRange: 20
+  BeamVisualPrefab: {fileID: 4314734663235059109, guid: d8b3d01e131e54ddcb31b19d9bc74a2e, type: 3}
+  ExplosionRadius: 0
+  ChainCount: 0
+  ChainRange: 3
+  ChainDamageRate: 0.7

@@ -16,6 +16,7 @@ MonoBehaviour:
   m_characterName: "\uC800\uACA9\uCD1D"
   m_prefab: {fileID: 2205132698534043213, guid: 151111b57a3d64d06b13a1ba99f00ef9, type: 3}
   m_uiIcon: {fileID: -609105593, guid: 9a7d4cf78d555f84b94b7e366c221326, type: 3}
+  m_defaultWeapon: {fileID: 11400000, guid: 99aa728b9fc124146b2b7b87f8ca67e4, type: 2}
   m_baseStats:
     ID: b
     MoveSpeed: 10

@@ -38,6 +38,7 @@ public class ObjectPoolManager : MonoBehaviour
 
         GameObject newObj = Instantiate(prefab, position, rotation);
         newObj.name = key;
+        newObj.SetActive(true);
         if (newObj.TryGetComponent<IPoolable>(out var newPoolable))
         {
             newPoolable.OnSpawn();

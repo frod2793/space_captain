@@ -19,6 +19,7 @@ public class PlayerCharacterController : MonoBehaviour, ICharacterStatus
     [SerializeField] private ActiveSkill m_activeSkill;
     private float m_swapCooldownEndTime = 0f;
     private bool m_isDying = false;
+    private string m_displayName;
 
     public event Action<float> OnHpChanged;
     public event Action<PlayerCharacterController> OnDead;
@@ -31,7 +32,19 @@ public class PlayerCharacterController : MonoBehaviour, ICharacterStatus
     public Collider2D Collider => m_collider;
     public Sprite UI_Icon => m_uiIcon;
     public string CharacterID => (m_stats != null && !string.IsNullOrEmpty(m_stats.ID)) ? m_stats.ID : m_characterID;
-    public string CharacterName => (m_activeSkill != null) ? m_activeSkill.CharacterName : m_characterID;
+
+    public string CharacterName
+    {
+        get
+        {
+            if (!string.IsNullOrEmpty(m_displayName))
+            {
+                return m_displayName;
+            }
+
+            return (m_activeSkill != null) ? m_activeSkill.CharacterName : m_characterID;
+        }
+    }
     public ActiveSkill Skill => m_activeSkill;
 
     [SerializeField] private CharacterSwapState m_swapState = CharacterSwapState.Reserve;
@@ -55,6 +68,20 @@ public class PlayerCharacterController : MonoBehaviour, ICharacterStatus
     private void Update()
     {
         HandleMovementUpdate();
+    }
+
+    /// <summary>
+    /// CharacterDataSO의 표시 정보를 주입한다. 프리팹에 박힌 값보다 우선한다.
+    /// 여러 캐릭터가 한 프리팹을 공유해도 로비에서 고른 정체성이 그대로 보인다.
+    /// </summary>
+    public void SetIdentity(string displayName, Sprite icon)
+    {
+        m_displayName = displayName;
+
+        if (icon != null)
+        {
+            m_uiIcon = icon;
+        }
     }
 
     public void Initialize(PlayerStatsDTO stats)

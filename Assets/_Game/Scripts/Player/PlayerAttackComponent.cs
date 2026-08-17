@@ -4,6 +4,7 @@ using System.Collections.Generic;
 public class PlayerAttackComponent : MonoBehaviour
 {
     [SerializeField] private PlayerCharacterController m_owner;
+    [SerializeField] private WeaponDataSO m_weapon;
     [SerializeField] private PlayerAttackType m_attackType;
     [SerializeField] private GameObject m_bulletPrefab;
     [SerializeField] private Transform[] m_firePoints;
@@ -12,7 +13,17 @@ public class PlayerAttackComponent : MonoBehaviour
     [SerializeField] private float m_targetingRange = 10f;
 
     public IAttackTarget CurrentTarget { get; set; }
+    private IWeaponBehaviour m_behaviour;
+    private ObjectPoolManager m_pool;
     private float m_fireTimer;
+    private float m_warmupTimer;
+    private IAttackTarget m_previousTarget;
+
+    private void Awake()
+    {
+        m_pool = FindAnyObjectByType<ObjectPoolManager>();
+        m_behaviour = CreateBehaviour();
+    }
 
     private void Update()
     {
@@ -22,34 +33,54 @@ public class PlayerAttackComponent : MonoBehaviour
         }
 
         UpdateTargeting();
-        
+        if (!ReferenceEquals(CurrentTarget, m_previousTarget))
+        {
+            m_previousTarget = CurrentTarget;
+            m_warmupTimer = 0f;
+        }
+
         m_fireTimer += Time.deltaTime;
 
-        bool canFire = false;
-        if (m_owner.Stats != null && m_owner.Stats.CurrentHp > 0 && m_owner.IsOnField)
+        bool canFire = m_owner.Stats != null && m_owner.Stats.CurrentHp > 0 && m_owner.IsOnField &&
+            (CurrentTarget != null || (m_owner.IsActive && m_owner.IsDragging));
+        if (!canFire)
         {
-            if (CurrentTarget != null || (m_owner.IsActive && m_owner.IsDragging))
+            m_warmupTimer = 0f;
+            return;
+        }
+
+        if (m_weapon == null || m_behaviour == null)
+        {
+            if (m_fireTimer >= m_fireRate)
             {
-                canFire = true;
+                m_fireTimer = 0f;
+                FireLegacy();
             }
+            return;
         }
 
-        if (m_fireTimer >= m_fireRate && canFire)
+        float fireRate = Mathf.Max(0f, m_weapon.FireRate);
+        if (m_weapon.WarmupTime > 0f)
         {
-            m_fireTimer = 0f;
-            Fire();
+            m_warmupTimer += Time.deltaTime;
+            float maxFireRate = m_weapon.MaxFireRate > 0f ? m_weapon.MaxFireRate : m_weapon.FireRate;
+            fireRate = Mathf.Lerp(m_weapon.FireRate, maxFireRate,
+                Mathf.Clamp01(m_warmupTimer / m_weapon.WarmupTime));
         }
-    }
 
-    private void Fire()
-    {
-        if (m_bulletPrefab == null) 
+        if (m_fireTimer < fireRate)
         {
             return;
         }
 
+        m_fireTimer = 0f;
+        Fire();
+    }
+
+    private void Fire()
+    {
         float baseAngle = 0f;
-        if ((!m_owner.IsActive || !m_owner.IsDragging) && CurrentTarget != null)
+        if ((!m_owner.IsActive || !m_owner.IsDragging) && CurrentTarget != null && CurrentTarget.TargetTransform != null)
         {
             Vector3 direction = (CurrentTarget.TargetTransform.position - transform.position).normalized;
             baseAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
@@ -59,73 +90,72 @@ public class PlayerAttackComponent : MonoBehaviour
             baseAngle = transform.rotation.eulerAngles.z;
         }
 
-        int totalBulletCount = 1;
-        float spreadAngle = 0f;
-
-        switch (m_attackType)
-        {
-            case PlayerAttackType.Single: 
-                totalBulletCount = 1; 
-                spreadAngle = 5f; 
-                break;
-            case PlayerAttackType.Double: 
-                totalBulletCount = 2; 
-                spreadAngle = 0f; 
-                break;
-            case PlayerAttackType.Spread: 
-                totalBulletCount = 3; 
-                spreadAngle = 60f; 
-                break;
-        }
-
-        float baseSpread = spreadAngle; 
-
+        int totalBulletCount = m_weapon.BulletCount;
+        float spreadAngle = m_weapon.SpreadAngle;
         if (m_owner.Stats != null)
         {
             totalBulletCount += m_owner.Stats.BulletCountBonus;
-            spreadAngle = spreadAngle + m_owner.Stats.SpreadAngleBonus;
+            spreadAngle += m_owner.Stats.SpreadAngleBonus;
         }
 
-        int firePointCount = m_firePoints != null ? m_firePoints.Length : 0;
-        if (firePointCount == 0)
+        var context = new WeaponFireContext
+        {
+            Origin = transform.position,
+            BaseAngle = baseAngle,
+            Damage = m_owner.Stats != null
+                ? Mathf.CeilToInt(Mathf.Max(0f, m_owner.Stats.AttackDamage * m_weapon.DamageMultiplier))
+                : 0,
+            OwnerID = m_owner.CharacterID,
+            FirePoints = m_firePoints,
+            Target = CurrentTarget,
+            Pool = m_pool,
+            Data = m_weapon,
+            BulletCount = totalBulletCount,
+            SpreadAngle = spreadAngle,
+            ScaleMultiplier = m_owner.IsActive ? 1f : 0.5f
+        };
+
+        m_behaviour.Fire(context);
+    }
+
+    private IWeaponBehaviour CreateBehaviour()
+    {
+        if (m_weapon == null)
+        {
+            return null;
+        }
+
+        switch (m_weapon.Behaviour)
+        {
+            case WeaponBehaviourType.Beam:
+                return new BeamWeapon();
+            case WeaponBehaviourType.Explosive:
+                return new ExplosiveWeapon();
+            case WeaponBehaviourType.Chain:
+                return new ChainWeapon();
+            default:
+                return new StraightWeapon();
+        }
+    }
+
+    public void SetWeapon(WeaponDataSO weapon)
+    {
+        if (weapon == null)
         {
             return;
         }
 
-        float multiplier = m_owner.IsActive ? 1.0f : 0.5f;
-
-        for (int i = 0; i < totalBulletCount; i++)
-        {
-            float angleOffset = totalBulletCount > 1 ? -spreadAngle / 2f + (spreadAngle / (totalBulletCount - 1)) * i : 0f;
-            
-            Transform firePoint = m_firePoints[i % firePointCount];
-            Vector3 spawnPos = firePoint.position;
-
-            if (m_attackType == PlayerAttackType.Spread && baseSpread > 0)
-            {
-                float k = Mathf.Clamp01(spreadAngle / baseSpread);
-                
-                Vector3 localPos = transform.InverseTransformPoint(firePoint.position);
-                localPos.x *= k; 
-                spawnPos = transform.TransformPoint(localPos);
-
-                int indexInPoints = i % firePointCount;
-                if (indexInPoints == 0 || indexInPoints == 2)
-                {
-                    angleOffset *= k; 
-                }
-            }
-
-            float finalAngle = baseAngle + angleOffset;
-            CreateBullet(spawnPos, finalAngle, multiplier);
-        }
+        m_weapon = weapon;
+        m_behaviour = CreateBehaviour();
+        m_warmupTimer = 0f;
     }
 
     private void UpdateTargeting()
     {
-        float currentTargetingRange = m_targetingRange * (m_owner.IsActive ? 1.0f : 0.5f);
+        float currentTargetingRange = m_weapon != null ? Mathf.Max(0f, m_weapon.Range) : m_targetingRange;
+        currentTargetingRange *= m_owner.IsActive ? 1.0f : 0.5f;
 
-        if (CurrentTarget == null || CurrentTarget.IsActiveTarget == false ||
+        if (CurrentTarget == null || CurrentTarget.IsActiveTarget == false || CurrentTarget.TargetTransform == null ||
             Vector2.Distance(transform.position, CurrentTarget.TargetTransform.position) > currentTargetingRange)
         {
             CurrentTarget = FindNearestEnemy(currentTargetingRange);
@@ -158,32 +188,41 @@ public class PlayerAttackComponent : MonoBehaviour
         return nearest;
     }
 
-    private void CreateBullet(Vector3 position, float angle, float scaleMultiplier)
+    private void FireLegacy()
     {
-        var pool = FindAnyObjectByType<ObjectPoolManager>();
-        GameObject bulletObj;
-        
-        if (pool != null)
+        if (m_bulletPrefab == null || m_firePoints == null || m_firePoints.Length == 0)
         {
-            bulletObj = pool.GetFromPool(m_bulletPrefab, position, Quaternion.Euler(0, 0, angle));
-        }
-        else
-        {
-            bulletObj = Instantiate(m_bulletPrefab, position, Quaternion.Euler(0, 0, angle));
+            return;
         }
 
-        if (bulletObj != null)
+        float baseAngle = CurrentTarget != null && (!m_owner.IsActive || !m_owner.IsDragging)
+            ? Mathf.Atan2((CurrentTarget.TargetTransform.position - transform.position).y, (CurrentTarget.TargetTransform.position - transform.position).x) * Mathf.Rad2Deg - 90f
+            : transform.rotation.eulerAngles.z;
+        int count = m_attackType == PlayerAttackType.Double ? 2 : m_attackType == PlayerAttackType.Spread ? 3 : 1;
+        float spread = m_attackType == PlayerAttackType.Spread ? 60f : 0f;
+        if (m_owner.Stats != null)
         {
-            bulletObj.transform.localScale = Vector3.one * scaleMultiplier;
+            count += m_owner.Stats.BulletCountBonus;
+            spread += m_owner.Stats.SpreadAngleBonus;
+        }
 
-            if (bulletObj.TryGetComponent<BulletProjectile>(out var projectile))
+        for (int i = 0; i < count; i++)
+        {
+            float offset = count > 1 ? -spread / 2f + spread / (count - 1) * i : 0f;
+            GameObject bullet = m_pool != null
+                ? m_pool.GetFromPool(m_bulletPrefab, m_firePoints[i % m_firePoints.Length].position, Quaternion.Euler(0f, 0f, baseAngle + offset))
+                : Instantiate(m_bulletPrefab, m_firePoints[i % m_firePoints.Length].position, Quaternion.Euler(0f, 0f, baseAngle + offset));
+            if (bullet != null && bullet.TryGetComponent<BulletProjectile>(out var projectile))
             {
+                projectile.ResetForLegacyFire();
+                bullet.transform.localScale = Vector3.one * (m_owner.IsActive ? 1f : 0.5f);
                 projectile.SetSpeed(m_bulletSpeed);
                 projectile.OwnerID = m_owner.CharacterID;
-                if (m_owner.Stats != null)
-                {
-                    projectile.Damage = m_owner.Stats.AttackDamage;
-                }
+                projectile.Damage = m_owner.Stats != null ? m_owner.Stats.AttackDamage : 0;
+                projectile.MaxTargets = 1;
+                projectile.PierceDamageRate = 1f;
+                projectile.DamageFalloffRate = 0f;
+                projectile.OnHit = null;
             }
         }
     }

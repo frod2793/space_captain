@@ -55,6 +55,10 @@ public class PartyUIWiringTests
     {
         PlayerPrefs.DeleteKey(SAVE_KEY);
 
+        // InGame 씬 테스트가 timeScale을 0으로 두고 갈 수 있다.
+        // 스케일 시간에 의존하는 대기가 멈추지 않도록 되돌린다.
+        Time.timeScale = 1f;
+
         SceneManager.LoadScene("Main");
         yield return null;
 
@@ -182,7 +186,7 @@ public class PartyUIWiringTests
 
         var closeButton = (Button)GetField(popup, "m_closeButton");
         closeButton.onClick.Invoke();
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSecondsRealtime(0.5f);
 
         Assert.IsFalse(popupBehaviour.gameObject.activeSelf, "닫기 후에도 팝업이 열려 있다");
 

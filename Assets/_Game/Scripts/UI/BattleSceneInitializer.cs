@@ -108,6 +108,8 @@ public class BattleSceneInitializer : MonoBehaviour
                         var controller = go.GetComponent<PlayerCharacterController>();
                         if (controller != null)
                         {
+                            // 아이콘/이름은 프리팹이 아니라 편성에서 고른 CharacterDataSO를 따른다
+                            controller.SetIdentity(charData.CharacterName, charData.UI_Icon);
                             // 초기 스탯 주입
                             if (charData.BaseStats != null)
                             {
@@ -122,6 +124,11 @@ public class BattleSceneInitializer : MonoBehaviour
                                     IsActive = (i == 0)
                                 };
                                 controller.Initialize(stats);
+                            }
+
+                            if (charData.DefaultWeapon != null && controller.TryGetComponent<PlayerAttackComponent>(out var attack))
+                            {
+                                attack.SetWeapon(charData.DefaultWeapon);
                             }
                             
                             spawnedCharacters.Add(controller);

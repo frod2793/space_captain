@@ -86,7 +86,10 @@ public class PlayerSwapManager : MonoBehaviour, IPlayerSwapContext, ISwapCommand
             return;
         }
 
-        m_characters.Sort((a, b) => a.SwapState.CompareTo(b.SwapState));
+        // 전달받은 순서가 곧 편성이다. SwapState로 정렬하면 안 된다 -
+        // AlignCharactersToPositions가 인덱스로 SwapState를 정하므로 SwapState는
+        // 순서의 결과이지 입력이 아니다. 게다가 List.Sort는 불안정 정렬이라
+        // 같은 값끼리도 순서가 뒤집혀 편성이 무작위로 섞였다.
 
         m_deadProcessedCharacters.Clear();
         m_aliveCount = 0;
