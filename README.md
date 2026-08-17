@@ -36,7 +36,7 @@
 | 문서                                      | 대상                                        | 상태  |
 | --------------------------------------- | ----------------------------------------- | --- |
 | [로비 씬](docs/onboarding/lobby-scene.md)  | `Main.unity` · `Scripts/OutGame/` 11개 파일  | 작성됨 |
-| [전투 씬](docs/onboarding/ingame-scene.md) | `InGame.unity` · `Scripts/InGame/` 59개 파일 | 작성됨 |
+| [전투 씬](docs/onboarding/ingame-scene.md) | `InGame.unity` · `Scripts/InGame/` 60개 파일 | 작성됨 |
 
 
 ### 기능별 설계와 계획
@@ -69,7 +69,7 @@
 
 ```
 Assets/_Game/Scripts/
-├── InGame/     59개  전투 씬에서만 도는 것
+├── InGame/     60개  전투 씬에서만 도는 것
 │   ├── Core/          Barrier, MasterShip, GameProgressController, IAttackTarget
 │   ├── Player/        캐릭터 본체, 공격, HP바
 │   │   ├── Swap/      교대 전략 (ISwapStrategy 구현들)
@@ -214,8 +214,8 @@ Dead     사망
 | 메서드 (public·private 모두)     | **PascalCase**       | `SetData`, `Compact`         | 201 / 0 |
 | enum 멤버                     | **PascalCase**       | `Single`, `Spread`, `Beam`   | 전부      |
 | private 인스턴스 필드             | `m_` + **camelCase** | `m_lobbyView`                | 302 / 1 |
-| private static 필드           | `s_` + **camelCase** | `s_gameAssembly`             | 4       |
-| 메서드 파라미터                    | **camelCase**        | `characterID`, `slot`        | 171 / 0 |
+| private static 필드           | `s_` + **camelCase** | `s_gameAssembly`             | 5       |
+| 메서드 파라미터                    | **camelCase**        | `characterID`, `slot`        | 172 / 0 |
 | 지역 변수                       | **camelCase**        | `viewModel`, `deck`          | 66 / 0  |
 | 상수 (`const`)                | **UPPER_SNAKE_CASE** | `DECK_SIZE`, `SAVE_KEY`      | 10 / 1  |
 
@@ -237,7 +237,7 @@ public class PlayerStatsDTO   // 클래스: Pascal
 | 대상                | 규칙      | 실측             |
 | ----------------- | ------- | -------------- |
 | private 인스턴스 필드   | `m_`    | 378곳 준수, 2곳 예외 |
-| private static 필드 | `s_`    | 4곳             |
+| private static 필드 | `s_`    | 5곳             |
 | 인터페이스             | `I`     | 16개            |
 | UI 버튼 핸들러         | `func_` | 22개            |
 
@@ -532,9 +532,12 @@ Time.timeScale = 1f;                             // SetUp에서 되돌리기
 연쇄인 경우가 대부분이다.
 
 ```bash
--testFilter "PartyViewModelTests"                    # 클래스 단위
+-testFilter "^PartyViewModelTests"                   # 클래스 단위
 -testFilter "PartyViewModelTests.덱_길이는_DECK_SIZE_상수를_따른다"   # 메서드 단위
 ```
+
+**`-testFilter`는 부분 일치다.** `SkillSystemTests`로 거르면 `ShipSkillSystemTests`까지
+함께 돈다. 개수가 이상하면 이걸 의심하고 `^`를 붙인다.
 
 ### 전체를 한 번에 돌리지 않는다
 
@@ -550,13 +553,13 @@ Time.timeScale = 1f;                             // SetUp에서 되돌리기
 | `CharacterSystemTests` | 13 | 21s |
 | `BulletProjectileTests` | 10 | ~12s |
 | `PlayerAttackComponentTests` | 10 | ~12s |
-| `SkillSystemTests` | 10 | 12s |
+| `SkillSystemTests` | 3 | 12s |
 | `ShipSkillSystemTests` | 7 | 9s |
 | `UserDataSaveTests` | 5 | 12s |
 | `BattleDeckApplyTests` | 5 | 12s |
 | `PartyUIWiringTests` | 3 | 15s |
 
-합계 **105개**. 전투 씬을 띄우는 클래스(`BattleDeckApplyTests`, `PartyUIWiringTests`)가
+합계 **98개**. 전투 씬을 띄우는 클래스(`BattleDeckApplyTests`, `PartyUIWiringTests`)가
 특히 다른 클래스를 오염시키기 쉬우니, 이 둘은 따로 돌리는 편이 안전하다.
 
 씬을 띄우는 클래스는 **드물게 혼자서도 멈춘다.** 같은 조건에서 12초에 통과하다가
