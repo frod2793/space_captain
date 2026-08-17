@@ -9,10 +9,13 @@ public class LobbyInitializer : MonoBehaviour
 {
     [SerializeField] private LobbyView m_lobbyView;
     [SerializeField] private UserProfilePopupView m_profilePopupView;
+    [SerializeField] private PartyPopupView m_partyPopupView;
+    [SerializeField] private CharacterDatabaseSO m_characterDatabase;
     [SerializeField] private TransitionSettings m_transitionSettings;
 
     private UserDataSO m_userData;
     private UserProfileViewModel m_userProfileViewModel;
+    private PartyViewModel m_partyViewModel;
     private LocalizationManager m_localizationManager;
 
     private void Start()
@@ -40,6 +43,14 @@ public class LobbyInitializer : MonoBehaviour
             return;
         }
 
+        if (m_characterDatabase == null)
+        {
+            m_characterDatabase = Resources.Load<CharacterDatabaseSO>("CharacterDatabase");
+        }
+
+        // 저장된 편성을 먼저 읽어야 ViewModel이 최신 덱을 본다
+        m_userData.LoadData();
+
         var lobbyViewModel = new LobbyViewModel();
         lobbyViewModel.SetData(m_userData.LobbyData, m_userData.StageProgress);
 
@@ -53,12 +64,30 @@ public class LobbyInitializer : MonoBehaviour
             m_profilePopupView.gameObject.SetActive(false);
         }
 
+        // 파티 편성 팝업 초기화
+        m_partyViewModel = new PartyViewModel();
+        m_partyViewModel.SetData(m_userData, m_characterDatabase);
+
+        if (m_partyPopupView != null)
+        {
+            m_partyPopupView.Initialize(m_partyViewModel);
+            m_partyPopupView.gameObject.SetActive(false);
+        }
+
         // 이벤트 바인딩
         lobbyViewModel.OnProfileOpenRequested += () => 
         {
             if (m_profilePopupView != null)
             {
                 m_profilePopupView.Show();
+            }
+        };
+
+        lobbyViewModel.OnPartyOpenRequested += () =>
+        {
+            if (m_partyPopupView != null)
+            {
+                m_partyPopupView.Show();
             }
         };
 

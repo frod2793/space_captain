@@ -88,6 +88,9 @@ public class BattleSceneInitializer : MonoBehaviour
             // 동적 캐릭터 생성 및 주입
             if (m_characterDatabase != null && m_userData != null)
             {
+                // 씬 전환으로 SO가 언로드/재로드되면 로비에서 저장한 편성이 날아간다
+                m_userData.LoadData();
+
                 var deck = m_userData.LobbyData.DeckCharacters;
                 
                 if (deck == null || deck.Count == 0)

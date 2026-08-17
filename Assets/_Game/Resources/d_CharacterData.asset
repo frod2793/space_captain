@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: d_CharacterData
   m_EditorClassIdentifier: Assembly-CSharp::CharacterDataSO
   m_characterID: d
-  m_characterName: "\uAE30\uC5B4\uC11C\uB4DC"
+  m_characterName: "\uC18C\uCD1D"
   m_prefab: {fileID: 1209679588757270527, guid: ed1d4dce95a054082b520035d49b316c, type: 3}
   m_uiIcon: {fileID: -663790813, guid: 9de24de8eaefa2547a78fa19acb9c1ba, type: 3}
   m_baseStats:

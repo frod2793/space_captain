@@ -10,19 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6fe39259502864dc59db6699d6a690ee, type: 3}
-  m_Name: c_CharacterData
+  m_Name: i_CharacterData
   m_EditorClassIdentifier: Assembly-CSharp::CharacterDataSO
-  m_characterID: c
-  m_characterName: "\uAD8C\uCD1D"
-  m_prefab: {fileID: 3968663484842372456, guid: 4eb6e2683eb0646b38b24335c4f701f2, type: 3}
-  m_uiIcon: {fileID: 766401250, guid: 0c04039c8c6afbb42b2d39b43f560475, type: 3}
+  m_characterID: i
+  m_characterName: "\uC720\uD0C4 \uBC1C\uC0AC\uAE30"
+  m_prefab: {fileID: 2171860435528576652, guid: 873a4de72efca487e8d5ad9f09d20091, type: 3}
+  m_uiIcon: {fileID: -1426459383, guid: 6e663d1a2a9e08b4db4d0106ca7a5215, type: 3}
   m_baseStats:
-    ID: c
+    ID: i
     MoveSpeed: 10
     AttackDamage: 20
     MaxHp: 100
     CurrentHp: 100
-    IsActive: 1
+    IsActive: 0
     CurrentX: 0
     BulletCountBonus: 0
     SpreadAngleBonus: 0

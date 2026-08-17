@@ -28,6 +28,7 @@ public class ButtonEventSystemTests
 
         public event Action OnDataChanged;
         public event Action OnProfileOpenRequested;
+        public event Action OnPartyOpenRequested;
 
         public void StartBattle()
         {
@@ -42,6 +43,11 @@ public class ButtonEventSystemTests
         public void OpenProfile()
         {
             OpenProfileCalled = true;
+        }
+
+        public void OpenParty()
+        {
+            OnPartyOpenRequested?.Invoke();
         }
 
         public void SelectDifficulty(StageDifficulty difficulty)

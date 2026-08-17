@@ -17,9 +17,11 @@ public interface ILobbyViewModel
 
     event Action OnDataChanged;
     event Action OnProfileOpenRequested;
+    event Action OnPartyOpenRequested;
 
     void StartBattle();
     void OpenSettings();
     void OpenProfile();
+    void OpenParty();
     void SelectDifficulty(StageDifficulty difficulty);
 }

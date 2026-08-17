@@ -22,6 +22,7 @@ public class LobbyView : MonoBehaviour
     [SerializeField] private TMP_Text m_staminaCostText;
     [SerializeField] private Button m_settingsButton;
     [SerializeField] private Button m_profileButton;
+    [SerializeField] private Button m_partyButton;
 
     [Header("일러스트")]
     [SerializeField] private Image m_characterIllustration;
@@ -41,6 +42,11 @@ public class LobbyView : MonoBehaviour
             if (m_profileButton != null)
             {
                 m_profileButton.onClick.AddListener(func_OnProfileClicked);
+            }
+
+            if (m_partyButton != null)
+            {
+                m_partyButton.onClick.AddListener(func_OnPartyClicked);
             }
 
             if (m_normalDifficultyButton != null)
@@ -93,6 +99,11 @@ public class LobbyView : MonoBehaviour
         if (m_profileButton != null)
         {
             m_profileButton.onClick.RemoveAllListeners();
+        }
+
+        if (m_partyButton != null)
+        {
+            m_partyButton.onClick.RemoveAllListeners();
         }
 
         if (m_normalDifficultyButton != null)
@@ -160,6 +171,14 @@ public class LobbyView : MonoBehaviour
         if (m_viewModel != null)
         {
             m_viewModel.OpenProfile();
+        }
+    }
+
+    private void func_OnPartyClicked()
+    {
+        if (m_viewModel != null)
+        {
+            m_viewModel.OpenParty();
         }
     }
 }

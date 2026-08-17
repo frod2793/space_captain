@@ -31,6 +31,7 @@ public class LobbyViewModel : ILobbyViewModel
 
     public event Action OnDataChanged;
     public event Action OnProfileOpenRequested;
+    public event Action OnPartyOpenRequested;
 
     public void SetData(LobbyDataDTO lobbyData, StageProgressDTO stageProgress)
     {
@@ -69,6 +70,11 @@ public class LobbyViewModel : ILobbyViewModel
     public void OpenProfile()
     {
         OnProfileOpenRequested?.Invoke();
+    }
+
+    public void OpenParty()
+    {
+        OnPartyOpenRequested?.Invoke();
     }
 
     public void SelectDifficulty(StageDifficulty difficulty)

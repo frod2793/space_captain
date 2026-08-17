@@ -39,10 +39,27 @@ public class UserProfilePopupView : MonoBehaviour
         
     }
 
+    /// <summary>
+    /// Show/Hide가 겹치면 Hide의 OnComplete가 뒤늦게 터져 방금 연 팝업을 꺼버린다.
+    /// </summary>
+    private void KillTweens()
+    {
+        if (m_canvasGroup != null)
+        {
+            m_canvasGroup.DOKill();
+        }
+
+        if (m_popupTransform != null)
+        {
+            m_popupTransform.DOKill();
+        }
+    }
+
     public void Show()
     {
+        KillTweens();
         gameObject.SetActive(true);
-        
+
         if (m_canvasGroup != null)
         {
             m_canvasGroup.alpha = 0;
@@ -58,6 +75,8 @@ public class UserProfilePopupView : MonoBehaviour
 
     public void Hide()
     {
+        KillTweens();
+
         if (m_canvasGroup != null)
         {
             m_canvasGroup.DOFade(0, 0.2f).SetEase(Ease.InQuad);
