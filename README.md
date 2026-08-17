@@ -67,19 +67,51 @@ Assets/_Game/Scripts/
 
 프로젝트 전체가 아래 규칙을 지킨다. 숫자는 실제 코드에서 센 것이다.
 
-### 네이밍
+### 케이싱
+
+**공개된 것은 파스칼, 지역적인 것은 카멜, 상수는 대문자 스네이크.** 아래는 전부 실제
+코드를 센 수치다. 예외가 거의 없으니 그대로 따르면 된다.
+
+| 대상 | 케이싱 | 예 | 실측 |
+|---|---|---|---|
+| 클래스 · 인터페이스 · enum · struct | **PascalCase** | `PartyViewModel` | 90 / 0 |
+| public 프로퍼티 | **PascalCase** | `CharacterID`, `CombatPower` | 70 / 0 |
+| public 필드 (DTO) | **PascalCase** | `MaxHp`, `AttackDamage` | 전부 |
+| 메서드 (public·private 모두) | **PascalCase** | `SetData`, `Compact` | 201 / 0 |
+| enum 멤버 | **PascalCase** | `Single`, `Spread`, `Beam` | 전부 |
+| private 인스턴스 필드 | `m_` + **camelCase** | `m_lobbyView` | 302 / 1 |
+| private static 필드 | `s_` + **camelCase** | `s_gameAssembly` | 4 |
+| 메서드 파라미터 | **camelCase** | `characterID`, `slot` | 171 / 0 |
+| 지역 변수 | **camelCase** | `viewModel`, `deck` | 66 / 0 |
+| 상수 (`const`) | **UPPER_SNAKE_CASE** | `DECK_SIZE`, `SAVE_KEY` | 10 / 1 |
+
+DTO의 public 필드가 파스칼인 점에 주의한다. C# 관례상 필드는 카멜인 경우도 있지만
+이 프로젝트는 **프로퍼티와 필드를 같은 케이싱으로 통일**했다. `JsonUtility` 직렬화
+키가 그대로 노출되므로 저장 포맷과도 직결된다.
+
+```csharp
+public class PlayerStatsDTO   // 클래스: Pascal
+{
+    public int MaxHp = 100;   // public 필드: Pascal
+}
+```
+
+### 접두사
 
 | 대상 | 규칙 | 실측 |
 |---|---|---|
-| 인스턴스 private 필드 | `m_` 접두사 | 378곳 준수, 2곳 예외 |
-| static private 필드 | `s_` 접두사 | 4곳 |
-| 인터페이스 | `I` 접두사 | 16개 |
-| 인스펙터 노출 | `[SerializeField] private` — `public` 필드를 쓰지 않는다 | |
+| private 인스턴스 필드 | `m_` | 378곳 준수, 2곳 예외 |
+| private static 필드 | `s_` | 4곳 |
+| 인터페이스 | `I` | 16개 |
+| UI 버튼 핸들러 | `func_` | 22개 |
+
+인스펙터 노출은 **`[SerializeField] private`**를 쓴다. `public` 필드로 열지 않는다.
 
 ```csharp
 [SerializeField] private LobbyView m_lobbyView;
 private UserDataSO m_userData;
 private static Assembly s_gameAssembly;
+private const int DECK_SIZE = 5;
 ```
 
 ### 접미사가 역할을 말한다
@@ -116,6 +148,7 @@ List<string> deck = m_lobbyData.DeckCharacters;
 ### UI 버튼 핸들러는 `func_` 접두사
 
 인스펙터의 OnClick에 연결하거나 코드에서 `AddListener`로 붙이는 메서드다. 22개 있다.
+접두사 뒤는 메서드 규칙대로 PascalCase다 — `func_` + `OnPartyClicked`.
 
 ```csharp
 private void func_OnPartyClicked()
