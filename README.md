@@ -40,7 +40,7 @@ git clone <repo> && cd space_captain
 | 문서 | 대상 | 상태 |
 |---|---|---|
 | [로비 씬](docs/onboarding/lobby-scene.md) | `Main.unity` · `Scripts/OutGame/` 11개 파일 | 작성됨 |
-| 전투 씬 | `InGame.unity` · `Scripts/InGame/` 59개 파일 | 미작성 |
+| [전투 씬](docs/onboarding/ingame-scene.md) | `InGame.unity` · `Scripts/InGame/` 59개 파일 | 작성됨 |
 
 ### 기능별 설계와 계획
 
@@ -126,7 +126,7 @@ Assets/_Game/Scripts/
 
 | 용어 | 코드 | 뜻 |
 |---|---|---|
-| **모함** | `MasterShip` (HP 1000) | 지켜야 할 본체. 파괴되면 패배 |
+| **모함** | `MasterShip` (HP 1000) | 지켜야 할 본체. 파괴 시 패배 처리는 [아직 미연결](docs/onboarding/ingame-scene.md#6-승패-판정) |
 | **배리어** | `Barrier` (500) | 모함 앞의 방어막. 피해를 먼저 흡수하고 깨진다 |
 | **웨이브** | `WaveConfigDTO` | 적이 몰려오는 한 묶음. 진행할수록 수는 늘고 간격은 줄어든다 |
 | **보스** | `BossController` | 지정 웨이브(기본 3)에 등장 |
