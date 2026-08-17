@@ -134,7 +134,8 @@ public class SkillSystemTests
         bool lockedDuringSkill = (bool)lockField.GetValue(m_swapManager);
         Assert.IsTrue(lockedDuringSkill, "스킬 컷신 및 로직 수행 중에는 입력이 잠겨야 합니다.");
 
-        yield return new WaitForSecondsRealtime(0.3f); 
+        // ActiveSkill은 ignoreTimeScale로 연출 0.1s + 고정 1.0s를 쓴다. 실시간 1.1초 이상 기다려야 한다
+        yield return new WaitForSecondsRealtime(1.5f);
 
         bool lockedAfterSkill = (bool)lockField.GetValue(m_swapManager);
         Assert.IsFalse(lockedAfterSkill, "스킬 애니메이션 종료 후 입력 잠금이 정상적으로 해제되어야 합니다.");

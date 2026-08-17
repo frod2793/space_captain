@@ -536,6 +536,29 @@ Time.timeScale = 1f;                             // SetUp에서 되돌리기
 -testFilter "PartyViewModelTests.덱_길이는_DECK_SIZE_상수를_따른다"   # 메서드 단위
 ```
 
+### 전체를 한 번에 돌리지 않는다
+
+**필터 없이 전 클래스를 함께 돌리면 끝나지 않는다.** 클래스별로는 전부 9~21초에
+통과하는데, 합치면 10분을 넘겨도 결과가 안 나온다. 원인은 아직 못 찾았다.
+
+클래스 단위로 나눠 돌리는 것이 현재의 표준 절차다. 전부 합쳐도 2분이 안 걸린다.
+
+| 클래스 | 개수 | 소요 |
+|---|---|---|
+| `PartyViewModelTests` | 27 | 12s |
+| `WeaponBehaviourTests` | 15 | ~15s |
+| `CharacterSystemTests` | 13 | 21s |
+| `BulletProjectileTests` | 10 | ~12s |
+| `PlayerAttackComponentTests` | 10 | ~12s |
+| `SkillSystemTests` | 10 | 12s |
+| `ShipSkillSystemTests` | 7 | 9s |
+| `UserDataSaveTests` | 5 | 12s |
+| `BattleDeckApplyTests` | 5 | 12s |
+| `PartyUIWiringTests` | 3 | 15s |
+
+합계 **105개**. 전투 씬을 띄우는 클래스(`BattleDeckApplyTests`, `PartyUIWiringTests`)가
+특히 다른 클래스를 오염시키기 쉬우니, 이 둘은 따로 돌리는 편이 안전하다.
+
 ---
 
 ## 에디터 자동화
