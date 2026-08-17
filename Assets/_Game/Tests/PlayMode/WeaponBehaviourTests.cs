@@ -17,6 +17,9 @@ public class WeaponBehaviourTests
     [UnitySetUp]
     public IEnumerator SetUp()
     {
+        // 전투 씬을 띄운 테스트가 timeScale = 0을 남기면 스케일 시간 대기가 영원히 만료되지 않는다
+        Time.timeScale = 1f;
+
         m_damageRecords.Clear();
         m_enemyType = TestReflectionHelper.GetGameType("EnemyController");
         m_damageEvent = m_enemyType.GetEvent("OnDamageDealt", BindingFlags.Public | BindingFlags.Static);
@@ -78,7 +81,7 @@ public class WeaponBehaviourTests
 
         var bullet = FindBulletAt(origin.position, prefab.name);
         Assert.IsNotNull(bullet);
-        yield return new WaitForSeconds(0.2f);
+        yield return new WaitForSecondsRealtime(0.2f);
 
         Assert.IsFalse(bullet.gameObject.activeSelf);
     }
@@ -248,7 +251,7 @@ public class WeaponBehaviourTests
         Assert.IsNotNull(projectile);
         Assert.IsTrue(projectile.gameObject.activeSelf);
         m_createdObjects.Add(projectile.gameObject);
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSecondsRealtime(0.5f);
 
         Assert.AreEqual(2, m_damageRecords.Count);
         Assert.IsFalse(projectile.gameObject.activeSelf);

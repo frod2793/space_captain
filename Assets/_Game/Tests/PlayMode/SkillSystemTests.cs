@@ -16,6 +16,7 @@ public class SkillSystemTests
     [UnitySetUp]
     public IEnumerator SetUp()
     {
+        Time.timeScale = 1f;
         m_characters.Clear();
         m_testStage = new GameObject("TestStage_Skill");
         
@@ -80,7 +81,7 @@ public class SkillSystemTests
         }
         managerType.GetMethod("SetCharacters")?.Invoke(m_swapManager, new[] { listInstance });
 
-        yield return new WaitForSeconds(0.1f); 
+        yield return new WaitForSecondsRealtime(0.1f); 
     }
 
     [UnityTearDown]
@@ -133,7 +134,7 @@ public class SkillSystemTests
         bool lockedDuringSkill = (bool)lockField.GetValue(m_swapManager);
         Assert.IsTrue(lockedDuringSkill, "스킬 컷신 및 로직 수행 중에는 입력이 잠겨야 합니다.");
 
-        yield return new WaitForSeconds(0.3f); 
+        yield return new WaitForSecondsRealtime(0.3f); 
 
         bool lockedAfterSkill = (bool)lockField.GetValue(m_swapManager);
         Assert.IsFalse(lockedAfterSkill, "스킬 애니메이션 종료 후 입력 잠금이 정상적으로 해제되어야 합니다.");
@@ -194,7 +195,7 @@ public class SkillSystemTests
         managerType.GetMethod("ExecuteCharacterActionAsync", BindingFlags.Public | BindingFlags.Instance)
             ?.Invoke(m_swapManager, new[] { activeChar });
 
-        yield return new WaitForSeconds(0.2f);
+        yield return new WaitForSecondsRealtime(0.2f);
 
         var isReadyProp = skillType.GetProperty("IsReady", BindingFlags.Public | BindingFlags.Instance);
         bool isReady = (bool)isReadyProp.GetValue(skillComponent);

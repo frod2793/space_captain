@@ -91,7 +91,7 @@ Awake  Time.timeScale = 0  ← 전투는 정지 상태로 시작한다        :3
 
 **`Time.timeScale = 0`으로 시작한다.** `GameFlowPanelView`의 시작 버튼을 눌러
 `func_OnStartButtonClicked()` → `StartGameTime()`이 불려야 시간이 흐른다.
-테스트를 짤 때 이것 때문에 멈춘다 ([9절](#9-자주-밟는-지뢰) 참조).
+테스트를 짤 때 이것 때문에 멈춘다 ([9절](#9-트러블슈팅) 참조).
 
 **3번이 4번보다 먼저다.** 씬 전환으로 `UserDataSO`가 언로드/재로드되면 로비에서 저장한
 편성이 날아간다. `LoadData()`가 PlayerPrefs에서 되살린다.
@@ -262,7 +262,7 @@ pool.ReturnToPool(gameObject);                  // 돌려주기
 
 ---
 
-## 9. 자주 밟는 지뢰
+## 9. 트러블슈팅
 
 | 증상 | 원인 |
 |---|---|

@@ -4,6 +4,9 @@ using UnityEngine;
 public class ChainWeapon : IWeaponBehaviour
 {
     private readonly System.Collections.Generic.HashSet<int> m_hitIds = new System.Collections.Generic.HashSet<int>();
+
+    // 상태가 없으므로 공유한다. 발사마다 new 하면 초당 할당이 쌓인다.
+    private static readonly StraightWeapon s_straight = new StraightWeapon();
     public void Fire(in WeaponFireContext ctx)
     {
         if (ctx.Data == null || ctx.Data.ProjectilePrefab == null || ctx.FirePoints == null || ctx.FirePoints.Length == 0)
@@ -27,7 +30,7 @@ public class ChainWeapon : IWeaponBehaviour
             ScaleMultiplier = ctx.ScaleMultiplier,
             OnProjectileHit = target => HandlePrimaryHit(context, target)
         };
-        new StraightWeapon().Fire(primary);
+        s_straight.Fire(primary);
     }
 
     private void HandlePrimaryHit(WeaponFireContext context, IAttackTarget firstTarget)

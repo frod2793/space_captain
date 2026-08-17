@@ -10,34 +10,34 @@ public class StraightWeapon : IWeaponBehaviour
         }
 
         int bulletCount = ctx.BulletCount;
-        float spread = ctx.SpreadAngle;
+
         for (int i = 0; i < bulletCount; i++)
         {
-            float angleOffset = bulletCount > 1 ? -spread / 2f + spread / (bulletCount - 1) * i : 0f;
-            Transform firePoint = ctx.FirePoints[i % ctx.FirePoints.Length];
-            Vector3 position = firePoint != null ? firePoint.position : ctx.Origin;
+            float angleOffset = ProjectileLauncher.AngleOffset(i, bulletCount, ctx.SpreadAngle);
+            Vector3 position = ProjectileLauncher.SpawnPosition(ctx, i);
             Quaternion rotation = Quaternion.Euler(0f, 0f, ctx.BaseAngle + angleOffset);
-            GameObject bullet = ctx.Pool != null
-                ? ctx.Pool.GetFromPool(ctx.Data.ProjectilePrefab, position, rotation)
-                : Object.Instantiate(ctx.Data.ProjectilePrefab, position, rotation);
+
+            GameObject bullet = ProjectileLauncher.Spawn(ctx, position, rotation);
 
             if (bullet == null)
             {
                 continue;
             }
 
-            bullet.transform.localScale = Vector3.one * ctx.ScaleMultiplier * ctx.Data.ProjectileScale;
-            if (bullet.TryGetComponent<BulletProjectile>(out var projectile))
+            if (!bullet.TryGetComponent<BulletProjectile>(out var projectile))
             {
-                projectile.SetSpeed(ctx.Data.ProjectileSpeed);
-                projectile.SetRange(ctx.Data.Range);
-                projectile.OwnerID = ctx.OwnerID;
-                projectile.Damage = ctx.Damage;
-                projectile.MaxTargets = ctx.Data.MaxTargets;
-                projectile.PierceDamageRate = ctx.Data.PierceDamageRate;
-                projectile.DamageFalloffRate = ctx.Data.DamageFalloffRate;
-                projectile.OnHit = ctx.OnProjectileHit;
+                ProjectileLauncher.Discard(ctx, bullet);
+                continue;
             }
+
+            projectile.SetSpeed(ctx.Data.ProjectileSpeed);
+            projectile.SetRange(ctx.Data.Range);
+            projectile.OwnerID = ctx.OwnerID;
+            projectile.Damage = ctx.Damage;
+            projectile.MaxTargets = ctx.Data.MaxTargets;
+            projectile.PierceDamageRate = ctx.Data.PierceDamageRate;
+            projectile.DamageFalloffRate = ctx.Data.DamageFalloffRate;
+            projectile.OnHit = ctx.OnProjectileHit;
         }
     }
 }

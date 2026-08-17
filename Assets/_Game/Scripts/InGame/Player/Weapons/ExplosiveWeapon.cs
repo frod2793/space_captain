@@ -10,26 +10,21 @@ public class ExplosiveWeapon : IWeaponBehaviour
         }
 
         int bulletCount = ctx.BulletCount;
-        float spread = ctx.SpreadAngle;
         Vector2 direction = Quaternion.Euler(0f, 0f, ctx.BaseAngle) * Vector2.up;
 
         for (int i = 0; i < bulletCount; i++)
         {
-            float angleOffset = bulletCount > 1
-                ? -spread / 2f + spread / (bulletCount - 1) * i
-                : 0f;
+            float angleOffset = ProjectileLauncher.AngleOffset(i, bulletCount, ctx.SpreadAngle);
             Vector2 shotDirection = Quaternion.Euler(0f, 0f, angleOffset) * direction;
-            Transform firePoint = ctx.FirePoints != null && ctx.FirePoints.Length > 0
-                ? ctx.FirePoints[i % ctx.FirePoints.Length]
-                : null;
-            Vector3 position = firePoint != null ? firePoint.position : ctx.Origin;
+            Vector3 position = ProjectileLauncher.SpawnPosition(ctx, i);
+
+            // 표적이 있으면 그 자리에, 없으면 사거리 끝에 떨어뜨린다
             Vector3 impactPosition = ctx.Target != null && ctx.Target.IsActiveTarget
                 ? ctx.Target.TargetTransform.position
                 : position + (Vector3)shotDirection * ctx.Data.Range;
+
             Quaternion rotation = Quaternion.Euler(0f, 0f, ctx.BaseAngle + angleOffset);
-            GameObject projectileObject = ctx.Pool != null
-                ? ctx.Pool.GetFromPool(ctx.Data.ProjectilePrefab, position, rotation)
-                : Object.Instantiate(ctx.Data.ProjectilePrefab, position, rotation);
+            GameObject projectileObject = ProjectileLauncher.Spawn(ctx, position, rotation);
 
             if (projectileObject == null)
             {
@@ -38,19 +33,10 @@ public class ExplosiveWeapon : IWeaponBehaviour
 
             if (!projectileObject.TryGetComponent<ExplosiveProjectile>(out var projectile))
             {
-                if (ctx.Pool != null)
-                {
-                    ctx.Pool.ReturnToPool(projectileObject);
-                }
-                else
-                {
-                    Object.Destroy(projectileObject);
-                }
+                ProjectileLauncher.Discard(ctx, projectileObject);
                 continue;
             }
 
-            projectileObject.SetActive(true);
-            projectileObject.transform.localScale = Vector3.one * ctx.ScaleMultiplier * ctx.Data.ProjectileScale;
             projectile.Initialize(
                 impactPosition,
                 ctx.Data.ProjectileSpeed,
