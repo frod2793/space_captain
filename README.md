@@ -51,6 +51,10 @@ git clone <repo> && cd space_captain
 |---|---|---|
 | 파티 편성 UI | [스펙](docs/superpowers/specs/2026-08-17-lobby-party-ui-design.md) | [계획](docs/superpowers/plans/2026-08-17-lobby-party-ui.md) |
 | 무기군별 공격 패턴 | [스펙](docs/superpowers/specs/2026-08-17-weapon-attack-patterns-design.md) | [계획](docs/superpowers/plans/2026-08-17-weapon-attack-patterns.md) |
+| 무기 검수 보완 | — | [계획](docs/superpowers/plans/2026-08-17-weapon-attack-patterns-review-remediation.md) |
+
+검수 보완 계획은 무기 구현 후 발견된 세 가지를 다룬다 — 기본 무기 미연결과 카드 수치
+교정, 풀 재사용 시 초기화 누락, 스탯이 없는 캐릭터의 무기 주입. **미착수 상태다.**
 
 무기군 계획서는 **실제 구현과 설계가 다르다.** 계획은 `WeaponGroupSO` + `IAttackPattern`을
 전제하지만 실제 코드는 `WeaponDataSO` + `IWeaponBehaviour`로 들어갔다. 코드를 기준으로
