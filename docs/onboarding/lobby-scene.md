@@ -143,10 +143,6 @@ PlayerPrefs["SpaceCaptain.Deck"]   ← 편성만 저장한다
 되고 회복 로직이 없어서, 0인 상태가 영구 저장되면 전투 시작이 영영 막힌다. 실제로
 발생했던 버그라 `UserDataSaveTests`에 회귀 테스트가 있다.
 
-`Resources.Load`가 돌려주는 것은 **에셋 그 자체**다. 에디터에서 Play하면 런타임 변경이
-디스크에 남아 git에 잡힌다. 알려진 한계이고, 편성의 진실은 PlayerPrefs 쪽이라 기능상
-문제는 없다.
-
 ---
 
 ## 6. 파티 편성
@@ -167,8 +163,7 @@ LobbyDataDTO.DeckCharacters   // List<string>, 캐릭터 ID
 | 3, 4 | Reserve | 예비. 쿨다운 후 교체 투입 |
 
 
-`PartyPopupView.m_slotViews` 배열도 **같은 순서**로 연결돼 있다. 0~~2가 필드, 3~~4가
-예비다. 순서를 잘못 꽂으면 편성한 선두가 예비로 들어간다.
+`PartyPopupView.m_slotViews` 배열도 **같은 순서**로 연결돼 있다.  순서를 잘못 꽂으면 편성한 선두가 예비로 들어간다.
 
 ### 빈칸은 항상 뒤쪽에만 있다
 
@@ -239,7 +234,7 @@ LobbyDataDTO.DeckCharacters   // List<string>, 캐릭터 ID
 | `PartyPopupView`   | `m_slotViews`(5), 텍스트·버튼 3, 선택 패널 4, 색 3                                                               | **슬롯 순서 주의**                            |
 
 
-`PartyPopup` 루트에는 `**CanvasGroup`이 반드시 있어야 한다.** `Show`/`Hide`의 DOTween
+`PartyPopup` 루트에는 **`CanvasGroup`이 반드시 있어야 한다.** `Show`/`Hide`의 DOTween
 페이드가 이를 전제한다.
 
 ---
@@ -248,12 +243,12 @@ LobbyDataDTO.DeckCharacters   // List<string>, 캐릭터 ID
 
 우편함을 예로 든다.
 
-1. `**IMailboxViewModel**` — View가 볼 표면을 먼저 정한다. 프로퍼티, 메서드, 이벤트.
-2. `**MailboxViewModel**` — 로직. `MonoBehaviour`를 상속하지 않는다. 이래야 테스트된다.
+1. **`IMailboxViewModel`** — View가 볼 표면을 먼저 정한다. 프로퍼티, 메서드, 이벤트.
+2. **`MailboxViewModel`** — 로직. `MonoBehaviour`를 상속하지 않는다. 이래야 테스트된다.
 3. **테스트** — `Assets/_Game/Tests/PlayMode/MailboxViewModelTests.cs`.
  게임 타입은 `TestReflectionHelper.GetGameType(...)`으로 얻는다. 직접 참조하면
  컴파일되지 않는다.
-4. `**MailboxPopupView**` — `MonoBehaviour`. 직렬화 필드를 들고, ViewModel 이벤트를
+4. **`MailboxPopupView`** — `MonoBehaviour`. 직렬화 필드를 들고, ViewModel 이벤트를
  구독해 다시 그린다. `UserProfilePopupView`의 Show/Hide를 그대로 베낀다.
 5. **진입점** — `ILobbyViewModel`에 `OpenMailbox()`와 `OnMailboxOpenRequested`를 추가하고
  `LobbyViewModel`에 구현. `LobbyView`에 버튼 필드와 `func_OnMailboxClicked`를 추가.
@@ -262,7 +257,7 @@ LobbyDataDTO.DeckCharacters   // List<string>, 캐릭터 ID
 7. **씬** — 에디터에서 오브젝트를 만들고 필드를 연결한다. 반복될 것 같으면
  `PartyUIBuilder`처럼 빌더 스크립트로 만든다.
 
-`**ILobbyViewModel`을 고치면 `Assets/Editor/ButtonEventSystemTests.cs`의
+**`ILobbyViewModel`을 고치면 `Assets/Editor/ButtonEventSystemTests.cs`의
 `MockLobbyViewModel`도 같이 고쳐야 한다.** 인터페이스 미구현으로 컴파일이 깨진다.
 
 ---
@@ -276,7 +271,7 @@ LobbyDataDTO.DeckCharacters   // List<string>, 캐릭터 ID
 | 팝업이 안 열림          | `LobbyInitializer`의 팝업 필드 미연결. null이면 조용히 넘어간다      |
 | 팝업이 열렸다 바로 사라짐    | Show/Hide 트윈 충돌. `KillTweens()`가 빠졌는지 확인            |
 | 페이드가 안 먹음         | 팝업 루트에 `CanvasGroup` 없음                             |
-| 편성한 선두가 예비로 들어감   | `m_slotViews` 배열 순서가 0~~2 필드, 3~~4 예비가 아님           |
+| 편성한 선두가 예비로 들어감   | `m_slotViews` 배열 순서가 0·1·2 필드, 3·4 예비가 아님           |
 | 편성이 전투에 반영 안 됨    | `BattleSceneInitializer`의 `LoadData()` 호출 확인        |
 | 편성이 재시작 후 사라짐     | `Commit()`이 안 불렸다. 팝업 `Hide()`가 호출하는 구조다            |
 | 그리드가 비어 있음        | `CharacterDatabase` 미연결, 또는 `m_cellPrefab` 미연결      |

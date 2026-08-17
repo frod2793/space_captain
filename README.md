@@ -58,7 +58,7 @@
 | 처음 합류했다     | 이 README → 폴더 구조 → 코드 컨벤션 → 만질 씬의 가이드                    |
 | 로비에 기능을 붙인다 | [로비 가이드](docs/onboarding/lobby-scene.md)의 "새 기능을 붙이는 순서" |
 | 테스트가 안 돈다   | 이 README의 [테스트](#테스트) 절 — 제약 세 가지부터                      |
-| 뭔가 이상하다     | 이 README의 [트러블슈팅](#트러블슈팅), 그다음 씬 가이드의 같은 절                  |
+| 뭔가 이상하다     | 이 README의 [트러블슈팅](#트러블슈팅), 그다음 씬 가이드의 같은 절               |
 
 
 ---
@@ -139,7 +139,7 @@ Reserve  예비. 필드 밖
 Dead     사망
 ```
 
-덱 순서가 초기 상태를 정한다. 0번이 `Active`, 1~~2번이 `Standby`, 3~~4번이 `Reserve`다.
+덱 순서가 초기 상태를 정한다. 0번이 `Active`, 1·2번이 `Standby`, 3·4번이 `Reserve`다.
 
 ### 무기군 9종
 
@@ -242,7 +242,7 @@ public class PlayerStatsDTO   // 클래스: Pascal
 | UI 버튼 핸들러         | `func_` | 22개            |
 
 
-인스펙터 노출은 `**[SerializeField] private` + 읽기 전용 프로퍼티**를 쓴다.
+인스펙터 노출은 **`[SerializeField] private` + 읽기 전용 프로퍼티**를 쓴다.
 `CharacterDataSO`, `UserDataSO`, `CharacterDatabaseSO`가 이 형태다.
 
 ```csharp
@@ -524,9 +524,9 @@ Time.timeScale = 1f;                             // SetUp에서 되돌리기
 둘이다.
 
 - **`Time.timeScale`이 0으로 남는다.** 전투 씬을 띄운 테스트가 되돌리지 않으면 다음
-  클래스의 스케일 시간 대기가 만료되지 않는다. `SetUp`에서 `1f`로 되돌린다.
+클래스의 스케일 시간 대기가 만료되지 않는다. `SetUp`에서 `1f`로 되돌린다.
 - **`Destroy`는 프레임 끝까지 지연된다.** 이전 테스트가 만든 콜라이더가 다음 테스트의
-  물리 질의에 잡혀 피해가 중복 집계된다. 기대보다 **더 많이** 맞으면 이걸 의심한다.
+물리 질의에 잡혀 피해가 중복 집계된다. 기대보다 **더 많이** 맞으면 이걸 의심한다.
 
 실패가 `SetUp` 단계에서 무더기로 나면 **첫 실패 하나만 격리해서 돌려본다.** 나머지는
 연쇄인 경우가 대부분이다.
@@ -546,18 +546,20 @@ Time.timeScale = 1f;                             // SetUp에서 되돌리기
 
 클래스 단위로 나눠 돌리는 것이 현재의 표준 절차다. 전부 합쳐도 2분이 안 걸린다.
 
-| 클래스 | 개수 | 소요 |
-|---|---|---|
-| `PartyViewModelTests` | 27 | 12s |
-| `WeaponBehaviourTests` | 15 | ~15s |
-| `CharacterSystemTests` | 13 | 21s |
-| `BulletProjectileTests` | 10 | ~12s |
-| `PlayerAttackComponentTests` | 10 | ~12s |
-| `SkillSystemTests` | 3 | 12s |
-| `ShipSkillSystemTests` | 7 | 9s |
-| `UserDataSaveTests` | 5 | 12s |
-| `BattleDeckApplyTests` | 5 | 12s |
-| `PartyUIWiringTests` | 3 | 15s |
+
+| 클래스                          | 개수  | 소요   |
+| ---------------------------- | --- | ---- |
+| `PartyViewModelTests`        | 27  | 12s  |
+| `WeaponBehaviourTests`       | 15  | ~15s |
+| `CharacterSystemTests`       | 13  | 21s  |
+| `BulletProjectileTests`      | 10  | ~12s |
+| `PlayerAttackComponentTests` | 10  | ~12s |
+| `SkillSystemTests`           | 3   | 12s  |
+| `ShipSkillSystemTests`       | 7   | 9s   |
+| `UserDataSaveTests`          | 5   | 12s  |
+| `BattleDeckApplyTests`       | 5   | 12s  |
+| `PartyUIWiringTests`         | 3   | 15s  |
+
 
 합계 **98개**. 전투 씬을 띄우는 클래스(`BattleDeckApplyTests`, `PartyUIWiringTests`)가
 특히 다른 클래스를 오염시키기 쉬우니, 이 둘은 따로 돌리는 편이 안전하다.
@@ -570,15 +572,12 @@ Time.timeScale = 1f;                             // SetUp에서 되돌리기
 
 ## 에디터 자동화
 
-씬과 프리팹 조립을 손으로 하지 않고 스크립트로 만든다. **몇 번을 다시 돌려도 결과가
-같아서** 안심하고 재실행할 수 있다. 메뉴에서도, CLI에서도 실행된다.
 
-
-| 스크립트                     | 하는 일                | 메뉴                             |
-| ------------------------ | ------------------- | ------------------------------ |
-| `PartyUIBuilder`         | 편성 팝업과 슬롯 프리팹 생성·배선 | `SpaceCaptain/파티 편성 UI 배선`     |
-| `CharacterRosterBuilder` | 캐릭터 로스터를 무기군 수에 맞춤  | `SpaceCaptain/캐릭터를 무기군 수에 맞추기` |
-| `BuildPipelineManager`   | 빌드                  |                                |
+| 스크립트                     | 하는 일               | 메뉴                             |
+| ------------------------ | ------------------ | ------------------------------ |
+| `PartyUIBuilder`         | 편성 팝업과 슬롯 프리팹 생성   | `SpaceCaptain/파티 편성 UI 배선`     |
+| `CharacterRosterBuilder` | 캐릭터 로스터를 무기군 수에 맞춤 | `SpaceCaptain/캐릭터를 무기군 수에 맞추기` |
+| `BuildPipelineManager`   | 빌드                 |                                |
 
 
 ---
@@ -617,14 +616,14 @@ docs/superpowers/plans/YYYY-MM-DD-<주제>.md          단계별 구현 계획
 ## 트러블슈팅
 
 
-| 증상                   | 원인                                           |
-| -------------------- | -------------------------------------------- |
-| 테스트가 10분 넘게 안 끝남     | `WaitForSeconds` + `Time.timeScale = 0`      |
-| batchmode가 즉시 실패     | 에디터 GUI가 `Library` 락을 쥐고 있음                  |
-| 테스트에서 `CS0246` 타입 없음 | 게임 타입 직접 참조. `TestReflectionHelper`를 써야 함    |
-| 편성이 전투에 반영 안 됨       | `LoadData()` 호출 누락, 또는 덱 순서를 뒤엎는 정렬          |
-| 씬 참조가 끊김             | `.cs`만 옮기고 `.cs.meta`를 안 옮김. 항상 `git mv`로 함께 |
-| 캐릭터 아이콘이 다 같음        | 여러 캐릭터가 프리팹을 공유. 정체성은 `SetIdentity`로 주입      |
+| 증상                                    | 원인                                                                         |
+| ------------------------------------- | -------------------------------------------------------------------------- |
+| 테스트가 10분 넘게 안 끝남                      | `WaitForSeconds` + `Time.timeScale = 0`                                    |
+| batchmode가 즉시 실패                      | 에디터 GUI가 `Library` 락을 쥐고 있음                                                |
+| 테스트에서 `CS0246` 타입 없음                  | 게임 타입 직접 참조. `TestReflectionHelper`를 써야 함                                  |
+| 편성이 전투에 반영 안 됨                        | `LoadData()` 호출 누락, 또는 덱 순서를 뒤엎는 정렬                                        |
+| 씬 참조가 끊김                              | `.cs`만 옮기고 `.cs.meta`를 안 옮김. 항상 `git mv`로 함께                               |
+| 캐릭터 아이콘이 다 같음                         | 여러 캐릭터가 프리팹을 공유. 정체성은 `SetIdentity`로 주입                                    |
 | 죽은 적에 접근해 `MissingReferenceException` | 인터페이스로 담은 Unity 객체는 `== null`이 파괴를 못 잡는다. `WeaponTargetQuery.IsAlive()` 사용 |
 
 
