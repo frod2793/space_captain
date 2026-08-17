@@ -205,8 +205,10 @@ LobbyDataDTO.DeckCharacters   // List<string>, 캐릭터 ID
 `PartyPopup`과 `CharacterSlot` 프리팹은 에디터 스크립트가 만든다. 멱등이라 다시 돌려도
 결과가 같다.
 
+에디터 메뉴에서 실행한다. CLI로 돌리려면 Unity 실행 파일 경로를 직접 지정한다.
+
 ```bash
-"$UNITY" -batchmode -quit -projectPath "$PROJ" \
+<Unity 실행 파일> -batchmode -quit -projectPath <프로젝트 경로> \
   -executeMethod PartyUIBuilder.Build -logFile -
 ```
 

@@ -508,32 +508,6 @@ Time.timeScale = 1f;                             // SetUp에서 되돌리기
 전투 씬에는 미리 배치된 캐릭터가 있다. `FindObjectsByType`으로 찾으면 편성으로 스폰된
 것과 섞인다. `PlayerSwapManager.Characters` 목록을 봐야 한다.
 
-### 실행
-
-에디터 GUI가 프로젝트를 열고 있으면 `Library` 락 때문에 실패한다. **먼저 닫는다.**
-
-`UNITY`는 에디터 설치 경로다. Hub 기본값은 `/Applications/Unity/Hub/Editor/...`지만
-설치 위치를 바꿨다면 `~/Library/Application Support/UnityHub/secondaryInstallPath.json`을
-확인한다.
-
-```bash
-export UNITY="/Applications/Unity/Hub/Editor/6000.3.19f1/Unity.app/Contents/MacOS/Unity"
-export PROJ="$(pwd)"
-
-# PlayMode 전체 (전투 씬 로드가 있어 5~8분)
-"$UNITY" -batchmode -projectPath "$PROJ" -runTests -testPlatform PlayMode \
-  -testResults "$PROJ/Logs/results.xml" -logFile - 2>&1 | grep -E "error CS|Exiting with code"
-
-# 특정 클래스만
-"$UNITY" -batchmode -projectPath "$PROJ" -runTests -testPlatform PlayMode \
-  -testFilter "PartyViewModelTests" -testResults "$PROJ/Logs/results.xml" -logFile -
-
-# 컴파일만 확인 (출력이 없으면 성공)
-"$UNITY" -batchmode -quit -projectPath "$PROJ" -logFile - 2>&1 | grep -E "error CS"
-```
-
-10분을 넘기면 통과가 느린 게 아니라 멈춘 것이다. 스케일 시간 대기를 의심한다.
-
 ### 테스트 이름
 
 한국어로 쓰되 **숫자로 시작하지 않는다** — C# 식별자 규칙 위반이다.
@@ -556,8 +530,10 @@ public void 3명만_편성하면_3명만_스폰된다()     // X, 컴파일 실�
 | `CharacterRosterBuilder` | 캐릭터 로스터를 무기군 수에 맞춤 | `SpaceCaptain/캐릭터를 무기군 수에 맞추기` |
 | `BuildPipelineManager` | 빌드 | |
 
+에디터 메뉴에서 실행한다. CLI로 돌리려면 Unity 실행 파일 경로를 직접 지정한다.
+
 ```bash
-"$UNITY" -batchmode -quit -projectPath "$PROJ" \
+<Unity 실행 파일> -batchmode -quit -projectPath <프로젝트 경로> \
   -executeMethod PartyUIBuilder.Build -logFile -
 ```
 
