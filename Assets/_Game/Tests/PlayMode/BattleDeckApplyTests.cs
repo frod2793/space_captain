@@ -21,7 +21,6 @@ public class BattleDeckApplyTests
 
     private object m_userData;
     private List<string> m_originalDeck;
-    private float m_originalTimeScale;
 
     private static object GetProp(object target, string name)
     {
@@ -52,7 +51,6 @@ public class BattleDeckApplyTests
     [UnitySetUp]
     public IEnumerator SetUp()
     {
-        m_originalTimeScale = Time.timeScale;
 
         m_userData = Resources.Load("UserData");
         Assert.IsNotNull(m_userData, "Resources/UserData를 찾을 수 없다");
@@ -64,7 +62,9 @@ public class BattleDeckApplyTests
     [TearDown]
     public void TearDown()
     {
-        Time.timeScale = m_originalTimeScale;
+        // 캡처한 값을 되돌리면 그 값이 0일 때 0을 그대로 복원해 다음 클래스가 멈춘다.
+        // 전투 씬은 Awake에서 timeScale = 0으로 시작하므로 무조건 1로 되돌린다.
+        Time.timeScale = 1f;
         PlayerPrefs.DeleteKey(SAVE_KEY);
 
         if (m_userData != null && m_originalDeck != null)
