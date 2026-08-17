@@ -518,6 +518,24 @@ Time.timeScale = 1f;                             // SetUp에서 되돌리기
 전투 씬에는 미리 배치된 캐릭터가 있다. `FindObjectsByType`으로 찾으면 편성으로 스폰된
 것과 섞인다. `PlayerSwapManager.Characters` 목록을 봐야 한다.
 
+### 테스트가 서로를 오염시킨다
+
+각 클래스는 단독으로 돌리면 통과하는데 함께 돌리면 실패하는 일이 있다. 원인은 대개
+둘이다.
+
+- **`Time.timeScale`이 0으로 남는다.** 전투 씬을 띄운 테스트가 되돌리지 않으면 다음
+  클래스의 스케일 시간 대기가 만료되지 않는다. `SetUp`에서 `1f`로 되돌린다.
+- **`Destroy`는 프레임 끝까지 지연된다.** 이전 테스트가 만든 콜라이더가 다음 테스트의
+  물리 질의에 잡혀 피해가 중복 집계된다. 기대보다 **더 많이** 맞으면 이걸 의심한다.
+
+실패가 `SetUp` 단계에서 무더기로 나면 **첫 실패 하나만 격리해서 돌려본다.** 나머지는
+연쇄인 경우가 대부분이다.
+
+```bash
+-testFilter "PartyViewModelTests"                    # 클래스 단위
+-testFilter "PartyViewModelTests.덱_길이는_DECK_SIZE_상수를_따른다"   # 메서드 단위
+```
+
 ---
 
 ## 에디터 자동화
@@ -577,5 +595,6 @@ docs/superpowers/plans/YYYY-MM-DD-<주제>.md          단계별 구현 계획
 | 편성이 전투에 반영 안 됨       | `LoadData()` 호출 누락, 또는 덱 순서를 뒤엎는 정렬          |
 | 씬 참조가 끊김             | `.cs`만 옮기고 `.cs.meta`를 안 옮김. 항상 `git mv`로 함께 |
 | 캐릭터 아이콘이 다 같음        | 여러 캐릭터가 프리팹을 공유. 정체성은 `SetIdentity`로 주입      |
+| 죽은 적에 접근해 `MissingReferenceException` | 인터페이스로 담은 Unity 객체는 `== null`이 파괴를 못 잡는다. `WeaponTargetQuery.IsAlive()` 사용 |
 
 

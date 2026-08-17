@@ -68,9 +68,25 @@ public static class WeaponTargetQuery
         return true;
     }
 
+    /// <summary>
+    /// 파괴된 UnityEngine.Object를 살아 있다고 판정하지 않는다.
+    /// IAttackTarget은 인터페이스라 != null 비교가 참조 비교로 떨어져
+    /// Unity의 파괴 검사를 타지 않는다. 그대로 두면 죽은 적에 접근해
+    /// MissingReferenceException이 난다.
+    /// </summary>
+    public static bool IsAlive(IAttackTarget target)
+    {
+        if (target is Object unityObject)
+        {
+            return unityObject != null;
+        }
+
+        return target != null;
+    }
+
     public static bool IsEnemyTarget(IAttackTarget target)
     {
-        return target != null && target.IsActiveTarget && target.TargetTransform != null &&
+        return IsAlive(target) && target.IsActiveTarget && target.TargetTransform != null &&
             (target.TargetTransform.CompareTag("Enemy") || target.TargetTransform.CompareTag("Boss")) &&
             (target is EnemyController || target is BossController);
     }

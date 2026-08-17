@@ -80,7 +80,7 @@ public class PlayerAttackComponent : MonoBehaviour
     private void Fire()
     {
         float baseAngle = 0f;
-        if ((!m_owner.IsActive || !m_owner.IsDragging) && CurrentTarget != null && CurrentTarget.TargetTransform != null)
+        if ((!m_owner.IsActive || !m_owner.IsDragging) && WeaponTargetQuery.IsAlive(CurrentTarget) && CurrentTarget.TargetTransform != null)
         {
             Vector3 direction = (CurrentTarget.TargetTransform.position - transform.position).normalized;
             baseAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
@@ -155,7 +155,7 @@ public class PlayerAttackComponent : MonoBehaviour
         float currentTargetingRange = m_weapon != null ? Mathf.Max(0f, m_weapon.Range) : m_targetingRange;
         currentTargetingRange *= m_owner.IsActive ? 1.0f : 0.5f;
 
-        if (CurrentTarget == null || CurrentTarget.IsActiveTarget == false || CurrentTarget.TargetTransform == null ||
+        if (!WeaponTargetQuery.IsAlive(CurrentTarget) || CurrentTarget.IsActiveTarget == false || CurrentTarget.TargetTransform == null ||
             Vector2.Distance(transform.position, CurrentTarget.TargetTransform.position) > currentTargetingRange)
         {
             CurrentTarget = FindNearestEnemy(currentTargetingRange);
@@ -195,7 +195,7 @@ public class PlayerAttackComponent : MonoBehaviour
             return;
         }
 
-        float baseAngle = CurrentTarget != null && (!m_owner.IsActive || !m_owner.IsDragging)
+        float baseAngle = WeaponTargetQuery.IsAlive(CurrentTarget) && CurrentTarget.TargetTransform != null && (!m_owner.IsActive || !m_owner.IsDragging)
             ? Mathf.Atan2((CurrentTarget.TargetTransform.position - transform.position).y, (CurrentTarget.TargetTransform.position - transform.position).x) * Mathf.Rad2Deg - 90f
             : transform.rotation.eulerAngles.z;
         int count = m_attackType == PlayerAttackType.Double ? 2 : m_attackType == PlayerAttackType.Spread ? 3 : 1;

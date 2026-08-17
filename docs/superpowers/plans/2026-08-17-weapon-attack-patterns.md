@@ -126,7 +126,29 @@ PlayerAttackComponent.Update()
 
 ---
 
-## 7. 남은 것
+## 7. 조심할 점
+
+### 인터페이스로 담은 Unity 객체는 파괴를 못 알아챈다
+
+`IAttackTarget`은 인터페이스라 `== null` 비교가 참조 비교로 떨어진다. `UnityEngine.Object`의
+파괴 검사 연산자를 타지 않으므로 **죽은 적이 살아 있는 것으로 통과한다.** 그 뒤 멤버에
+접근하면 `MissingReferenceException`이 난다.
+
+```csharp
+WeaponTargetQuery.IsAlive(target)   // 이걸 쓴다
+target != null                      // 파괴를 못 잡는다
+```
+
+전투에서 적은 계속 죽는다. 조준 중이던 적이 파괴된 프레임에 이 검사가 새면 예외가 난다.
+
+### 무기 수치는 세 곳이 일치해야 한다
+
+에셋, 테스트 기대값, 문서다. 검의 `MaxTargets`가 에셋은 `-1`인데 테스트는 `5`를
+기대해 실패한 적이 있다. 수치를 바꾸면 셋을 함께 고친다.
+
+---
+
+## 8. 남은 것
 
 | 항목 | 상태 |
 |---|---|

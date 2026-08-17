@@ -275,7 +275,27 @@ pool.ReturnToPool(gameObject);                  // 돌려주기
 | 발사체가 사라지지 않음 | `ReturnToPool` 대신 `Destroy`를 썼거나, 관통 카운트가 안 줄어듦 |
 | 캐릭터 아이콘·이름이 전부 같음 | 여러 캐릭터가 프리팹을 공유한다. `SetIdentity` 주입 확인 |
 | 씬에 배치된 캐릭터가 테스트에 걸림 | `FindObjectsByType` 대신 `PlayerSwapManager.Characters`를 본다 |
+| 죽은 적에 접근해 `MissingReferenceException` | `IAttackTarget` 같은 **인터페이스 참조는 `== null`이 Unity의 파괴 검사를 타지 않는다.** `WeaponTargetQuery.IsAlive()`를 쓴다 |
 | 시간이 안 흐름 | 시작 버튼을 안 눌렀다. `GameFlowPanelView.func_OnStartButtonClicked` |
+
+---
+
+### 인터페이스로 담은 Unity 객체는 파괴를 못 알아챈다
+
+`UnityEngine.Object`는 파괴되면 `== null`이 `true`가 되도록 연산자가 오버로드돼 있다.
+**인터페이스 타입으로 담으면 그 오버로드를 타지 않고 평범한 참조 비교가 된다.**
+
+```csharp
+IAttackTarget target = enemyController;   // EnemyController를 인터페이스로 담음
+Destroy(enemyController.gameObject);
+
+target == null                 // false — 파괴됐는데 통과한다
+target.IsActiveTarget          // MissingReferenceException
+WeaponTargetQuery.IsAlive(t)   // false — 이걸 써야 한다
+```
+
+전투에서 적은 계속 죽는다. 조준 중이던 적이 파괴된 프레임에 이 검사가 새면 예외가 난다.
+`IAttackTarget`을 들고 있는 코드는 **반드시 `IsAlive()`로 확인한다.**
 
 ---
 

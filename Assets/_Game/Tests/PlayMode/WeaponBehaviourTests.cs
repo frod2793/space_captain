@@ -145,7 +145,7 @@ public class WeaponBehaviourTests
             ["machine-gun"] = 1,
             ["shotgun"] = 1,
             ["sniper-rifle"] = 3,
-            ["sword"] = 5,
+            ["sword"] = -1,   // 무제한 관통. 검수 보완 계획서가 정한 값이고 에셋도 -1이다
             ["laser"] = 1,
             ["grenade-launcher"] = 1,
             ["staff"] = 1
