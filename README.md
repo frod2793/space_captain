@@ -27,6 +27,46 @@ git clone <repo> && cd space_captain
 
 ---
 
+## 온보딩 문서
+
+이 README는 **프로젝트 전체에 걸친 규칙**을 다룬다. 특정 씬이나 기능을 실제로 만질
+때는 아래 문서를 본다.
+
+### 씬별 가이드
+
+씬에 기능을 하나 붙이려는 사람을 위한 것이다. 구조, 부팅 순서, 배선 지점, 그 씬에서
+자주 밟는 지뢰가 들어 있다.
+
+| 문서 | 대상 | 상태 |
+|---|---|---|
+| [로비 씬](docs/onboarding/lobby-scene.md) | `Main.unity` · `Scripts/OutGame/` 11개 파일 | 작성됨 |
+| 전투 씬 | `InGame.unity` · `Scripts/InGame/` 59개 파일 | 미작성 |
+
+### 기능별 설계와 계획
+
+기능을 **왜 그렇게 만들었는지**가 필요할 때 본다. 스펙은 결정과 그 근거를, 계획은
+단계별 구현 기록을 담는다.
+
+| 기능 | 설계 | 계획 |
+|---|---|---|
+| 파티 편성 UI | [스펙](docs/superpowers/specs/2026-08-17-lobby-party-ui-design.md) | [계획](docs/superpowers/plans/2026-08-17-lobby-party-ui.md) |
+| 무기군별 공격 패턴 | [스펙](docs/superpowers/specs/2026-08-17-weapon-attack-patterns-design.md) | [계획](docs/superpowers/plans/2026-08-17-weapon-attack-patterns.md) |
+
+무기군 계획서는 **실제 구현과 설계가 다르다.** 계획은 `WeaponGroupSO` + `IAttackPattern`을
+전제하지만 실제 코드는 `WeaponDataSO` + `IWeaponBehaviour`로 들어갔다. 코드를 기준으로
+읽고, 계획서는 검토 근거로만 참고한다.
+
+### 어디부터 읽을까
+
+| 상황 | 순서 |
+|---|---|
+| 처음 합류했다 | 이 README → 폴더 구조 → 코드 컨벤션 → 만질 씬의 가이드 |
+| 로비에 기능을 붙인다 | [로비 가이드](docs/onboarding/lobby-scene.md)의 "새 기능을 붙이는 순서" |
+| 테스트가 안 돈다 | 이 README의 [테스트](#테스트) 절 — 제약 세 가지부터 |
+| 뭔가 이상하다 | 이 README의 [자주 밟는 지뢰](#자주-밟는-지뢰), 그다음 씬 가이드의 같은 절 |
+
+---
+
 ## 폴더 구조
 
 스크립트는 **씬 소속**으로 나뉜다. 기술 레이어가 아니라 "어느 씬에서 도는가"가 기준이다.
@@ -360,12 +400,17 @@ PlayerPrefs.SetString("SpaceCaptain.Deck", ...);
 
 ## 작업 흐름
 
-기능 작업은 문서를 먼저 남긴다.
+기능 작업은 문서를 먼저 남긴다. 이름 규칙은 아래를 따르고, 쌓인 문서는
+[온보딩 문서](#온보딩-문서) 절에서 찾는다.
 
 ```
+docs/onboarding/<씬 또는 영역>.md                    씬 가이드
 docs/superpowers/specs/YYYY-MM-DD-<주제>-design.md   설계와 결정 근거
 docs/superpowers/plans/YYYY-MM-DD-<주제>.md          단계별 구현 계획
 ```
+
+문서를 새로 만들면 **[온보딩 문서](#온보딩-문서) 절의 표에 한 줄 추가한다.** 목록에
+없는 문서는 없는 것이나 마찬가지다.
 
 커밋 메시지는 한국어로, **무엇을 했는지보다 왜 그렇게 했는지**를 남긴다.
 
