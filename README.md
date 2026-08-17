@@ -103,6 +103,93 @@ Assets/_Game/Scripts/
 
 ---
 
+## 도메인
+
+코드에 나오는 용어들이다. 이 표만 알면 어느 파일을 열어도 무엇을 하는지 읽힌다.
+
+### 아웃게임
+
+| 용어 | 코드 | 뜻 |
+|---|---|---|
+| **덱 / 편성** | `LobbyDataDTO.DeckCharacters` | 전투에 데려갈 캐릭터 5명. `List<string>` 하나이고 **순서가 곧 역할** |
+| **필드** | 덱 인덱스 0~2 | 전투에 즉시 나가는 3명 |
+| **예비** | 덱 인덱스 3~4 | 대기 2명. 쿨다운을 기다려 교체 투입 |
+| **전투력** | `PartyViewModel.CombatPower` | 편성 강함을 나타내는 단일 수치 |
+| **스태미나** | `LobbyDataDTO.CurrentStamina` | 전투 진입 비용. **회복 로직이 아직 없다** |
+| **스테이지 난이도** | `StageDifficulty` | 일반 / 정예 |
+
+### 인게임
+
+| 용어 | 코드 | 뜻 |
+|---|---|---|
+| **모함** | `MasterShip` (HP 1000) | 지켜야 할 본체. 파괴되면 패배 |
+| **배리어** | `Barrier` (500) | 모함 앞의 방어막. 피해를 먼저 흡수하고 깨진다 |
+| **웨이브** | `WaveConfigDTO` | 적이 몰려오는 한 묶음. 진행할수록 수는 늘고 간격은 줄어든다 |
+| **보스** | `BossController` | 지정 웨이브(기본 3)에 등장 |
+| **스왑** | `PlayerSwapManager` | 필드 캐릭터를 교대하는 조작. 이 게임의 핵심 |
+| **액티브 스킬** | `ActiveSkill` | 캐릭터별 궁극기. 쿨다운과 컷인 연출 |
+| **무기군** | `WeaponDataSO` | 공격 방식의 종류. 9종 |
+
+### 캐릭터 상태 (`CharacterSwapState`)
+
+```
+Active   활성. 조작 가능. 항상 1명
+Standby  대기. 필드에 있으나 조작 불가
+Reserve  예비. 필드 밖
+Dead     사망
+```
+
+덱 순서가 초기 상태를 정한다. 0번이 `Active`, 1~2번이 `Standby`, 3~4번이 `Reserve`다.
+
+### 무기군 9종
+
+`Assets/_Game/Resources/Weapons/`에 에셋으로 있고 `WeaponCatalog`가 읽는다.
+
+| 무기군 | 거동 | 실제 설정값 |
+|---|---|---|
+| 권총 `pistol` | Straight | `FireRate 0.5` — 기본형. 특수 수치 없음 |
+| 소총 `rifle` | Straight | `FireRate 0.15` — 연사만 빠름 |
+| 기관총 `machine-gun` | Straight | `FireRate 0.3` → `WarmupTime 2`초에 걸쳐 `MaxFireRate 0.06`까지 가속 |
+| 샷건 `shotgun` | Straight | `BulletCount 5`, `SpreadAngle 60`, `DamageFalloffRate 0.6` |
+| 저격총 `sniper-rifle` | Straight | `MaxTargets 3`, `PierceDamageRate 0.8`, `FireRate 1.5` |
+| 검 `sword` | Straight | `MaxTargets -1`(무제한 관통), `ProjectileScale 3`, `FireRate 1.5` |
+| 레이저 `laser` | Beam | `BeamWidth 1.5`, `BeamRange 20` |
+| 유탄 발사기 `grenade-launcher` | Explosive | `ExplosionRadius 2.5`, `FireRate 1.2` |
+| 지팡이 `staff` | Chain | `ChainCount 3`, `ChainRange 4`, `ChainDamageRate 0.7`, `DamageMultiplier 0.6` |
+
+거동은 4종뿐이고 나머지 차이는 전부 `WeaponDataSO`의 수치다. `Straight` 하나가 9종 중
+6종을 덮는다 — 단발·연사·산탄·관통·검기가 전부 같은 코드다.
+
+**새 무기군을 만들 때 코드를 먼저 건드리지 않는다.** 기존 거동 + 수치 조합으로 되는지
+부터 본다.
+
+### 무기 수치 필드가 어디에 쓰이는지
+
+거동마다 읽는 필드가 다르다. 엉뚱한 필드를 채워도 아무 일도 일어나지 않는다.
+
+| 거동 | 읽는 필드 |
+|---|---|
+| 공통 | `FireRate`, `BulletCount`, `SpreadAngle`, `DamageMultiplier`, `WarmupTime`, `MaxFireRate` |
+| `Straight` | `ProjectilePrefab`, `ProjectileSpeed`, `ProjectileScale`, `Range`, `MaxTargets`, `PierceDamageRate`, `DamageFalloffRate` |
+| `Beam` | `BeamWidth`, `BeamRange`, `BeamVisualPrefab`, `Range` |
+| `Explosive` | `ProjectilePrefab`, `ProjectileSpeed`, `ProjectileScale`, `Range`, `ExplosionRadius` |
+| `Chain` | `ProjectilePrefab`, `ChainCount`, `ChainRange`, `ChainDamageRate` |
+
+`MaxTargets`는 **관통 수**다. `-1`이면 무제한이다. 연쇄 횟수는 `ChainCount`로 따로
+있으니 헷갈리지 않는다.
+
+### 데이터 자산
+
+| 에셋 | 내용 |
+|---|---|
+| `Resources/UserData.asset` | 닉네임, 재화, 스태미나, 덱 |
+| `Resources/CharacterDatabase.asset` | 캐릭터 9종 목록 |
+| `Resources/{a~i}_CharacterData.asset` | ID · 이름 · 프리팹 · 아이콘 · 기본 스탯 · 기본 무기 |
+| `Resources/Weapons/*.asset` | 무기군 9종 |
+| `Resources/ItemDatabase.asset` | 보상 아이템 |
+
+---
+
 ## 코드 컨벤션
 
 프로젝트 전체가 아래 규칙을 지킨다. 숫자는 실제 코드에서 센 것이다.
@@ -145,7 +232,19 @@ public class PlayerStatsDTO   // 클래스: Pascal
 | 인터페이스 | `I` | 16개 |
 | UI 버튼 핸들러 | `func_` | 22개 |
 
-인스펙터 노출은 **`[SerializeField] private`**를 쓴다. `public` 필드로 열지 않는다.
+인스펙터 노출은 **`[SerializeField] private` + 읽기 전용 프로퍼티**를 쓴다.
+`CharacterDataSO`, `UserDataSO`, `CharacterDatabaseSO`가 이 형태다.
+
+```csharp
+[SerializeField] private string m_characterID;
+public string CharacterID => m_characterID;
+```
+
+**예외 하나:** `WeaponDataSO`는 `public` 필드를 그대로 노출한다. 나중에 들어온 코드라
+형태가 다르다. 통일하려면 소비처를 함께 고쳐야 하므로 그대로 두고 있다. **새 SO를
+만들 때는 위쪽 형태를 따른다.**
+
+`DTO`는 예외가 아니다. 순수 데이터 컨테이너라 처음부터 `public` 필드를 쓴다.
 
 ```csharp
 [SerializeField] private LobbyView m_lobbyView;
@@ -212,7 +311,55 @@ private void func_OnPartyClicked()
 
 ---
 
-## 아키텍처
+## 디자인 패턴
+
+이 프로젝트가 반복해서 쓰는 여섯 가지다. 새 코드를 짤 때는 **새 구조를 발명하기 전에
+여기 있는 것으로 되는지 먼저 본다.**
+
+| 패턴 | 쓰는 곳 | 해결하는 문제 |
+|---|---|---|
+| MVVM | 모든 UI | 씬 없이 로직을 테스트 |
+| DTO + Logic + MonoBehaviour | 게임플레이 6곳 | 씬 없이 게임 규칙을 테스트 |
+| 전략 | 스왑 4종, 무기 4종 | 조건 분기 대신 교체 가능한 거동 |
+| Initializer | 씬마다 1개 | DI 컨테이너 없이 의존성 주입 |
+| 오브젝트 풀 | 발사체 전부 | 전투 중 GC 스파이크 제거 |
+| 카탈로그 | `WeaponCatalog` | ID로 에셋 조회 |
+
+### 관통하는 원칙 하나
+
+**로직은 `MonoBehaviour` 바깥에 둔다.** MVVM도, DTO+Logic도 같은 이유다.
+`MonoBehaviour`는 씬과 생명주기에 묶여 있어 테스트하려면 씬을 띄워야 하고, 그러면
+느리고 잘 깨진다. 실제로 순수 클래스 테스트는 즉시 돌지만 씬을 띄우는 테스트는
+5~8분이 걸린다.
+
+### DTO + Logic + MonoBehaviour 3분할
+
+게임플레이 쪽의 기본형이다. 한 파일에 세 클래스가 같이 있다.
+
+```csharp
+public class BarrierDTO      // 상태만. 로직 없음
+{
+    public int MaxBarrier = 500;
+    public int CurrentBarrier = 500;
+    public bool IsBroken = false;
+}
+
+public class BarrierLogic    // 규칙. MonoBehaviour 아님 → 테스트 가능
+{
+    public int ResolveDamage(int damage) { ... }
+    public float GetBarrierRatio() { ... }
+}
+
+public class Barrier : MonoBehaviour   // 씬 연결. 입력을 받아 Logic에 넘기고 결과를 그린다
+{
+}
+```
+
+6곳에서 쓴다: `Barrier`, `MasterShip`, `EnemyController`, `BossController`,
+`EnemySpawner`, `TopScrollContrl`.
+
+**새 게임플레이 규칙을 만들 때 이 형태를 따른다.** 수치는 DTO에, 계산은 Logic에,
+`Update`와 충돌 판정만 `MonoBehaviour`에 둔다.
 
 ### MVVM — View는 얇게, ViewModel은 씬 없이 테스트 가능하게
 
@@ -246,12 +393,56 @@ m_partyPopupView.Initialize(m_partyViewModel);
 
 ### 전략 패턴 — 교대와 무기
 
-교체 가능한 거동은 인터페이스 + 구현체로 분리한다. 조건 분기를 늘리지 않는다.
+교체 가능한 거동은 인터페이스 + 구현체로 분리한다. `switch`를 늘리지 않는다.
 
 ```
 ISwapStrategy      FieldSwap, CircularSwap, ReserveSwap, DeathSwap
 IWeaponBehaviour   StraightWeapon, BeamWeapon, ChainWeapon, ExplosiveWeapon
 ```
+
+둘 다 **컨텍스트 구조체 하나를 받는다.** 파라미터가 늘어도 시그니처가 흔들리지 않는다.
+
+```csharp
+public struct WeaponFireContext
+{
+    public Vector3 Origin;
+    public float BaseAngle;
+    public int Damage;
+    public string OwnerID;
+    public Transform[] FirePoints;
+    public IAttackTarget Target;
+    public ObjectPoolManager Pool;
+    public WeaponDataSO Data;
+    // ...
+}
+```
+
+### 오브젝트 풀
+
+발사체는 전투 중 초당 수십 개가 생겼다 사라진다. `Instantiate`/`Destroy`를 쓰면 GC가
+튄다. `ObjectPoolManager`가 재사용하고, `IPoolable`이 재사용 시점의 초기화 훅을 준다.
+
+```csharp
+public interface IPoolable
+{
+    void OnSpawn();
+    void OnDespawn();
+}
+```
+
+**풀에서 꺼낸 오브젝트를 `Destroy`하면 안 된다.** 풀이 죽은 참조를 들고 있게 된다.
+반드시 `ReturnToPool`로 돌려준다.
+
+### 카탈로그
+
+에셋을 ID로 찾는다. `Resources.LoadAll`을 한 번만 하고 캐시한다.
+
+```csharp
+WeaponCatalog.Get("shotgun");   // WeaponDataSO
+WeaponCatalog.All;              // 전체 목록
+```
+
+`CharacterDatabaseSO.GetCharacter(id)`도 같은 역할을 한다.
 
 ### 파티 편성: 인덱스가 곧 역할
 
@@ -372,15 +563,8 @@ public void 3명만_편성하면_3명만_스폰된다()     // X, 컴파일 실�
 
 ## 데이터
 
-런타임 데이터는 `Assets/_Game/Resources/`에 있다. `Resources.Load`로 읽는다.
-
-| 에셋 | 내용 |
-|---|---|
-| `UserData.asset` | 닉네임, 재화, 스태미나, 편성(`DeckCharacters`) |
-| `CharacterDatabase.asset` | 캐릭터 9종 목록 |
-| `{a~i}_CharacterData.asset` | 캐릭터별 ID·이름·프리팹·아이콘·기본 스탯·무기 |
-| `Weapons/` | 무기군 데이터 |
-| `ItemDatabase.asset` | 보상 아이템 |
+런타임 데이터는 `Assets/_Game/Resources/`에 있고 `Resources.Load`로 읽는다.
+에셋 목록은 [도메인](#도메인) 절에 있다. 여기서는 **다루는 규칙**만 적는다.
 
 ### 저장은 편성만 한다
 

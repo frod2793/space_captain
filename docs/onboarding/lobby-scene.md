@@ -117,7 +117,7 @@ LobbyViewModel  ...      PartyViewModel  (순수 C#, 로직)
 
 - **View는 ViewModel의 구현이 아니라 인터페이스를 본다.**
 - **ViewModel은 `MonoBehaviour`가 아니다.** 그래서 씬 없이 테스트된다
-  (`PartyViewModelTests` 25케이스가 씬을 안 띄운다).
+  (`PartyViewModelTests` 27케이스가 씬을 안 띄운다).
 - **View끼리 직접 대화하지 않는다.** 로비에서 팝업을 여는 것도
   `LobbyViewModel.OnPartyOpenRequested` 이벤트를 Initializer가 받아 처리한다.
 
@@ -161,7 +161,7 @@ LobbyDataDTO.DeckCharacters   // List<string>, 캐릭터 ID
 |---|---|---|
 | 0 | Active | 전투 시작 시 투입 |
 | 1, 2 | Standby | 필드 대기, 드래그로 교대 |
-| 3, 4 | Reserve | 예비, 쿨다운 10초 |
+| 3, 4 | Reserve | 예비. 쿨다운 후 교체 투입 |
 
 `PartyPopupView.m_slotViews` 배열도 **같은 순서**로 연결돼 있다. 0~2가 필드, 3~4가
 예비다. 순서를 잘못 꽂으면 편성한 선두가 예비로 들어간다.
