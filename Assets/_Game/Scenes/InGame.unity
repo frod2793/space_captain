@@ -8004,8 +8004,8 @@ MonoBehaviour:
   - {x: 414, y: 127}
   - {x: 414, y: -33}
   m_reserveSlotPositions:
-  - {x: -412, y: 194}
-  - {x: -412, y: 34}
+  - {x: 414, y: -193}
+  - {x: 414, y: -353}
   m_skillCutInUI: {fileID: 1605565296}
   m_swapCooldownFill: {fileID: 465321680}
 --- !u!4 &1195165436
@@ -9169,7 +9169,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 131.5675, y: 861.1611}
+  m_AnchoredPosition: {x: 131.5675, y: 866}
   m_SizeDelta: {x: 198.1612, y: 53.6778}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1476361744
@@ -9911,7 +9911,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: 82.5}
+  m_AnchoredPosition: {x: -120, y: 120}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1576265987
